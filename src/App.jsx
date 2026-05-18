@@ -493,7 +493,7 @@ function App() {
 
   const actions = makeActions(setStore, forceReplaceStore);
 
-  if (route.pathname === '/verifier') {
+  if (route.pathname === '/verifier' || route.pathname === '/vérifier') {
     return (
       <>
         <VerifyReceiptPage navigate={navigate} route={route} store={store} />
@@ -10014,7 +10014,7 @@ function renderProofHtml(proof) {
 
 function getReceiptVerifyUrl(code) {
   const origin = typeof window !== 'undefined' && window.location ? window.location.origin : 'https://frescoop.sn';
-  return `${origin}/vérifier?code=${encodeURIComponent(code || '')}`;
+  return `${origin}/verifier?code=${encodeURIComponent(code || '')}`;
 }
 
 function getQrImageUrl(value, size = 220) {
