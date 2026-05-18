@@ -125,19 +125,28 @@ const useDemoSeedData = configuredSeedMode
   : !productionLike;
 let mongoDb = null;
 if (mongoUri) {
-  try {
-    const client = new MongoClient(mongoUri, {
-      tls: true,
-      tlsAllowInvalidCertificates: false,
-      serverSelectionTimeoutMS: 10000,
-      connectTimeoutMS: 10000,
-    });
-    await client.connect();
-    mongoDb = client.db(process.env.MONGODB_DB || 'frescoop');
-    console.log('[MongoDB] Connecté à Atlas — les données persistent entre les déploiements');
-  } catch (err) {
-    console.error('[MongoDB] Connexion echouee:', err.message);
-    console.warn('[MongoDB] Fallback sur stockage fichier local (store.json)');
+  const attempts = [
+    { tlsAllowInvalidCertificates: true },
+    { tls: true, tlsAllowInvalidCertificates: true },
+    {},
+  ];
+  for (const opts of attempts) {
+    try {
+      const client = new MongoClient(mongoUri, {
+        ...opts,
+        serverSelectionTimeoutMS: 15000,
+        connectTimeoutMS: 15000,
+      });
+      await client.connect();
+      mongoDb = client.db(process.env.MONGODB_DB || 'frescoop');
+      console.log('[MongoDB] Connecté à Atlas — données persistantes');
+      break;
+    } catch (err) {
+      console.warn('[MongoDB] Tentative échouée:', err.message);
+    }
+  }
+  if (!mongoDb) {
+    console.error('[MongoDB] Impossible de se connecter après 3 tentatives. Fallback fichier local.');
   }
 } else {
   console.warn('[DB] MONGODB_URI non configuré — stockage fichier local.');
