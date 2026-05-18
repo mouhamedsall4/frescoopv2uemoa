@@ -1719,11 +1719,7 @@ function FrescoopRoleHomePage({ currentUser, navigate, store }) {
   if (currentUser.role === 'partenaire') {
     const agriculteurs = store.users.filter((u) => u.role === 'agriculteur');
     const scoredFarmers = agriculteurs.map((farmer) => {
-      const prods = store.products.filter((p) => p.ownerId === farmer.id && p.status === 'Publie');
-      const ords = store.orders.filter((o) => o.sellerId === farmer.id);
-      const txns = store.transactions.filter((t) => t.ownerId === farmer.id);
-      const doss = store.dossiers.filter((d) => d.ownerId === farmer.id && d.status === 'Valide');
-      const score = Math.min(100, Math.min(30, prods.length * 10) + Math.min(30, ords.length * 10) + Math.min(25, txns.length * 8) + Math.min(15, doss.length * 15));
+      const score = buildBancabiliteDossier(farmer, store).score;
       return { farmer, score };
     });
     const bancables = scoredFarmers.filter((f) => f.score >= 75);
@@ -1956,12 +1952,7 @@ function SellerHomePage({ currentUser, navigate, store }) {
   const orderValue = orders.reduce((sum, order) => sum + getOrderTotal(order, store), 0);
   const actions = buildSellerOpportunities(store, currentUser);
 
-  const bancabiliteScore = Math.min(100,
-    Math.min(30, publishedProducts.length * 10) +
-    Math.min(30, orders.length * 10) +
-    Math.min(25, transactions.length * 8) +
-    Math.min(15, dossiers.filter((item) => item.status === 'Valide').length * 15)
-  );
+  const bancabiliteScore = buildBancabiliteDossier(currentUser, store).score;
   const scoreLevel = bancabiliteScore >= 75 ? 'Bancable' : bancabiliteScore >= 40 ? 'En progression' : 'Débutant';
   const scoreTone = bancabiliteScore >= 75 ? 'green' : bancabiliteScore >= 40 ? 'blue' : 'gold';
 
