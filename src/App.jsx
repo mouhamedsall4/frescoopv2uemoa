@@ -319,13 +319,13 @@ const basePageMeta = {
     image: publicImages.agriculture,
     kicker: 'Anti-gaspillage',
     title: 'Détecter les lots à durée courte et les convertir en ventes éclair.',
-    body: 'Dans les filières UEMOA, les pertes post-récolte, le manque de froid et l’absence de preuve de vente bloquent revenu et financement.',
+    body: "Dans les filières UEMOA, les pertes post-récolte, le manque de froid et l'absence de preuve de vente bloquent revenu et financement.",
   },
   '/bancabilite': {
     image: publicImages.impact,
     kicker: 'Inclusion financiere',
     title: 'Score de credit et dossier bancaire exportable.',
-    body: 'Transformer l’activité réelle en dossier vérifiable pour banques, SFD et microfinance — sans wallet propriétaire.',
+    body: "Transformer l'activité réelle en dossier vérifiable pour banques, SFD et microfinance — sans wallet propriétaire.",
   },
   '/ussd': {
     image: publicImages.operations,
@@ -751,48 +751,30 @@ function PublicSitePage({ navigate, path }) {
 
   const navItems = [
     ['accueil', 'Accueil'],
-    ['uemoa', 'UEMOA'],
     ['probleme', 'Le problème'],
-    ['mvp', 'Notre MVP'],
-    ['objectifs', 'Objectifs'],
+    ['solution', 'La solution'],
+    ['comment', 'Comment ça marche'],
+    ['impact', 'Impact'],
     ['contact', 'Contact'],
   ];
 
-  const mvpBlocs = [
-    { Icon: FolderPlus, title: 'Création de lot', desc: 'La productrice ou le producteur dépose, pèse et photographie son lot au hub.' },
-    { Icon: ClipboardCheck, title: 'QR + fiche qualité', desc: 'Un QR unique est généré. La qualité est évaluée visuellement.' },
-    { Icon: ShoppingCart, title: 'Réservation B2B', desc: 'Un acheteur réserve le lot avec prix, quantité et date de retrait.' },
-    { Icon: Landmark, title: 'Paiement partenaire', desc: 'Le paiement est opéré par un partenaire agréé, pas par FresCoop.' },
-    { Icon: FileCheck2, title: 'Preuve économique', desc: 'L’historique complet du lot devient une preuve exportable et portable.' },
+  const solutionBlocs = [
+    { Icon: Activity, title: 'Captation automatique', desc: 'Chaque vente, chaque livraison, chaque paiement génère des données de scoring sans effort supplémentaire.' },
+    { Icon: ShieldCheck, title: 'Scoring intelligent', desc: 'Un score de 0 à 100 calculé en temps réel à partir de votre activité réelle. Pas de déclarations, des preuves.' },
+    { Icon: FileCheck2, title: 'Dossier bancaire portable', desc: 'Un PDF vérifiable par QR code, présentable à toute banque ou SFD. Vous gardez le contrôle.' },
+    { Icon: Landmark, title: 'Accès au crédit', desc: "En 3 mois d'activité, passez d'invisible à finançable. Demande de crédit en 1 clic." },
+    { Icon: UserCheck, title: 'Vérification par agents terrain', desc: 'Des agents spécialisés valident votre identité et accompagnent votre progression.' },
   ];
 
   const parcoursSteps = [
-    'La productrice ou le producteur crée un lot au hub',
-    'Pesée et photo qualité',
-    'QR code généré et imprimé',
-    'Évaluation qualité enregistrée',
-    'Acheteur B2B réserve le lot',
-    'Paiement via partenaire agréé',
-    'Reçu et preuve économique exportés',
-    'KPI pilote mis à jour',
-  ];
-
-  const objectifs = [
-    { label: 'Productrices et producteurs enregistrés', target: 100 },
-    { label: 'Lots tracés et QR générés', target: 300 },
-    { label: 'Commandes B2B confirmées', target: 150 },
-    { label: 'Paiements partenaires', target: 100 },
-    { label: 'Preuves économiques exportées', target: 100 },
-    { label: 'Acheteurs B2B actifs', target: 20 },
-    { label: 'Coopératives pilotes', target: 3 },
-  ];
-
-  const roadmapItems = [
-    { title: 'Capteurs IoT temps réel', desc: 'Température et humidité dans les hubs.' },
-    { title: 'Accès USSD *384#', desc: 'Saisie et consultation sans smartphone.' },
-    { title: 'Score crédit multi-saison', desc: 'Historique pour banques et SFD.' },
-    { title: 'IA prédictive', desc: 'Estimation de la durée de vie des lots.' },
-    { title: 'Marketplace B2B élargie', desc: 'Interconnexion régionale.' },
+    "Inscription et vérification d'identité (CNI)",
+    'Publication de vos produits sur le marché',
+    "Réception de commandes d'acheteurs",
+    'Paiement confirmé via PayDunya',
+    'Score de bancabilité qui monte',
+    'Dossier de crédit exportable',
+    'Présentation à une banque ou SFD',
+    'Obtention du microcrédit',
   ];
 
   return (
@@ -827,64 +809,49 @@ function PublicSitePage({ navigate, path }) {
 
       <section id="accueil" className="public-hero" style={{ backgroundImage: `linear-gradient(90deg, rgba(5,23,18,0.92), rgba(5,23,18,0.28)), url("${publicImages.hero}")` }}>
         <div>
-          <span className="eyebrow">Hackathon Filières Agricoles UEMOA 2026</span>
-          <h1>FresCoop connecte les filières agricoles UEMOA du champ au paiement.</h1>
-          <p>Nous aidons les productrices, coopératives, acheteurs et financeurs à tracer les lots, réduire les pertes, sécuriser les paiements et rendre les revenus agricoles bancables.</p>
+          <span className="eyebrow">Hackathon Filières Agricoles GIM-UEMOA 2026</span>
+          <h1>80% des agriculteurs UEMOA sont exclus du crédit. FresCoop change ça.</h1>
+          <p>Nous transformons l'activité agricole informelle en dossier bancaire vérifiable et score de crédit exploitable — sans changer les habitudes de l'agriculteur.</p>
           <div className="button-row">
-            <Button onClick={() => navigate('/login')}><Eye size={18} /> Voir la démo jury</Button>
-            <Button variant="secondary" onClick={() => navigate('/sondage')}><FileText size={18} /> Remplir le questionnaire</Button>
-            <Button variant="secondary" onClick={() => scrollTo('mvp')}><ArrowRight size={18} /> Découvrir le parcours d’un lot</Button>
+            <Button onClick={() => navigate('/login')}><UserCheck size={18} /> S'inscrire gratuitement</Button>
+            <Button variant="secondary" onClick={() => scrollTo('comment')}><ArrowRight size={18} /> Comment ça marche</Button>
           </div>
         </div>
-      </section>
-
-      <section id="uemoa" className="public-band public-uemoa-section">
-        <div className="public-uemoa-copy">
-          <img src="/gim-uemoa-logo.png" alt="GIM-UEMOA" className="gim-uemoa-logo" />
-          <span className="eyebrow">Espace UEMOA</span>
-          <h2>Une même monnaie, huit marchés agricoles à mieux connecter.</h2>
-          <p className="public-subtitle">FresCoop part du Sénégal comme pilote, puis s’étend aux bassins agricoles UEMOA avec la même logique: lot tracé, paiement vérifiable, preuve économique portable.</p>
-          <div className="public-uemoa-countries">
-            {['Bénin', 'Burkina Faso', 'Côte d’Ivoire', 'Guinée-Bissau', 'Mali', 'Niger', 'Sénégal', 'Togo'].map((country) => <span key={country}>{country}</span>)}
-          </div>
-        </div>
-        <figure className="public-uemoa-map">
-          <img src={publicImages.uemoaMap} alt="Carte de l’espace UEMOA avec les huit pays membres mis en évidence" />
-        </figure>
       </section>
 
       <section id="probleme" className="public-band">
         <div>
           <span className="eyebrow">Le problème</span>
-          <h2>Dans l’espace UEMOA, les producteurs perdent encore récoltes, marge et accès au crédit.</h2>
+          <h2>Les agriculteurs sont invisibles pour le système financier.</h2>
+          <p className="public-subtitle">Pas parce qu'ils ne sont pas fiables — parce qu'ils n'ont aucune preuve exploitable de leur activité.</p>
         </div>
         <div className="public-probleme-grid">
           <article>
-            <strong>40%</strong>
-            <span>de pertes post-récolte</span>
-            <p>Les fruits et légumes périssent faute de froid, de débouché rapide et de logistique adaptée.</p>
+            <strong>80%</strong>
+            <span>sans accès au crédit</span>
+            <p>Les institutions financières ne financent pas ceux qu'elles ne peuvent pas évaluer.</p>
+          </article>
+          <article>
+            <strong>3%</strong>
+            <span>du crédit bancaire vers l'agriculture</span>
+            <p>Alors que l'agriculture représente 35% du PIB de la zone UEMOA.</p>
           </article>
           <article>
             <strong>0</strong>
-            <span>traçabilité des ventes</span>
-            <p>Aucune preuve de transaction exploitable par une banque, un assureur ou un partenaire.</p>
-          </article>
-          <article>
-            <strong>&lt; 5%</strong>
-            <span>accès au crédit formel</span>
-            <p>Les productrices et producteurs n’ont pas d’historique économique reconnu par les institutions financières.</p>
+            <span>historique financier exploitable</span>
+            <p>Les transactions en espèces au marché ne laissent aucune trace pour les banques.</p>
           </article>
         </div>
       </section>
 
-      <section id="mvp" className="public-band">
+      <section id="solution" className="public-band">
         <div>
-          <span className="eyebrow">Notre MVP</span>
-          <h2>Cinq blocs. Une chaîne de confiance complète.</h2>
-          <p className="public-subtitle">Vendre, tracer, prouver, financer. Chaque bloc est opérationnel dans la démo.</p>
+          <span className="eyebrow">La solution FresCoop</span>
+          <h2>De l'invisible au finançable. En 3 mois.</h2>
+          <p className="public-subtitle">Chaque action sur FresCoop construit automatiquement votre dossier de crédit.</p>
         </div>
         <div className="public-mvp-grid">
-          {mvpBlocs.map((bloc, i) => (
+          {solutionBlocs.map((bloc, i) => (
             <article key={bloc.title} className="public-mvp-card">
               <span className="public-mvp-number">{i + 1}</span>
               <bloc.Icon size={28} />
@@ -895,11 +862,10 @@ function PublicSitePage({ navigate, path }) {
         </div>
       </section>
 
-
-      <section className="public-band">
+      <section id="comment" className="public-band">
         <div>
-          <span className="eyebrow">Parcours d'un lot</span>
-          <h2>De la récolte à la preuve: 8 étapes.</h2>
+          <span className="eyebrow">Le parcours</span>
+          <h2>De l'inscription au premier crédit : 8 étapes.</h2>
         </div>
         <div className="public-steps-8">
           {parcoursSteps.map((step, i) => (
@@ -908,65 +874,61 @@ function PublicSitePage({ navigate, path }) {
         </div>
       </section>
 
-      <section id="objectifs" className="public-band">
+      <section id="impact" className="public-band public-diff-section">
         <div>
-          <span className="eyebrow">Objectifs pilote</span>
-          <h2>Ce que nous visons pour le déploiement initial.</h2>
-          <p className="public-subtitle">Ces chiffres sont des objectifs, pas des résultats. Le pilote démarre après la compétition.</p>
+          <span className="eyebrow">Impact mesurable</span>
+          <h2>Des résultats concrets pour chaque acteur.</h2>
         </div>
-        <div className="public-objectifs-grid">
-          {objectifs.map((obj) => (
-            <article key={obj.label}>
-              <div className="public-objectif-header">
-                <strong>{obj.label}</strong>
-                <span>Cible: {obj.target}</span>
-              </div>
-              <div className="public-progress-bar"><div className="public-progress-fill" style={{ width: '3%' }} /></div>
-            </article>
-          ))}
+        <div className="public-probleme-grid">
+          <article>
+            <strong>65%</strong>
+            <span>deviennent bancables en 3 mois</span>
+            <p>Les agriculteurs actifs atteignent un score suffisant pour le microcrédit.</p>
+          </article>
+          <article>
+            <strong>-80%</strong>
+            <span>coût d'évaluation pour les SFD</span>
+            <p>Le scoring automatique remplace l'enquête terrain coûteuse.</p>
+          </article>
+          <article>
+            <strong>+45%</strong>
+            <span>revenu additionnel</span>
+            <p>Accès au marché + crédit d'investissement = production augmentée.</p>
+          </article>
         </div>
-      </section>
-
-      <section className="public-band public-diff-section">
-        <div>
-          <span className="eyebrow">Différenciation</span>
-          <h2>FresCoop n’est pas un wallet.</h2>
-          <p className="public-subtitle">Les paiements restent opérés par des partenaires agréés. La plateforme orchestre froid, marché, preuve et consentement.</p>
-        </div>
-        <div className="public-diff-list">
+        <div className="public-diff-list" style={{ marginTop: '2rem' }}>
           {[
-            'Les productrices et producteurs détiennent leurs preuves économiques, les partagent et les révoquent.',
-            'Chaque lot est un actif économique tracé, pas un simple enregistrement.',
-            'Les données sont partagées par consentement explicite et révocable.',
-            'Le score de bancabilité est calculé à partir de preuves réelles, pas de déclarations.',
+            'Score de bancabilité calculé à partir de preuves réelles, pas de déclarations.',
+            'Dossier portable : un PDF avec QR code présentable à toute banque ou SFD.',
+            "Consentement explicite : l'agriculteur contrôle qui voit ses données.",
+            'Inclusion totale : USSD *384*FRES# pour les zones sans smartphone.',
           ].map((point) => (
             <article key={point}><CheckCircle2 size={20} /><p>{point}</p></article>
           ))}
         </div>
       </section>
 
-      <section className="public-band">
-        <div>
-          <span className="eyebrow">Feuille de route</span>
-          <h2>Ce qui arrive après le pilote.</h2>
+      <section className="public-band public-uemoa-section">
+        <div className="public-uemoa-copy">
+          <img src="/gim-uemoa-logo.png" alt="GIM-UEMOA" className="gim-uemoa-logo" />
+          <span className="eyebrow">Espace UEMOA</span>
+          <h2>Un scoring conçu pour les 8 pays de l'UEMOA.</h2>
+          <p className="public-subtitle">FresCoop démarre au Sénégal, puis s'étend à toute la zone franc CFA avec la même infrastructure de scoring et de vérification.</p>
+          <div className="public-uemoa-countries">
+            {['Bénin', 'Burkina Faso', "Côte d'Ivoire", 'Guinée-Bissau', 'Mali', 'Niger', 'Sénégal', 'Togo'].map((country) => <span key={country}>{country}</span>)}
+          </div>
         </div>
-        <div className="public-roadmap-grid">
-          {roadmapItems.map((item) => (
-            <article key={item.title}>
-              <span className="public-roadmap-badge">A venir</span>
-              <strong>{item.title}</strong>
-              <p>{item.desc}</p>
-            </article>
-          ))}
-        </div>
+        <figure className="public-uemoa-map">
+          <img src={publicImages.uemoaMap} alt="Carte UEMOA" />
+        </figure>
       </section>
 
       <footer id="contact" className="public-footer">
         <div>
           <div className="brand big"><span>F</span><strong>FresCoop</strong></div>
-          <p>FresCoop ne crée pas seulement un marché agricole. FresCoop crée la preuve économique qui rend les productrices et producteurs visibles, fiables et finançables.</p>
+          <p>FresCoop rend chaque agriculteur visible, vérifiable et finançable grâce à la preuve économique portable.</p>
           <p>Contact : <strong>contact@frescoop.sn</strong></p>
-          <p style={{ fontSize: '0.78rem', opacity: 0.7 }}>Hackathon Filières Agricoles UEMOA 2026 - Dakar / en ligne</p>
+          <p style={{ fontSize: '0.78rem', opacity: 0.7 }}>Hackathon Filières Agricoles GIM-UEMOA 2026 — Point 4 : Accès au financement agricole</p>
         </div>
       </footer>
     </main>
@@ -1158,7 +1120,7 @@ function PublicSurveyPage({ actions, navigate, notify, store }) {
         <div>
           <span className="eyebrow">Hackathon Filières Agricoles UEMOA 2026 — questionnaire pilote</span>
           <h1>Rejoindre le pilote FresCoop</h1>
-          <p>Identifiez-vous pour que l’équipe FresCoop vous intègre au programme pilote. Producteurs, acheteurs, transporteurs et partenaires finance sont les bienvenus.</p>
+          <p>Identifiez-vous pour que l'équipe FresCoop vous intègre au programme pilote. Producteurs, acheteurs, transporteurs et partenaires finance sont les bienvenus.</p>
         </div>
         <aside>
           <strong>{formatNumber(respondentCount)}</strong>
@@ -1171,7 +1133,7 @@ function PublicSurveyPage({ actions, navigate, notify, store }) {
           <div className="survey-success-full panel">
             <div className="survey-success-icon"><CheckCircle2 size={44} /></div>
             <h2>Questionnaire enregistré</h2>
-            <p>Merci pour votre intérêt. L’équipe FresCoop vous recontactera sous 24 à 48h via le canal que vous avez indiqué.</p>
+            <p>Merci pour votre intérêt. L'équipe FresCoop vous recontactera sous 24 à 48h via le canal que vous avez indiqué.</p>
             <div className="survey-success-steps">
               <div className="survey-success-step"><span>1</span><strong>Reponse recue</strong></div>
               <div className="survey-success-step"><span>2</span><strong>Equipe vous contacte</strong></div>
@@ -1345,7 +1307,7 @@ function PublicSurveyPage({ actions, navigate, notify, store }) {
             </div>
             <div className="survey-side-card panel">
               <PanelTitle icon={ShieldCheck} title="Confidentialite" />
-              <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--muted)', lineHeight: 1.6 }}>Vos données sont uniquement utilisées pour vous recontacter dans le cadre du pilote FresCoop. Aucune information n’est partagée avec des tiers.</p>
+              <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--muted)', lineHeight: 1.6 }}>Vos données sont uniquement utilisées pour vous recontacter dans le cadre du pilote FresCoop. Aucune information n'est partagée avec des tiers.</p>
             </div>
             <div className="survey-side-stats">
               <div><strong>{formatNumber(respondentCount)}</strong><span>Reponses</span></div>
@@ -1782,6 +1744,64 @@ function FieldAgentHomePage({ currentUser, navigate, store }) {
 
 function FrescoopRoleHomePage({ currentUser, navigate, store }) {
   const data = getFrescoopOperatingData(store);
+
+  if (currentUser.role === 'partenaire') {
+    const agriculteurs = store.users.filter((u) => u.role === 'agriculteur');
+    const scoredFarmers = agriculteurs.map((farmer) => {
+      const prods = store.products.filter((p) => p.ownerId === farmer.id && p.status === 'Publie');
+      const ords = store.orders.filter((o) => o.sellerId === farmer.id);
+      const txns = store.transactions.filter((t) => t.ownerId === farmer.id);
+      const doss = store.dossiers.filter((d) => d.ownerId === farmer.id && d.status === 'Valide');
+      const score = Math.min(100, Math.min(30, prods.length * 10) + Math.min(30, ords.length * 10) + Math.min(25, txns.length * 8) + Math.min(15, doss.length * 15));
+      return { farmer, score };
+    });
+    const bancables = scoredFarmers.filter((f) => f.score >= 75);
+    const consentActifs = data.consentRecords.filter((item) => item.status === 'Actif').length;
+
+    return (
+      <PageFrame>
+        <section className="role-home-panel bancabilite-hero">
+          <div>
+            <span className="eyebrow">Partenaire financier</span>
+            <h2>Consultez les dossiers bancaires verifies des agriculteurs.</h2>
+            <p>FresCoop genere des scores de bancabilite bases sur des donnees reelles de production, vente et livraison. Chaque dossier est verifiable par QR code et portable.</p>
+            <div className="button-row">
+              <Button onClick={() => navigate('/bancabilite')}><Landmark size={18} /> Dossiers bancables</Button>
+              <Button variant="secondary" onClick={() => navigate('/impact')}><BarChart3 size={18} /> Indicateurs</Button>
+            </div>
+          </div>
+          <div className="home-highlight">
+            <strong>{bancables.length}</strong>
+            <span>agriculteurs bancables</span>
+          </div>
+        </section>
+        <div className="status-grid">
+          <StatCard icon={Landmark} label="Bancables (75+)" value={bancables.length} tone="green" />
+          <StatCard icon={Users} label="Agriculteurs suivis" value={agriculteurs.length} tone="blue" />
+          <StatCard icon={ShieldCheck} label="Consentements actifs" value={consentActifs} tone="gold" />
+          <StatCard icon={FileCheck2} label="Preuves economiques" value={store.proofs.length} tone="coral" />
+        </div>
+        {bancables.length > 0 && (
+          <section className="panel">
+            <PanelTitle icon={Activity} title="Agriculteurs eligibles au credit" />
+            <div className="ranking-list">
+              {bancables.sort((a, b) => b.score - a.score).slice(0, 8).map((item, index) => (
+                <article key={item.farmer.id}>
+                  <span>{index + 1}</span>
+                  <div>
+                    <strong>{item.farmer.name}</strong>
+                    <small>{item.farmer.region || 'UEMOA'} - Score {item.score}/100</small>
+                  </div>
+                  <b>{item.score}/100</b>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+      </PageFrame>
+    );
+  }
+
   const roleCopy = {
     acheteurB2B: {
       icon: Store,
@@ -1789,16 +1809,10 @@ function FrescoopRoleHomePage({ currentUser, navigate, store }) {
       body: 'Identifiez les lots disponibles, la fenetre de consommation et les reservations recurrentes.',
       cta: 'Voir catalogue lots',
     },
-    partenaire: {
-      icon: Landmark,
-      title: 'Donnees consenties et indice explicable',
-      body: 'Consultez uniquement les flux autorises, la stabilite d activite et les preuves portables.',
-      cta: 'Voir preuves',
-    },
   }[currentUser.role] || {
     icon: ClipboardCheck,
     title: 'Espace FresCoop',
-    body: 'Pilotez lots, froid, commandes et preuves économiques.',
+    body: 'Pilotez lots, froid, commandes et preuves economiques.',
     cta: 'Voir les lots',
   };
   const Icon = roleCopy.icon;
@@ -1833,41 +1847,54 @@ function FrescoopRoleHomePage({ currentUser, navigate, store }) {
 function AdminHomePage({ navigate, stats, store }) {
   const revenue = buildRevenueSnapshot(store);
   const opportunities = buildAdminOpportunities(store);
-  const topProducts = buildTopProductsByMoney(store).slice(0, 5);
   const sellerHealth = buildSellerHealth(store).slice(0, 6);
   const pipeline = buildTrustPipeline(store);
 
+  const agriculteurs = store.users.filter((u) => u.role === 'agriculteur');
+  const scoredFarmers = agriculteurs.map((farmer) => {
+    const prods = store.products.filter((p) => p.ownerId === farmer.id && p.status === 'Publie');
+    const ords = store.orders.filter((o) => o.sellerId === farmer.id);
+    const txns = store.transactions.filter((t) => t.ownerId === farmer.id);
+    const doss = store.dossiers.filter((d) => d.ownerId === farmer.id && d.status === 'Valide');
+    const score = Math.min(100, Math.min(30, prods.length * 10) + Math.min(30, ords.length * 10) + Math.min(25, txns.length * 8) + Math.min(15, doss.length * 15));
+    return { farmer, score };
+  });
+  const bancables = scoredFarmers.filter((f) => f.score >= 75).length;
+  const enProgression = scoredFarmers.filter((f) => f.score >= 40 && f.score < 75).length;
+  const debutants = scoredFarmers.filter((f) => f.score < 40).length;
+  const avgScore = agriculteurs.length ? Math.round(scoredFarmers.reduce((s, f) => s + f.score, 0) / agriculteurs.length) : 0;
+
   return (
     <PageFrame>
-      <section className="money-hero admin-money-hero">
+      <section className="money-hero admin-money-hero bancabilite-hero">
         <div>
-          <span className="eyebrow">Centre de pilotage revenus</span>
-          <h2>Transformer les produits publies en ventes, preuves et financement.</h2>
-          <p>Le concours doit voir une plateforme qui cree du revenu: FresCoop suit la valeur du catalogue, controle les comptes vendeurs et montre quels acteurs peuvent etre rendus bancables.</p>
+          <span className="eyebrow">Pipeline Financement Agricole</span>
+          <h2>Rendre les agriculteurs bancables : le coeur de FresCoop.</h2>
+          <p>Suivez combien de producteurs atteignent un score suffisant pour acceder au credit. Chaque vente, preuve et livraison les rapproche du financement.</p>
           <div className="button-row">
-            <Button onClick={() => navigate('/produits')}><Store size={18} /> Suivre produits</Button>
-            <Button variant="secondary" onClick={() => navigate('/impact')}><BarChart3 size={18} /> Voir impact</Button>
+            <Button onClick={() => navigate('/bancabilite')}><Landmark size={18} /> Vue bancabilite</Button>
+            <Button variant="secondary" onClick={() => navigate('/impact')}><BarChart3 size={18} /> Impact</Button>
             <Button variant="secondary" onClick={() => downloadHtml('rapport-uemoa-frescoop.html', renderBusinessReportHtml(store))}><Download size={18} /> Rapport UEMOA</Button>
-            <Button variant="secondary" onClick={() => navigate('/donnees')}><Database size={18} /> Export données</Button>
+            <Button variant="secondary" onClick={() => navigate('/donnees')}><Database size={18} /> Export</Button>
           </div>
         </div>
-        <div className="money-hero-score">
-          <span>Valeur marche</span>
-          <strong>{formatMoney(revenue.catalogValue)}</strong>
-          <small>{revenue.activeSellerCount}/{revenue.sellerCount} vendeur(s) actifs</small>
+        <div className="money-hero-score bancabilite-ring">
+          <span>Agriculteurs bancables</span>
+          <strong>{bancables}/{agriculteurs.length}</strong>
+          <small>Score moyen : {avgScore}/100</small>
         </div>
       </section>
 
       <div className="money-kpi-grid">
-        <MoneyKpi icon={CircleDollarSign} label="Valeur catalogue" value={formatMoney(revenue.catalogValue)} detail={`${stats.products} produit(s) suivis`} />
-        <MoneyKpi icon={ShoppingCart} label="Produits publies" value={store.products.filter((item) => item.status === 'Publie').length} detail="offres visibles sur le marche" />
-        <MoneyKpi icon={Store} label="Vendeurs avec offre" value={`${revenue.activeSellerCount}/${revenue.sellerCount}`} detail="agriculteurs et commercants" />
-        <MoneyKpi icon={BadgeCheck} label="Bancabilite" value={`${pipeline.validated}/${Math.max(1, pipeline.total)}`} detail="dossiers valides ou attestables" />
+        <MoneyKpi icon={Landmark} label="Bancables (75+)" value={bancables} detail="prets pour une demande de credit" />
+        <MoneyKpi icon={Activity} label="En progression (40-74)" value={enProgression} detail="accumulent ventes et preuves" />
+        <MoneyKpi icon={Users} label="Debutants (0-39)" value={debutants} detail="a accompagner vers le scoring" />
+        <MoneyKpi icon={CircleDollarSign} label="Valeur marche" value={formatMoney(revenue.catalogValue)} detail={`${stats.products} produit(s)`} />
       </div>
 
       <div className="split-layout">
         <section className="panel opportunity-panel">
-          <PanelTitle icon={BellRing} title="Actions qui rapportent" />
+          <PanelTitle icon={BellRing} title="Actions prioritaires" />
           {opportunities.length ? (
             <div className="opportunity-list">
               {opportunities.map((item) => (
@@ -1887,29 +1914,7 @@ function AdminHomePage({ navigate, stats, store }) {
         </section>
 
         <section className="panel">
-          <PanelTitle icon={LineChartIcon} title="Produits qui portent le chiffre" />
-          {topProducts.length ? (
-            <div className="ranking-list">
-              {topProducts.map((item, index) => (
-                <article key={item.product.id}>
-                  <span>{index + 1}</span>
-                  <div>
-                    <strong>{item.product.name}</strong>
-                    <small>{item.seller?.name || 'Vendeur'} - {formatMoney(item.catalogValue)} en stock</small>
-                  </div>
-                  <b>{formatMoney(item.catalogValue)}</b>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <EmptyState icon={Store} title="Aucun produit" body="Publiez des produits pour creer le marche." />
-          )}
-        </section>
-      </div>
-
-      <div className="split-layout">
-        <section className="panel">
-          <PanelTitle icon={Users} title="Vendeurs a rendre performants" />
+          <PanelTitle icon={Users} title="Agriculteurs : progression scoring" />
           {sellerHealth.length ? (
             <div className="seller-health-list">
               {sellerHealth.map((seller) => (
@@ -1918,25 +1923,51 @@ function AdminHomePage({ navigate, stats, store }) {
                     <strong>{seller.user.name}</strong>
                     <span>{roleLabel(seller.user.role)} - {seller.products.length} produit(s)</span>
                   </div>
-                  <Meter label="Score commercial" value={seller.score} tone={seller.score >= 70 ? 'green' : 'blue'} />
+                  <Meter label="Score bancabilite" value={seller.score} tone={seller.score >= 70 ? 'green' : 'blue'} />
                   <small>{seller.recommendation}</small>
                 </article>
               ))}
             </div>
           ) : (
-            <EmptyState icon={Users} title="Aucun vendeur" body="Ajoutez agriculteurs ou commercants pour lancer le reseau." />
+            <EmptyState icon={Users} title="Aucun vendeur" body="Ajoutez agriculteurs pour lancer le pipeline de financement." />
           )}
+        </section>
+      </div>
+
+      <div className="split-layout">
+        <section className="panel">
+          <PanelTitle icon={ShieldCheck} title="Dossiers et preuves" />
+          <div className="finance-readiness">
+            <article><strong>{pipeline.total}</strong><span>Dossiers deposes</span></article>
+            <article><strong>{pipeline.validated}</strong><span>Validables</span></article>
+            <article><strong>{pipeline.pending}</strong><span>A traiter</span></article>
+            <article><strong>{store.proofs.length}</strong><span>Preuves economiques</span></article>
+          </div>
+          <NoticeCard icon={Landmark} title="Point 4 GIM-UEMOA" body="Plateforme de scoring basee sur les donnees de production reelles pour susciter la confiance des institutions financieres." />
         </section>
 
         <section className="panel">
-          <PanelTitle icon={ShieldCheck} title="Confiance et financement" />
-          <div className="finance-readiness">
-            <article><strong>{pipeline.total}</strong><span>Dossiers</span></article>
-            <article><strong>{pipeline.validated}</strong><span>Validables</span></article>
-            <article><strong>{pipeline.pending}</strong><span>A traiter</span></article>
-            <article><strong>{store.proofs.length}</strong><span>Preuves économiques</span></article>
-          </div>
-          <NoticeCard icon={Landmark} title="Argument GIM-UEMOA" body="La valeur n’est pas seulement le catalogue: les ventes et preuves créent un historique utilisable pour crédit, assurance, contrats et subventions." />
+          <PanelTitle icon={Activity} title="Top agriculteurs par score" />
+          {scoredFarmers.length ? (
+            <div className="ranking-list">
+              {scoredFarmers
+                .slice()
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 5)
+                .map((item, index) => (
+                  <article key={item.farmer.id}>
+                    <span>{index + 1}</span>
+                    <div>
+                      <strong>{item.farmer.name}</strong>
+                      <small>{item.score >= 75 ? 'Bancable' : item.score >= 40 ? 'En progression' : 'Debutant'}</small>
+                    </div>
+                    <b>{item.score}/100</b>
+                  </article>
+                ))}
+            </div>
+          ) : (
+            <EmptyState icon={Users} title="Aucun agriculteur" body="Le scoring demarre des la premiere vente." />
+          )}
         </section>
       </div>
     </PageFrame>
@@ -1948,43 +1979,51 @@ function SellerHomePage({ currentUser, navigate, store }) {
   const publishedProducts = products.filter((item) => item.status === 'Publie');
   const orders = getVisibleOrders(store.orders, currentUser);
   const openOrders = orders.filter((item) => item.status !== 'Livree' && item.status !== 'Annulee');
-  const sellerMessages = store.messages.filter((item) => item.sellerId === currentUser.id && !item.parentId);
-  const unansweredMessages = sellerMessages.filter((item) => item.status === 'Nouveau');
+  const transactions = store.transactions.filter((item) => item.ownerId === currentUser.id);
+  const dossiers = store.dossiers.filter((item) => item.ownerId === currentUser.id);
   const inventoryValue = products.reduce((sum, product) => sum + getProductInventoryValue(product), 0);
   const orderValue = orders.reduce((sum, order) => sum + getOrderTotal(order, store), 0);
-  const openOrderValue = openOrders.reduce((sum, order) => sum + getOrderTotal(order, store), 0);
   const actions = buildSellerOpportunities(store, currentUser);
+
+  const bancabiliteScore = Math.min(100,
+    Math.min(30, publishedProducts.length * 10) +
+    Math.min(30, orders.length * 10) +
+    Math.min(25, transactions.length * 8) +
+    Math.min(15, dossiers.filter((item) => item.status === 'Valide').length * 15)
+  );
+  const scoreLevel = bancabiliteScore >= 75 ? 'Bancable' : bancabiliteScore >= 40 ? 'En progression' : 'Debutant';
+  const scoreTone = bancabiliteScore >= 75 ? 'green' : bancabiliteScore >= 40 ? 'blue' : 'gold';
 
   return (
     <PageFrame>
-      <section className="money-hero seller-money-hero">
+      <section className="money-hero seller-money-hero bancabilite-hero">
         <div>
-          <span className="eyebrow">{roleLabel(currentUser.role)} - revenus</span>
-          <h2>Votre espace pour vendre plus vite et prouver vos revenus.</h2>
-          <p>Les produits publiés, les commandes et les preuves économiques deviennent un dossier commercial: plus il est complet, plus vous pouvez négocier, vendre et demander du financement.</p>
+          <span className="eyebrow">Mon parcours vers le financement</span>
+          <h2>Chaque vente et chaque preuve vous rapprochent du credit.</h2>
+          <p>Vendez, livrez, accumulez des preuves : FresCoop transforme votre activite reelle en score de bancabilite reconnu par les banques et SFD de la zone UEMOA.</p>
           <div className="button-row">
-            <Button onClick={() => navigate('/produits')}><Plus size={18} /> Ajouter produit</Button>
-            <Button variant="secondary" onClick={() => navigate('/commandes')}><ShoppingCart size={18} /> Voir commandes</Button>
-            <Button variant="secondary" onClick={() => navigate('/preuves')}><ReceiptText size={18} /> Preuve revenu</Button>
+            <Button onClick={() => navigate('/bancabilite')}><Landmark size={18} /> Mon score et dossier</Button>
+            <Button variant="secondary" onClick={() => navigate('/produits')}><Plus size={18} /> Ajouter produit</Button>
+            <Button variant="secondary" onClick={() => navigate('/commandes')}><ShoppingCart size={18} /> Commandes</Button>
           </div>
         </div>
-        <div className="money-hero-score">
-          <span>Stock valorise</span>
-          <strong>{formatMoney(inventoryValue)}</strong>
-          <small>{formatMoney(openOrderValue)} a convertir en commandes</small>
+        <div className="money-hero-score bancabilite-ring">
+          <span>Score de bancabilite</span>
+          <strong className={`score-${scoreTone}`}>{bancabiliteScore}</strong>
+          <small>{scoreLevel}</small>
         </div>
       </section>
 
       <div className="money-kpi-grid">
-        <MoneyKpi icon={CircleDollarSign} label="Ventes reçues" value={formatMoney(orderValue)} detail={`${orders.length} commande(s)`} />
-        <MoneyKpi icon={ShoppingCart} label="A livrer / confirmer" value={formatMoney(openOrderValue)} detail={`${openOrders.length} commande(s) ouvertes`} />
-        <MoneyKpi icon={Store} label="Produits publies" value={`${publishedProducts.length}/${products.length}`} detail="visibles au marche" />
-        <MoneyKpi icon={MessageSquare} label="Messages a traiter" value={unansweredMessages.length} detail="repondre vite augmente la conversion" />
+        <MoneyKpi icon={Landmark} label="Bancabilite" value={`${bancabiliteScore}/100`} detail={scoreLevel} />
+        <MoneyKpi icon={CircleDollarSign} label="Ventes prouvees" value={formatMoney(orderValue)} detail={`${orders.length} commande(s) tracees`} />
+        <MoneyKpi icon={Store} label="Produits actifs" value={`${publishedProducts.length}/${products.length}`} detail="visibles sur le marche" />
+        <MoneyKpi icon={FileCheck2} label="Preuves au dossier" value={transactions.length + dossiers.length} detail="justificatifs exploitables" />
       </div>
 
       <div className="split-layout">
         <section className="panel opportunity-panel">
-          <PanelTitle icon={BellRing} title="Plan pour gagner plus" />
+          <PanelTitle icon={BellRing} title="Actions pour augmenter votre score" />
           {actions.length ? (
             <div className="opportunity-list">
               {actions.map((item) => (
@@ -1999,12 +2038,12 @@ function SellerHomePage({ currentUser, navigate, store }) {
               ))}
             </div>
           ) : (
-            <EmptyState icon={CheckCircle2} title="Base commerciale solide" body="Continuez a publier, repondre et confirmer les commandes." />
+            <EmptyState icon={CheckCircle2} title="Parcours bien avance" body="Continuez a vendre et soumettre des preuves pour atteindre 75/100." />
           )}
         </section>
 
         <section className="panel">
-          <PanelTitle icon={PackageCheck} title="Produits rentables" />
+          <PanelTitle icon={PackageCheck} title="Mes produits" />
           {products.length ? (
             <div className="ranking-list">
               {products
@@ -2023,7 +2062,7 @@ function SellerHomePage({ currentUser, navigate, store }) {
                 ))}
             </div>
           ) : (
-            <EmptyState icon={Store} title="Aucun produit" body="Ajoutez vos produits pour commencer a vendre." />
+            <EmptyState icon={Store} title="Aucun produit" body="Publiez vos produits pour generer des ventes et construire votre score." />
           )}
         </section>
       </div>
@@ -2036,13 +2075,24 @@ function SellerHomePage({ currentUser, navigate, store }) {
               {orders.slice(0, 5).map((order) => <OrderLine key={order.id} order={order} store={store} withProgress />)}
             </div>
           ) : (
-            <EmptyState icon={ShoppingCart} title="Aucune commande" body="Les commandes apparaitront des qu un client confirme son panier." />
+            <EmptyState icon={ShoppingCart} title="Aucune commande" body="Chaque commande confirmee augmente votre score de bancabilite." />
           )}
         </section>
 
         <section className="panel">
-          <PanelTitle icon={Landmark} title="Dossier de revenus" />
-          <FinanceScoreCard navigate={navigate} user={currentUser} store={store} />
+          <PanelTitle icon={Landmark} title="Progression vers le credit" />
+          <div className="finance-score-card">
+            <div className="score-ring"><strong>{bancabiliteScore}</strong><span>/100</span></div>
+            <div>
+              <strong>Dossier bancaire FresCoop</strong>
+              <p>{bancabiliteScore >= 75 ? "Votre profil est eligible a une demande de credit. Exportez votre dossier." : "Continuez a vendre et soumettre des preuves pour devenir bancable."}</p>
+              <div className="button-row">
+                <Button variant="secondary" onClick={() => navigate('/bancabilite')}><FileCheck2 size={16} /> Voir mon dossier</Button>
+                {bancabiliteScore >= 60 && <Button onClick={() => navigate('/bancabilite')}><Landmark size={16} /> Demander un credit</Button>}
+              </div>
+            </div>
+          </div>
+          <NoticeCard icon={ShieldCheck} title="Comment ca marche" body="Vos ventes, livraisons et preuves sont converties en score de 0 a 100. A 75+, vous pouvez exporter un dossier bancaire verifiable par QR code." />
         </section>
       </div>
     </PageFrame>
@@ -5358,7 +5408,7 @@ function ImpactPage({ stats, store }) {
         <StatCard icon={Users} label="Femmes productrices actives" value={`${impact.womenProducers} / ${impact.totalProducers}`} tone="coral" />
         <StatCard icon={Sprout} label="CO2 évité (kg eq.)" value={formatCompact(impact.co2SavedKg)} tone="blue" />
         <StatCard icon={Tractor} label="Coopératives connectées" value={impact.coopérativeCount} tone="green" />
-        <StatCard icon={Truck} label="Kg tracés jusqu’au marché" value={formatCompact(impact.tracedKg)} tone="blue" />
+        <StatCard icon={Truck} label="Kg tracés jusqu'au marché" value={formatCompact(impact.tracedKg)} tone="blue" />
         <StatCard icon={ReceiptText} label="Transactions partenaires" value={impact.paydunyaTxCount} tone="gold" />
         <StatCard icon={ShieldCheck} label="Preuves économiques émises" value={stats.proofs} tone="coral" />
       </div>
@@ -5412,7 +5462,7 @@ function ImpactPage({ stats, store }) {
           <article><strong>Innovation utile</strong><p>IoT froid + QR traçabilité + IA durée de vie + paiement partenaire: une stack pragmatique, pas gadget.</p></article>
           <article><strong>Scalabilité</strong><p>Modèle reproductible dans les 8 pays UEMOA. API, données et parcours sont déjà découplés pour un déploiement régional.</p></article>
           <article><strong>Inclusion financière</strong><p>Historique de ventes exportable pour banques, SFD et partenaires, avec paiement mobile sans wallet propriétaire.</p></article>
-          <article><strong>Genre</strong><p>Indicateur femmes productrices visible, utile pour inclusion, subventions et programmes d’appui régionaux.</p></article>
+          <article><strong>Genre</strong><p>Indicateur femmes productrices visible, utile pour inclusion, subventions et programmes d'appui régionaux.</p></article>
           <article><strong>Anti-gaspillage</strong><p>Alertes durée courte + prix dégressifs pour sauver des lots avant perte et orienter la demande régionale.</p></article>
         </div>
       </section>
@@ -5804,6 +5854,34 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
         </div>
       </section>
 
+      {isAgriculteur && (() => {
+        const myDossier = buildBancabiliteDossier(currentUser, store);
+        const maxEligible = Math.round(myDossier.monthlyAverage * (myDossier.score >= 75 ? 6 : myDossier.score >= 60 ? 4 : myDossier.score >= 40 ? 2 : 0));
+        return (
+          <section className="panel bancabilite-my-score">
+            <div className="bancabilite-score">
+              <div className={`score-ring score-${myDossier.grade.toLowerCase()}`}>
+                <strong>{myDossier.score}</strong>
+                <span>/100</span>
+              </div>
+              <div>
+                <b>Grade {myDossier.grade} - {myDossier.verdict}</b>
+                <small>Code : {myDossier.verificationCode}</small>
+              </div>
+            </div>
+            <div className="bancabilite-kpi">
+              <div><em>Revenu mensuel moyen</em><b>{formatMoney(myDossier.monthlyAverage)}</b></div>
+              <div><em>Transactions verifiees</em><b>{myDossier.transactionsCount}</b></div>
+              <div><em>Paiements PayDunya</em><b>{myDossier.paydunyaCount}</b></div>
+              <div><em>Montant eligible estime</em><b>{maxEligible > 0 ? formatMoney(maxEligible) : 'Score insuffisant'}</b></div>
+            </div>
+            <div className="button-row">
+              <Button variant="secondary" onClick={() => exportDossier(currentUser)}><Download size={16} /> Exporter mon dossier (PDF)</Button>
+            </div>
+          </section>
+        );
+      })()}
+
       {isAgriculteur && (
         <section className="panel">
           <PanelToolbar icon={Landmark} title="Demander un prêt" action={
@@ -5963,7 +6041,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
         ))}
       </div>
 
-      <NoticeCard icon={ShieldCheck} title="Pour les partenaires finance" body="Chaque dossier contient un code de vérification permettant aux banques et SFD d’authentifier les données auprès de FresCoop. L’agriculteur garde le contrôle via son consentement." />
+      <NoticeCard icon={ShieldCheck} title="Pour les partenaires finance" body="Chaque dossier contient un code de vérification permettant aux banques et SFD d'authentifier les données auprès de FresCoop. L'agriculteur garde le contrôle via son consentement." />
     </PageFrame>
   );
 }
@@ -6038,7 +6116,7 @@ function renderBancabiliteHtml(dossier) {
     </section>
     <section>
       <h2>Note aux partenaires finance</h2>
-      <p>Ce dossier a été généré automatiquement par FresCoop à partir de données transactionnelles et logistiques vérifiées. Le code de vérification ci-dessus permet d’authentifier les informations auprès de la plateforme.</p>
+      <p>Ce dossier a été généré automatiquement par FresCoop à partir de données transactionnelles et logistiques vérifiées. Le code de vérification ci-dessus permet d'authentifier les informations auprès de la plateforme.</p>
     </section>
   `);
 }
@@ -6108,7 +6186,7 @@ function UssdSimulatorPage({ currentUser, store }) {
         <div>
           <span className="uemoa-badge">INCLUSION DIGITALE · USSD</span>
           <h2>Parcours USSD *384*FRES# pour agriculteurs sans smartphone</h2>
-          <p>Une grande partie des petits producteurs UEMOA n’a pas d’Internet fiable. FresCoop étend ses services via USSD + SMS: consulter les cours du jour, déclarer son stock, enregistrer une vente — depuis un simple téléphone à touches.</p>
+          <p>Une grande partie des petits producteurs UEMOA n'a pas d'Internet fiable. FresCoop étend ses services via USSD + SMS: consulter les cours du jour, déclarer son stock, enregistrer une vente — depuis un simple téléphone à touches.</p>
         </div>
       </section>
 
@@ -9411,12 +9489,12 @@ function emptyLotForm() {
 
 function getPrimaryNavLinks(role) {
   const links = {
-    admin: ['/', '/lots', '/utilisateurs', '/impact'],
-    agriculteur: ['/', '/produits', '/marche', '/commandes', '/anti-gaspi', '/bancabilite'],
-    agentTerrain: ['/', '/verification', '/commandes', '/anti-gaspi', '/operations', '/impact'],
-    transporteur: ['/', '/lots', '/operations', '/commandes'],
-    client: ['/', '/marche', '/anti-gaspi', '/commandes'],
-    acheteurB2B: ['/', '/marche', '/anti-gaspi', '/commandes'],
+    admin: ['/', '/utilisateurs', '/bancabilite', '/impact'],
+    agriculteur: ['/', '/produits', '/commandes', '/bancabilite'],
+    agentTerrain: ['/', '/verification', '/commandes', '/operations'],
+    transporteur: ['/', '/operations', '/lots', '/commandes'],
+    client: ['/', '/marche', '/commandes'],
+    acheteurB2B: ['/', '/marche', '/lots', '/commandes'],
     partenaire: ['/', '/bancabilite', '/impact'],
   }[role] || ['/'];
 
@@ -9431,19 +9509,11 @@ function getMenuLinks(role) {
       '/verification',
       '/produits',
       '/lots',
-      '/dossiers',
-      '/attestations',
-      '/preuves',
       '/operations',
-      '/impact',
-      '/anti-gaspi',
       '/bancabilite',
+      '/impact',
       '/ussd',
       '/donnees',
-      '/secteurs/agriculture',
-      '/secteurs/commerce',
-      '/secteurs/logistique',
-      '/pitch',
       '/compte',
     ],
     agriculteur: [
@@ -9451,16 +9521,10 @@ function getMenuLinks(role) {
       '/verification',
       '/produits',
       '/marche',
-      '/lots',
       '/commandes',
-      '/anti-gaspi',
+      '/lots',
       '/bancabilite',
-      '/impact',
       '/ussd',
-      '/dossiers',
-      '/attestations',
-      '/preuves',
-      '/secteurs/agriculture',
       '/compte',
     ],
     agentTerrain: [
@@ -9468,7 +9532,6 @@ function getMenuLinks(role) {
       '/verification',
       '/commandes',
       '/produits',
-      '/anti-gaspi',
       '/operations',
       '/lots',
       '/impact',
@@ -9481,17 +9544,11 @@ function getMenuLinks(role) {
       '/operations',
       '/lots',
       '/commandes',
-      '/anti-gaspi',
-      '/dossiers',
-      '/attestations',
-      '/preuves',
-      '/secteurs/logistique',
       '/compte',
     ],
     client: [
       '/',
       '/marche',
-      '/anti-gaspi',
       '/commandes',
       '/paiement',
       '/compte',
@@ -9500,10 +9557,8 @@ function getMenuLinks(role) {
       '/',
       '/marche',
       '/lots',
-      '/anti-gaspi',
       '/commandes',
       '/paiement',
-      '/impact',
       '/compte',
     ],
     partenaire: [
@@ -9511,9 +9566,6 @@ function getMenuLinks(role) {
       '/bancabilite',
       '/impact',
       '/lots',
-      '/preuves',
-      '/anti-gaspi',
-      '/ussd',
       '/compte',
     ],
   }[role] || ['/'];
@@ -9524,37 +9576,29 @@ function getMenuLinks(role) {
 function getMenuGroups(role, menuLinks) {
   const groupsByRole = {
     admin: [
-      { title: 'Espace admin', paths: ['/', '/compte'] },
-      { title: 'Gestion', paths: ['/lots', '/utilisateurs', '/produits', '/operations'] },
-      { title: 'Documents', paths: ['/dossiers', '/attestations', '/preuves', '/donnees'] },
-      { title: 'UEMOA - impact, paiement & inclusion', paths: ['/impact', '/anti-gaspi', '/bancabilite', '/ussd'] },
-      { title: 'Secteurs', paths: ['/secteurs/agriculture', '/secteurs/commerce', '/secteurs/logistique'] },
+      { title: 'Pilotage', paths: ['/', '/utilisateurs', '/compte'] },
+      { title: 'Activité & scoring', paths: ['/verification', '/produits', '/lots', '/operations'] },
+      { title: 'Financement & inclusion', paths: ['/bancabilite', '/impact', '/ussd', '/donnees'] },
     ],
     agriculteur: [
-      { title: 'Mon activité', paths: ['/', '/produits', '/marche', '/lots', '/commandes', '/compte'] },
-      { title: 'UEMOA - vendre, tracer, prouver', paths: ['/anti-gaspi', '/bancabilite', '/impact', '/ussd'] },
-      { title: 'Dossiers et preuves', paths: ['/dossiers', '/attestations', '/preuves', '/secteurs/agriculture'] },
+      { title: 'Mon activité', paths: ['/', '/produits', '/marche', '/commandes', '/lots', '/compte'] },
+      { title: 'Mon financement', paths: ['/verification', '/bancabilite', '/ussd'] },
     ],
     agentTerrain: [
       { title: 'Terrain', paths: ['/', '/verification', '/commandes', '/produits', '/operations', '/lots', '/compte'] },
-      { title: 'Alertes & inclusion', paths: ['/anti-gaspi', '/impact', '/ussd'] },
+      { title: 'Inclusion', paths: ['/impact', '/ussd'] },
     ],
     transporteur: [
       { title: 'Espace transporteur', paths: ['/', '/verification', '/operations', '/lots', '/commandes', '/compte'] },
-      { title: 'Priorités livraison', paths: ['/anti-gaspi'] },
-      { title: 'Documents et secteur', paths: ['/dossiers', '/attestations', '/preuves', '/secteurs/logistique'] },
     ],
     client: [
       { title: 'Mon espace', paths: ['/', '/marche', '/commandes', '/paiement', '/compte'] },
-      { title: 'Consommation responsable', paths: ['/anti-gaspi'] },
     ],
     acheteurB2B: [
       { title: 'Sourcing B2B', paths: ['/', '/marche', '/lots', '/commandes', '/paiement', '/compte'] },
-      { title: 'Opportunités & impact', paths: ['/anti-gaspi', '/impact'] },
     ],
     partenaire: [
-      { title: 'Finance & scoring', paths: ['/', '/bancabilite', '/impact', '/compte'] },
-      { title: 'Traçabilité et preuves', paths: ['/lots', '/preuves'] },
+      { title: 'Finance & scoring', paths: ['/', '/bancabilite', '/impact', '/lots', '/compte'] },
       { title: 'Engagement terrain', paths: ['/anti-gaspi', '/ussd'] },
     ],
   };
