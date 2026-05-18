@@ -693,7 +693,7 @@ async function handleActivityProofs(request, response, authData) {
         (p) => p.userId === authData.uid && p.proofType === proofType && ['valide', 'auto_valide', 'en_attente', 'en_attente_agent'].includes(p.status)
       );
       if (existingProof) {
-        return { status: 409, body: { error: 'Vous avez deja soumis ce type de preuve.' } };
+        return { status: 409, body: { error: 'Vous avez déjà soumis ce type de preuve.' } };
       }
 
       const canAutoValidate = ['historique_livraisons', 'parrainage_agriculteurs', 'mobile_money_agri'].includes(proofType);
@@ -764,8 +764,8 @@ async function handleActivityProofs(request, response, authData) {
           id: `notif-${Date.now().toString(36)}-${randomBytes(4).toString('hex')}`,
           createdAt: now,
           type: 'account-status',
-          title: 'Compte active automatiquement',
-          body: `Votre score de verification (${totalScore}/100) a permis l activation automatique de votre compte.`,
+          title: 'Compte activé automatiquement',
+          body: `Votre score de vérification (${totalScore}/100) a permis l'activation automatique de votre compte.`,
           recipientId: authData.uid,
           path: '/',
           read: false,
@@ -781,7 +781,7 @@ async function handleActivityProofs(request, response, authData) {
             createdAt: now,
             type: 'agent_confirm_visit',
             title: 'Confirmation de visite terrain',
-            body: `${farmerName} demande votre confirmation de visite terrain. Confirmez-vous avoir visite son exploitation ?`,
+            body: `${farmerName} demande votre confirmation de visite terrain. Confirmez-vous avoir visité son exploitation ?`,
             recipientId: agentId,
             path: '/verification',
             relatedId: proof.id,
@@ -794,7 +794,7 @@ async function handleActivityProofs(request, response, authData) {
             id: `notif-${Date.now().toString(36)}-${randomBytes(4).toString('hex')}`,
             createdAt: now,
             type: 'proof_review',
-            title: 'Preuve d activite a valider',
+            title: "Preuve d'activité à valider",
             body: `${farmerName} a soumis une preuve (${proofType}).`,
             recipientRole: 'admin',
             path: '/verification',
@@ -836,7 +836,7 @@ async function handleActivityProofs(request, response, authData) {
 
   if (request.method === 'PATCH') {
     if (authData.role !== 'admin' && authData.role !== 'agentTerrain') {
-      sendJson(response, 403, { error: 'Acces reserve aux administrateurs et agents terrain' });
+      sendJson(response, 403, { error: 'Accès réservé aux administrateurs et agents terrain' });
       return;
     }
     const body = await readBody(request);
@@ -854,7 +854,7 @@ async function handleActivityProofs(request, response, authData) {
 
       const targetProof = (store.activityProofs || [])[proofIdx];
       if (targetProof.status === 'en_attente_agent' && authData.role === 'agentTerrain' && targetProof.agentId !== authData.uid) {
-        return { status: 403, body: { error: 'Seul l agent designe peut confirmer cette visite' } };
+        return { status: 403, body: { error: "Seul l'agent désigné peut confirmer cette visite" } };
       }
 
       const updatedProofs = [...(store.activityProofs || [])];
@@ -1018,7 +1018,7 @@ async function handlePaydunya(request, response) {
       } else {
         sendJson(response, 400, {
           ok: false,
-          error: result?.response_text || 'Echec creation facture PayDunya',
+          error: result?.response_text || 'Échec création facture PayDunya',
           raw: result,
         });
       }

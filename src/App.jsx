@@ -253,7 +253,7 @@ const basePageMeta = {
     image: publicImages.market,
     kicker: 'Espace client',
     title: 'Commander les articles disponibles et contacter les vendeurs.',
-    body: 'Les clients voient seulement le marche, leurs commandes, leurs messages et leur compte.',
+    body: 'Les clients voient seulement le marché, leurs commandes, leurs messages et leur compte.',
   },
   '/produits': {
     image: publicImages.products,
@@ -395,11 +395,11 @@ const orderStatuses = ['Paiement en attente', 'Nouvelle', 'Confirmee', 'En prepa
 const paymentStatuses = ['Paye', 'Partiel', 'En attente', 'Litige'];
 const MARKET_PRICE_MAX_MARGIN = 100;
 const marketPriceReferences = [
-  { key: 'oignon', label: 'Oignon', price: 350, unit: 'kg', source: 'Reference marche Dakar-Thies' },
-  { key: 'riz', label: 'Riz local', price: 330, unit: 'kg', source: 'Reference marche Saint-Louis' },
-  { key: 'carotte', label: 'Carotte', price: 220, unit: 'kg', source: 'Reference marche Dakar' },
-  { key: 'tomate', label: 'Tomate', price: 260, unit: 'kg', source: 'Reference marche Thies' },
-  { key: 'mangue', label: 'Mangue', price: 500, unit: 'kg', source: 'Reference marche Casamance' },
+  { key: 'oignon', label: 'Oignon', price: 350, unit: 'kg', source: 'Référence marché Dakar-Thiès' },
+  { key: 'riz', label: 'Riz local', price: 330, unit: 'kg', source: 'Référence marché Saint-Louis' },
+  { key: 'carotte', label: 'Carotte', price: 220, unit: 'kg', source: 'Référence marché Dakar' },
+  { key: 'tomate', label: 'Tomate', price: 260, unit: 'kg', source: 'Référence marché Thiès' },
+  { key: 'mangue', label: 'Mangue', price: 500, unit: 'kg', source: 'Référence marché Casamance' },
 ];
 const evidenceTypes = ['Piece identité', 'Registre coopérative', 'Photo activité', 'Facture', 'Recu paiement', 'Contrat', 'Autre preuve'];
 const chartColors = ['#1f835d', '#258399', '#e54d35', '#d99912', '#74526f'];
@@ -531,7 +531,7 @@ function App() {
   if (!currentUser) {
     return (
       <AuthShell meta={basePageMeta['/login']}>
-        <LoginPage actions={actions} notify={notify} onLogin={(id, user) => { setSessionUserId(id); const role = user?.role || store.users.find((u) => u.id === id)?.role || 'client'; const status = normalize(user?.status || store.users.find((u) => u.id === id)?.status || 'Actif'); if (status !== 'en attente') navigate(getRoleHomePath(role)); }} store={store} />
+        <LoginPage actions={actions} notify={notify} onLogin={(id, user) => { if (user && !store.users.some((u) => u.id === id)) { actions.setUsers((items) => [user, ...items]); } setSessionUserId(id); const role = user?.role || store.users.find((u) => u.id === id)?.role || 'client'; const status = normalize(user?.status || store.users.find((u) => u.id === id)?.status || 'Actif'); if (status !== 'en attente') navigate(getRoleHomePath(role)); }} store={store} />
         {toast && <Toast toast={toast} />}
       </AuthShell>
     );
@@ -985,7 +985,7 @@ function PublicSurveyPage({ actions, navigate, notify, store }) {
   });
 
   const needOptions = [
-    { label: 'Vendre mes produits', icon: Store, desc: 'Publier et vendre sur le marche FresCoop' },
+    { label: 'Vendre mes produits', icon: Store, desc: 'Publier et vendre sur le marché FresCoop' },
     { label: 'Acheter en gros', icon: ShoppingCart, desc: 'Sourcing B2B direct producteurs' },
     { label: 'Suivre une commande', icon: ClipboardCheck, desc: 'Traçabilité champ-a-client' },
     { label: 'Reduire les pertes', icon: Leaf, desc: 'Alertes DLC et ventes éclair' },
@@ -1735,7 +1735,7 @@ function FrescoopRoleHomePage({ currentUser, navigate, store }) {
           <div>
             <span className="eyebrow">Partenaire financier</span>
             <h2>Consultez les dossiers bancaires vérifiés des agriculteurs.</h2>
-            <p>FresCoop genere des scores de bancabilité bases sur des données reelles de production, vente et livraison. Chaque dossier est verifiable par QR code et portable.</p>
+            <p>FresCoop génère des scores de bancabilité basés sur des données réelles de production, vente et livraison. Chaque dossier est vérifiable par QR code et portable.</p>
             <div className="button-row">
               <Button onClick={() => navigate('/bancabilite')}><Landmark size={18} /> Dossiers bancables</Button>
               <Button variant="secondary" onClick={() => navigate('/impact')}><BarChart3 size={18} /> Indicateurs</Button>
@@ -1860,7 +1860,7 @@ function AdminHomePage({ navigate, stats, store }) {
         <MoneyKpi icon={Landmark} label="Bancables (75+)" value={bancables} detail="prêts pour une demande de credit" />
         <MoneyKpi icon={Activity} label="En progression (40-74)" value={enProgression} detail="accumulent ventes et preuves" />
         <MoneyKpi icon={Users} label="Débutants (0-39)" value={débutants} detail="a accompagner vers le scoring" />
-        <MoneyKpi icon={CircleDollarSign} label="Valeur marche" value={formatMoney(revenue.catalogValue)} detail={`${stats.products} produit(s)`} />
+        <MoneyKpi icon={CircleDollarSign} label="Valeur marché" value={formatMoney(revenue.catalogValue)} detail={`${stats.products} produit(s)`} />
       </div>
 
       <div className="split-layout">
@@ -1988,7 +1988,7 @@ function SellerHomePage({ currentUser, navigate, store }) {
       <div className="money-kpi-grid">
         <MoneyKpi icon={Landmark} label="Bancabilité" value={`${bancabiliteScore}/100`} detail={scoreLevel} />
         <MoneyKpi icon={CircleDollarSign} label="Ventes prouvees" value={formatMoney(orderValue)} detail={`${orders.length} commande(s) tracees`} />
-        <MoneyKpi icon={Store} label="Produits actifs" value={`${publishedProducts.length}/${products.length}`} detail="visibles sur le marche" />
+        <MoneyKpi icon={Store} label="Produits actifs" value={`${publishedProducts.length}/${products.length}`} detail="visibles sur le marché" />
         <MoneyKpi icon={FileCheck2} label="Preuves au dossier" value={transactions.length + dossiers.length} detail="justificatifs exploitables" />
       </div>
 
@@ -2096,7 +2096,7 @@ function ClientHomePage({ currentUser, navigate, store }) {
           <h2>Votre espace client FresCoop</h2>
           <p>Découvrez les produits publiés, preparez un panier, confirmez vos commandes et gardez les échanges avec les vendeurs au même endroit.</p>
           <div className="button-row">
-            <Button onClick={() => navigate('/marche')}><ShoppingCart size={18} /> Aller au marche</Button>
+            <Button onClick={() => navigate('/marche')}><ShoppingCart size={18} /> Aller au marché</Button>
             <Button variant="secondary" onClick={() => navigate('/commandes')}><ReceiptText size={18} /> Mes commandes</Button>
           </div>
         </div>
@@ -2115,7 +2115,7 @@ function ClientHomePage({ currentUser, navigate, store }) {
       </div>
 
       <div className="quick-grid">
-        <QuickAction icon={Search} title="Trouver un produit" body="Filtrer les offres par nom, zone ou categorie." onClick={() => navigate('/marche')} />
+        <QuickAction icon={Search} title="Trouver un produit" body="Filtrer les offres par nom, zone ou catégorie." onClick={() => navigate('/marche')} />
         <QuickAction icon={CheckCircle2} title="Confirmer le panier" body="Vérifier quantites, total et vendeur avant envoi." onClick={() => navigate('/commandes')} />
         <QuickAction icon={MessageSquare} title="Discuter avec vendeur" body="Demander prix, disponibilité ou details produit." onClick={() => navigate('/commandes')} />
         <QuickAction icon={Settings} title="Completer mon compte" body="Ajouter téléphone, region et organisation." onClick={() => navigate('/compte')} />
@@ -2650,7 +2650,7 @@ function ProductsPage({ actions, currentUser, notify, store }) {
 
   return (
     <PageFrame>
-      {!allowed && !canVerifyProducts && <NoticeCard icon={CircleAlert} title="Acces lecture" body="Les clients commandent depuis le marche. Les transporteurs gerent surtout operations et documents." />}
+      {!allowed && !canVerifyProducts && <NoticeCard icon={CircleAlert} title="Accès lecture" body="Les clients commandent depuis le marché. Les transporteurs gèrent surtout opérations et documents." />}
       {canVerifyProducts && <NoticeCard icon={ShieldCheck} title="Verification terrain" body="Contrôlez les produits ajoutes par les agriculteurs: disponibilité, qualité annoncée, zone et coherence du prix." />}
       {allowed && (
         <form className="panel form-panel" onSubmit={submit}>
@@ -2732,7 +2732,7 @@ function ProductsPage({ actions, currentUser, notify, store }) {
             )}
           </>
         ) : (
-          <EmptyState icon={PackageCheck} title="Aucun produit" body="Ajoutez vos premiers produits pour alimenter le marche client." />
+          <EmptyState icon={PackageCheck} title="Aucun produit" body="Ajoutez vos premiers produits pour alimenter le marché client." />
         )}
       </section>
 
@@ -3616,7 +3616,7 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
                 </div>
               )
             ) : (
-              <EmptyState icon={ShoppingCart} title="Panier vide" body="Ajoutez des produits depuis le marche avant de confirmer une commande." />
+              <EmptyState icon={ShoppingCart} title="Panier vide" body="Ajoutez des produits depuis le marché avant de confirmer une commande." />
             )}
           </div>
 
@@ -3813,7 +3813,7 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
       if (farmer) {
         notifications.push(createAppNotification({
           actor: currentUser,
-          body: `${formatNumber(order.quantity)} ${order.unit || product?.unit || 'kg'} de ${product?.name || 'produit'} paye(s). Préparerez le stock.`,
+          body: `${formatNumber(order.quantity)} ${order.unit || product?.unit || 'kg'} de ${product?.name || 'produit'} payé(s). Préparez le stock.`,
           path: `/commandes?tab=orders&order=${encodeURIComponent(order.id)}`,
           relatedId: order.id,
           recipientId: farmer.id,
@@ -3900,7 +3900,7 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
       if (data?.confirmed) {
         finalizePayment(token, data);
       } else {
-        notify(`Paiement non confirme (statut: ${data?.status || 'inconnu'}). Aucun recu genere.`);
+        notify(`Paiement non confirmé (statut: ${data?.status || 'inconnu'}). Aucun reçu généré.`);
         try { sessionStorage.removeItem('frescoop.paydunya.token'); } catch {}
         setPendingToken('');
       }
@@ -4244,7 +4244,7 @@ function ActivityProofPage({ actions, currentUser, navigate, notify, store }) {
       notify('Preuve soumise avec succès !', 'success');
       setSelectedType(''); setDescription(''); setFile(null); setSponsor1(''); setSponsor2(''); setSelectedAgent('');
     } catch (err) {
-      notify(err.message || 'Erreur reseau', 'error');
+      notify(err.message || 'Erreur réseau', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -4265,7 +4265,7 @@ function ActivityProofPage({ actions, currentUser, navigate, notify, store }) {
       if (proof && data.level >= 1) {
         actions.setUsers((items) => items.map((u) => u.id === proof.userId ? { ...u, verificationScore: data.score, verificationLevel: data.level, status: 'Actif' } : u));
       }
-      notify(`Preuve ${status === 'valide' ? 'validee' : 'rejetee'}`, 'success');
+      notify(`Preuve ${status === 'valide' ? 'validée' : 'rejetée'}`, 'success');
     } catch (err) {
       notify(err.message || 'Erreur', 'error');
     }
@@ -4793,7 +4793,7 @@ function LotIntelligencePage({ actions, currentUser, notify, store }) {
     };
 
     actions.setLots((items) => [lot, ...items]);
-    actions.setAuditLogs((items) => [createAuditLog(currentUser, 'lot_created', `Lot ${code} cree: ${lot.productName} (${lot.weightKg} kg) - Producteur: ${lot.producerName} - Hub: ${lot.hubName}`, lot.id), ...items]);
+    actions.setAuditLogs((items) => [createAuditLog(currentUser, 'lot_created', `Lot ${code} créé: ${lot.productName} (${lot.weightKg} kg) - Producteur: ${lot.producerName} - Hub: ${lot.hubName}`, lot.id), ...items]);
 
     const notif = {
       id: uid('notif'),
@@ -4841,6 +4841,10 @@ function LotIntelligencePage({ actions, currentUser, notify, store }) {
 
   function reserveLot(lot) {
     if (!lot) return;
+    if (!['acheteurB2B', 'partenaire', 'admin'].includes(currentUser.role)) {
+      notify('Réservation réservée aux acheteurs B2B et partenaires', 'error');
+      return;
+    }
     const now = new Date().toISOString();
     const reservation = {
       id: uid('rsv'),
@@ -4851,7 +4855,7 @@ function LotIntelligencePage({ actions, currentUser, notify, store }) {
       quantityKg: Math.min(200, Number(lot.weightKg || 0)),
       value: Math.min(200, Number(lot.weightKg || 0)) * Number(lot.recommendedPrice || lot.baselinePrice || 0),
       paymentMode: 'Partner-powered',
-      paymentPartner: lot.paymentPartner || 'Orange Money / banque partenaire agreee',
+      paymentPartner: lot.paymentPartner || 'Orange Money / banque partenaire agréée',
     };
     actions.setReservations((items) => [reservation, ...items]);
     actions.setBuyerOrders((items) => [{
@@ -4860,16 +4864,16 @@ function LotIntelligencePage({ actions, currentUser, notify, store }) {
       reservationId: reservation.id,
       buyerId: reservation.buyerId,
       lotId: lot.id,
-      status: 'Reservation emise',
+      status: 'Réservation émise',
       recurrence: 'Ponctuelle',
     }, ...items]);
     actions.setLots((items) => items.map((l) => l.id !== lot.id ? l : {
       ...l,
       status: 'Reserve',
-      movements: [...(l.movements || []), { timestamp: now, status: 'Reserve', actor: currentUser.name, note: `Reservation B2B: ${reservation.quantityKg} kg` }],
+      movements: [...(l.movements || []), { timestamp: now, status: 'Reserve', actor: currentUser.name, note: `Réservation B2B: ${reservation.quantityKg} kg` }],
     }));
-    actions.setAuditLogs((items) => [createAuditLog(currentUser, 'reservation_b2b', 'Reservation B2B créée', lot.id), ...items]);
-    notify('Réservation B2B créée avec paiement partenaire');
+    actions.setAuditLogs((items) => [createAuditLog(currentUser, 'reservation_b2b', 'Réservation B2B créée', lot.id), ...items]);
+    notify('Réservation B2B créée avec paiement partenaire', 'success');
   }
 
   function shareConsent(lot) {
@@ -4892,7 +4896,7 @@ function LotIntelligencePage({ actions, currentUser, notify, store }) {
       status: 'Actif',
       revocable: true,
     }, ...items]);
-    actions.setAuditLogs((items) => [createAuditLog(currentUser, 'consent_create', 'Consentement partenaire cree', lot.id), ...items]);
+    actions.setAuditLogs((items) => [createAuditLog(currentUser, 'consent_create', 'Consentement partenaire créé', lot.id), ...items]);
     notify('Partage basé sur consentement activé pour partenaire agréé');
   }
 
@@ -4905,7 +4909,7 @@ function LotIntelligencePage({ actions, currentUser, notify, store }) {
         <StatCard icon={ClipboardCheck} label="Lots actifs" value={activeLots.length} tone="green" />
         <StatCard icon={Warehouse} label="Kg proteges" value={formatNumber(protectedKg)} tone="blue" />
         <StatCard icon={Leaf} label="Pertes evitees" value={`${formatNumber(avoidedLossKg)} kg`} tone="gold" />
-        <StatCard icon={CircleDollarSign} label="Reservations" value={formatMoney(pipelineValue)} tone="coral" />
+        <StatCard icon={CircleDollarSign} label="Réservations" value={formatMoney(pipelineValue)} tone="coral" />
       </div>
 
       {canCreateLot && (
@@ -5014,6 +5018,7 @@ function LotIntelligencePage({ actions, currentUser, notify, store }) {
           {selectedLot ? (
             <LotDigitalTwinCard
               lot={selectedLot}
+              canReserve={['acheteurB2B', 'partenaire', 'admin'].includes(currentUser.role)}
               onReserve={() => reserveLot(selectedLot)}
               onShareConsent={() => shareConsent(selectedLot)}
             />
@@ -5214,7 +5219,7 @@ function UsersPage({ actions, currentUser, navigate, notify, store }) {
             : `Votre demande de compte ${roleLabel(user.role)} a été rejetée. Contactez un administrateur FresCoop pour plus d'informations.`,
           path: status === 'Actif' ? '/verification' : '/compte',
           recipientId: user.id,
-          title: status === 'Actif' ? `Compte ${roleLabel(user.role)} approuve` : `Inscription ${roleLabel(user.role)} rejetee`,
+          title: status === 'Actif' ? `Compte ${roleLabel(user.role)} approuvé` : `Inscription ${roleLabel(user.role)} rejetée`,
           type: 'account-status',
         }),
         ...resolved,
@@ -5223,9 +5228,9 @@ function UsersPage({ actions, currentUser, navigate, notify, store }) {
 
     notify(
       status === 'Actif' && wasPending
-        ? `${user.name} approuve. Le compte est actif.`
+        ? `${user.name} approuvé. Le compte est actif.`
         : status === 'Rejete' && wasPending
-          ? `${user.name} rejete. Le compte reste bloque.`
+          ? `${user.name} rejeté. Le compte reste bloqué.`
           : `Statut de ${user.name} mis à jour: ${status}`,
       status === 'Rejete' ? 'info' : 'success',
     );
@@ -6239,11 +6244,11 @@ function renderBancabiliteHtml(dossier) {
       <h2>Score de bancabilité</h2>
       <p>Score global: <strong>${dossier.score}/100 (Grade ${escapeHtml(dossier.grade)})</strong></p>
       <p>${escapeHtml(dossier.verdict)}</p>
-      <table><thead><tr><th>Critere</th><th>Valeur</th><th>Points</th></tr></thead><tbody>${rows}</tbody></table>
+      <table><thead><tr><th>Critère</th><th>Valeur</th><th>Points</th></tr></thead><tbody>${rows}</tbody></table>
     </section>
     <section>
       <h2>Indicateurs cles</h2>
-      <p>Revenu total verifie: <strong>${escapeHtml(formatMoney(dossier.totalRevenue))}</strong></p>
+      <p>Revenu total vérifié: <strong>${escapeHtml(formatMoney(dossier.totalRevenue))}</strong></p>
       <p>Revenu mensuel moyen: <strong>${escapeHtml(formatMoney(dossier.monthlyAverage))}</strong></p>
       <p>Transactions vérifiées: ${dossier.transactionsCount} | Paiements PayDunya: ${dossier.paydunyaCount}</p>
       <p>Lots traces: ${dossier.lotsCount} | Attestations: ${dossier.attestationsCount}</p>
@@ -6383,7 +6388,7 @@ function DataPage({ actions, currentUser, notify, store }) {
 
   return (
     <PageFrame>
-      <NoticeCard icon={Database} title="API et base applicative" body="L application est prete pour synchronisation API locale. Les exports JSON/CSV permettent migration vers une base serveur et stockage fichiers." />
+      <NoticeCard icon={Database} title="API et base applicative" body="L'application est prête pour synchronisation API locale. Les exports JSON/CSV permettent migration vers une base serveur et stockage fichiers." />
       <div className="data-grid">
         <section className="panel">
           <PanelTitle icon={Download} title="Export complet" />
@@ -6833,7 +6838,7 @@ function CatalogPager({ onPageChange, page, totalPages }) {
   );
 }
 
-function LotDigitalTwinCard({ lot, onReserve, onShareConsent }) {
+function LotDigitalTwinCard({ lot, canReserve, onReserve, onShareConsent }) {
   const gain = Number(lot.recommendedPrice || 0) - Number(lot.baselinePrice || 0);
   return (
     <article className="lot-twin-card">
@@ -6853,7 +6858,7 @@ function LotDigitalTwinCard({ lot, onReserve, onShareConsent }) {
       </div>
       <div className="sensor-strip">
         <span>Temp. {lot.temperatureC}°C</span>
-        <span>Humidite {lot.humidityPercent}%</span>
+        <span>Humidité {lot.humidityPercent}%</span>
         <span>Chambre {lot.chamber}</span>
       </div>
       <div className="recommendation-card">
@@ -6861,7 +6866,7 @@ function LotDigitalTwinCard({ lot, onReserve, onShareConsent }) {
         <p>{lot.routeReason}</p>
         <div>
           <span>Prix terrain: {formatMoney(lot.baselinePrice)}/kg</span>
-          <span>Prix recommande: {formatMoney(lot.recommendedPrice)}/kg</span>
+          <span>Prix recommandé: {formatMoney(lot.recommendedPrice)}/kg</span>
           <b>{gain >= 0 ? '+' : ''}{formatMoney(gain)}/kg potentiel</b>
         </div>
       </div>
@@ -6873,7 +6878,7 @@ function LotDigitalTwinCard({ lot, onReserve, onShareConsent }) {
         </div>
       </div>
       <div className="button-row">
-        <Button onClick={onReserve}><ShoppingCart size={17} /> Reserver B2B</Button>
+        {canReserve && <Button onClick={onReserve}><ShoppingCart size={17} /> Réserver B2B</Button>}
         <Button variant="secondary" onClick={onShareConsent}><Landmark size={17} /> Partager avec consentement</Button>
       </div>
     </article>
@@ -7702,7 +7707,7 @@ function PitchPage({ navigate, store }) {
     },
     {
       title: 'Modele économique',
-      body: 'Commission de 2% sur paiements partenaires. Abonnement premium pour acheteurs B2B (acces lots certifies). Licence SaaS pour SFD et banques qui veulent intégrér le scoring FresCoop.',
+      body: 'Commission de 2% sur paiements partenaires. Abonnement premium pour acheteurs B2B (accès lots certifiés). Licence SaaS pour SFD et banques qui veulent intégrer le scoring FresCoop.',
       metrics: [
         { label: 'Commission paiement', value: '2%' },
         { label: 'Abo B2B', value: '15 000 FCFA/mois' },
@@ -8531,7 +8536,7 @@ function getNotificationIcon(type) {
 function getNotificationActionLabel(item) {
   if (item.type === 'message') return 'Ouvrir la conversation';
   if (item.type === 'order' || item.type === 'field-agent' || item.type === 'agent-step' || String(item.type || '').startsWith('order-')) return 'Voir la commande';
-  if (item.type === 'anti-waste') return 'Voir le marche';
+  if (item.type === 'anti-waste') return 'Voir le marché';
   if (item.type === 'approval_request') return 'Valider le compte';
   if (item.type === 'account-status') return 'Voir mon espace';
   if (item.type === 'survey-lead') return 'Voir les prospects';
@@ -9590,7 +9595,7 @@ async function buildUser(input) {
 function getInactiveAccountMessage(status) {
   const normalized = normalize(status);
   if (normalized === 'en attente') {
-    return 'Votre inscription est en attente de validation par un administrateur. Vous recevrez un acces des que votre compte sera approuve.';
+    return 'Votre inscription est en attente de validation par un administrateur. Vous recevrez un accès dès que votre compte sera approuvé.';
   }
   if (normalized === 'rejete') {
     return "Votre demande d'inscription a été rejetée. Contactez un administrateur FresCoop pour plus d'informations.";
@@ -10516,7 +10521,7 @@ function renderBusinessReportHtml(store) {
 
     <section>
       <h2>Proposition de valeur</h2>
-      <p>FresCoop digitalise la chaine de valeur agricole UEMOA : marketplace multicanale, stockage froid solaire, paiement via rails GIM-UEMOA et preuve économique portable pour l'acces au credit formel.</p>
+      <p>FresCoop digitalise la chaîne de valeur agricole UEMOA : marketplace multicanale, stockage froid solaire, paiement via rails GIM-UEMOA et preuve économique portable pour l'accès au crédit formel.</p>
     </section>
 
     <section>
