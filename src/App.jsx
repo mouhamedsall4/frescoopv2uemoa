@@ -5939,35 +5939,77 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
         );
       })()}
 
-      {isAgriculteur && (
-        <section className="panel">
-          <PanelToolbar icon={Landmark} title="Demander un prêt" action={
-            <Button onClick={() => setShowLoanForm((open) => !open)} variant={showLoanForm ? 'secondary' : 'primary'}>
-              {showLoanForm ? 'Annuler' : 'Nouvelle demande'}
-            </Button>
-          } />
-          {showLoanForm && (
-            <form className="stack-form" onSubmit={submitLoanRequest}>
-              <div className="field-row">
-                <Field label="Montant souhaité (FCFA) — suggestion IA pré-remplie" required><input type="number" min="0" value={loanForm.amount} onChange={(event) => updateForm(setLoanForm, 'amount', event.target.value)} /></Field>
-                <Field label="Durée (mois)" required>
-                  <select value={loanForm.months} onChange={(event) => updateForm(setLoanForm, 'months', event.target.value)}>
-                    <option value="3">3 mois</option>
-                    <option value="6">6 mois</option>
-                    <option value="12">12 mois</option>
-                    <option value="18">18 mois</option>
-                    <option value="24">24 mois</option>
-                  </select>
+      {isAgriculteur && (() => {
+        const dossier = buildBancabiliteDossier(currentUser, store);
+        const sFactor = dossier.score >= 80 ? 0.7 : dossier.score >= 60 ? 0.5 : dossier.score >= 40 ? 0.3 : 0;
+        const regBonus = dossier.transactionsCount >= 10 ? 1.2 : dossier.transactionsCount >= 5 ? 1.1 : 1.0;
+        const pdBonus = dossier.paydunyaCount >= 3 ? 1.15 : 1.0;
+        const maxEligible6m = Math.round(dossier.monthlyAverage * 6 * sFactor * regBonus * pdBonus);
+        const mFactor = Number(loanForm.months) / 6;
+        const maxForDuration = Math.round(maxEligible6m * mFactor);
+        const requestedAmount = Number(loanForm.amount) || 0;
+        const pctUsed = maxForDuration > 0 ? Math.min(100, Math.round((requestedAmount / maxForDuration) * 100)) : 0;
+
+        return (
+          <section className="panel">
+            <PanelToolbar icon={Landmark} title="Demander un prêt" action={
+              <Button onClick={() => { setShowLoanForm((open) => !open); if (!loanForm.amount && maxForDuration > 0) updateForm(setLoanForm, 'amount', String(maxForDuration)); }} variant={showLoanForm ? 'secondary' : 'primary'}>
+                {showLoanForm ? 'Annuler' : 'Nouvelle demande'}
+              </Button>
+            } />
+            {showLoanForm && (
+              <form className="stack-form" onSubmit={submitLoanRequest}>
+                {maxForDuration > 0 ? (
+                  <div className="loan-ia-box">
+                    <div className="loan-ia-header">
+                      <Activity size={18} />
+                      <strong>Estimation IA de votre capacité d'emprunt</strong>
+                    </div>
+                    <div className="loan-ia-amount">
+                      <span className="loan-ia-max">{formatMoney(maxForDuration)}</span>
+                      <small>montant maximum sur {loanForm.months} mois</small>
+                    </div>
+                    <div className="loan-ia-bar">
+                      <div className="loan-ia-fill" style={{ width: `${pctUsed}%`, background: pctUsed > 90 ? '#ef4444' : pctUsed > 70 ? '#f59e0b' : '#16a34a' }} />
+                    </div>
+                    <div className="loan-ia-details">
+                      <small>Revenu moyen : {formatMoney(dossier.monthlyAverage)}/mois</small>
+                      <small>Score : {dossier.score}/100 (facteur {(sFactor * 100).toFixed(0)}%)</small>
+                      <small>Régularité : ×{regBonus.toFixed(2)} · PayDunya : ×{pdBonus.toFixed(2)}</small>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="loan-ia-box" style={{ borderColor: '#fbbf24', background: '#fffbeb' }}>
+                    <div className="loan-ia-header"><CircleAlert size={18} /><strong>Score insuffisant pour le calcul IA</strong></div>
+                    <p style={{ fontSize: '0.85rem', margin: '0.5rem 0 0' }}>Continuez à vendre et soumettre des preuves pour augmenter votre score au-dessus de 40.</p>
+                  </div>
+                )}
+                <div className="field-row">
+                  <Field label={`Montant souhaité (FCFA)${maxForDuration > 0 ? ` — max ${formatMoney(maxForDuration)}` : ''}`} required>
+                    <input type="number" min="0" max={maxForDuration || undefined} value={loanForm.amount} onChange={(event) => updateForm(setLoanForm, 'amount', event.target.value)} placeholder={maxForDuration > 0 ? String(maxForDuration) : ''} />
+                  </Field>
+                  <Field label="Durée (mois)" required>
+                    <select value={loanForm.months} onChange={(event) => { updateForm(setLoanForm, 'months', event.target.value); const newMax = Math.round(maxEligible6m * (Number(event.target.value) / 6)); if (!loanForm.amount || Number(loanForm.amount) === maxForDuration) updateForm(setLoanForm, 'amount', String(newMax)); }}>
+                      <option value="3">3 mois</option>
+                      <option value="6">6 mois</option>
+                      <option value="12">12 mois</option>
+                      <option value="18">18 mois</option>
+                      <option value="24">24 mois</option>
+                    </select>
+                  </Field>
+                </div>
+                {requestedAmount > maxForDuration && maxForDuration > 0 && (
+                  <p style={{ color: '#dc2626', fontSize: '0.82rem', margin: 0 }}>⚠ Le montant dépasse votre capacité estimée ({formatMoney(maxForDuration)}). La demande risque d'être refusée.</p>
+                )}
+                <Field label="Objet (intrants, matériel, transport...)" required>
+                  <textarea rows="3" value={loanForm.purpose} onChange={(event) => updateForm(setLoanForm, 'purpose', event.target.value)} />
                 </Field>
-              </div>
-              <Field label="Objet (intrants, matériel, transport...)" required>
-                <textarea rows="3" value={loanForm.purpose} onChange={(event) => updateForm(setLoanForm, 'purpose', event.target.value)} />
-              </Field>
-              <Button type="submit"><Send size={16} /> Envoyer la demande</Button>
-            </form>
-          )}
-        </section>
-      )}
+                <Button type="submit"><Send size={16} /> Envoyer la demande</Button>
+              </form>
+            )}
+          </section>
+        );
+      })()}
 
       {(isAgriculteur || isFinancePartner) && myLoans.length > 0 && (
         <section className="panel">
