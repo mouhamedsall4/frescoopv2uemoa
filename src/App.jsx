@@ -6124,8 +6124,10 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
             </div>
             <div className="button-row">
               <Button variant="secondary" onClick={() => exportDossier(user)}><Download size={16} /> Dossier PDF</Button>
-              {isFinancePartner && dossier.score >= 40 && (
+              {isFinancePartner && dossier.score >= 40 && !(store.loans || []).some((l) => l.farmerId === user.id && l.partnerId === currentUser.id && (l.status === 'Pré-approuvé' || l.status === 'En attente')) && (
                 <Button onClick={() => {
+                  const existing = (store.loans || []).find((l) => l.farmerId === user.id && l.partnerId === currentUser.id);
+                  if (existing) { notify('Vous avez déjà pré-approuvé cet agriculteur.', 'info'); return; }
                   const loan = {
                     id: uid('loan'),
                     createdAt: new Date().toISOString(),
