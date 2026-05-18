@@ -26,6 +26,7 @@ import {
   ImagePlus,
   Landmark,
   Leaf,
+  Loader2,
   LineChart as LineChartIcon,
   LockKeyhole,
   LogOut,
@@ -599,6 +600,17 @@ function App() {
 function VerifyReceiptPage({ navigate, route, store }) {
   const params = new URLSearchParams(route.search || '');
   const code = (params.get('code') || '').trim().toUpperCase();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if ((store.paymentRecords || []).length > 0 || (store.users || []).length > 1) {
+      setReady(true);
+    } else {
+      const timer = setTimeout(() => setReady(true), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [store.paymentRecords, store.users]);
+
   const payment = useMemo(() => {
     if (!code) return null;
     return (store.paymentRecords || []).find((record) => String(record.receiptCode || '').toUpperCase() === code) || null;
@@ -609,7 +621,7 @@ function VerifyReceiptPage({ navigate, route, store }) {
   const payer = payment ? store.users.find((user) => user.id === payment.payerId) : null;
   const seller = payment ? store.users.find((user) => user.id === payment.sellerId) : null;
 
-  const status = !code ? 'missing' : (payment ? 'valid' : 'unknown');
+  const status = !code ? 'missing' : payment ? 'valid' : !ready ? 'loading' : 'unknown';
 
   return (
     <main className="verify-page">
@@ -622,6 +634,14 @@ function VerifyReceiptPage({ navigate, route, store }) {
       </header>
 
       <section className="verify-card">
+        {status === 'loading' && (
+          <>
+            <div className="verify-icon verify-icon-warn"><Loader2 size={56} strokeWidth={2} className="spin" /></div>
+            <h1>Vérification en cours...</h1>
+            <p>Recherche du reçu <code>{code}</code> dans le système FresCoop. Veuillez patienter.</p>
+          </>
+        )}
+
         {status === 'missing' && (
           <>
             <div className="verify-icon verify-icon-warn"><CircleAlert size={56} strokeWidth={2} /></div>
