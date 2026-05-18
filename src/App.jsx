@@ -7711,6 +7711,10 @@ function LanguageAssistant({ currentUser, store }) {
   const [lang, setLang] = useState('fr');
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
   const scrollRef = useRef(null);
 
   const greetings = {
@@ -7803,6 +7807,56 @@ function LanguageAssistant({ currentUser, store }) {
     }[language];
   }
 
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        stream.getTracks().forEach((track) => track.stop());
+      };
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch {
+      setMessages((prev) => [...prev, { from: 'bot', text: lang === 'fr' ? 'Impossible d\'accéder au microphone. Vérifiez les permissions.' : 'Microphone bi dëkku du. Saytul permissions yi.' }]);
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  }
+
+  async function sendVoiceMessage() {
+    if (!audioBlob) return;
+    const audioUrl = URL.createObjectURL(audioBlob);
+    setMessages((prev) => [...prev, { from: 'user', text: '🎤 Message vocal', audio: audioUrl }]);
+    setAudioBlob(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'voice.webm');
+      formData.append('lang', lang);
+      const res = await fetch(API_BASE + '/api/yaay/voice', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data?.ok && data.transcript) {
+        setMessages((prev) => [...prev, { from: 'bot', text: data.answer || findResponse(data.transcript, lang) }]);
+        return;
+      }
+      throw new Error('no transcript');
+    } catch {
+      setMessages((prev) => [...prev, { from: 'bot', text: lang === 'fr' ? 'Message vocal reçu. La transcription automatique n\'est pas encore disponible — veuillez reformuler par écrit.' : 'Wax wi jot na. Bind ko ci biir ngir ma man ko dégg.' }]);
+    }
+  }
+
   async function send(text) {
     const content = (text ?? input).trim();
     if (!content) return;
@@ -7883,7 +7937,10 @@ function LanguageAssistant({ currentUser, store }) {
           </div>
           <div className="assistant-messages" ref={scrollRef}>
             {messages.map((msg, index) => (
-              <div key={index} className={`assistant-msg ${msg.from}`}>{msg.text}</div>
+              <div key={index} className={`assistant-msg ${msg.from}`}>
+                {msg.text}
+                {msg.audio && <audio src={msg.audio} controls style={{ width: '100%', height: '28px', marginTop: '4px' }} />}
+              </div>
             ))}
           </div>
           <div className="assistant-suggestions">
@@ -7891,6 +7948,13 @@ function LanguageAssistant({ currentUser, store }) {
               <button key={prompt.q} type="button" onClick={() => send(prompt.q)}>{prompt.q}</button>
             ))}
           </div>
+          {audioBlob && (
+            <div className="assistant-voice-preview">
+              <audio src={URL.createObjectURL(audioBlob)} controls style={{ height: '28px', flex: 1 }} />
+              <button type="button" onClick={sendVoiceMessage} className="btn-voice-send" aria-label="Envoyer vocal"><Send size={14} /></button>
+              <button type="button" onClick={() => setAudioBlob(null)} className="btn-voice-cancel" aria-label="Annuler"><X size={14} /></button>
+            </div>
+          )}
           <form className="assistant-form" onSubmit={(event) => { event.preventDefault(); send(); }}>
             <input
               value={input}
@@ -7898,6 +7962,9 @@ function LanguageAssistant({ currentUser, store }) {
               placeholder={lang === 'fr' ? 'Posez votre question...' : lang === 'wo' ? 'Laaj ma...' : lang === 'pul' ? 'Naamno mi...' : 'Penden mi...'}
               aria-label="Votre message"
             />
+            <button type="button" onClick={isRecording ? stopRecording : startRecording} aria-label={isRecording ? 'Arrêter' : 'Enregistrer vocal'} className={isRecording ? 'voice-btn recording' : 'voice-btn'}>
+              {isRecording ? <CircleAlert size={16} /> : <PhoneCall size={16} />}
+            </button>
             <button type="submit" aria-label="Envoyer"><ArrowRight size={16} /></button>
           </form>
         </aside>
