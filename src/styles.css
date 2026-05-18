@@ -6170,7 +6170,7 @@ textarea {
   width: 88px;
   height: 88px;
   border-radius: 999px;
-  background: conic-gradient(var(--green-700) 0deg, var(--green-700) 300deg, var(--line) 300deg);
+  background: conic-gradient(var(--line, #e5e7eb) 0deg 360deg);
   position: relative;
 }
 

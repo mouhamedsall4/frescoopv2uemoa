@@ -2055,7 +2055,7 @@ function SellerHomePage({ currentUser, navigate, store }) {
         <section className="panel">
           <PanelTitle icon={Landmark} title="Progression vers le crédit" />
           <div className="finance-score-card">
-            <div className="score-ring"><strong>{bancabiliteScore}</strong><span>/100</span></div>
+            <div className="score-ring" style={{ background: `conic-gradient(${bancabiliteScore >= 75 ? '#1f835d' : bancabiliteScore >= 40 ? '#4fb07e' : bancabiliteScore >= 20 ? '#d99912' : '#e54d35'} 0deg ${Math.round(bancabiliteScore * 3.6)}deg, var(--line, #e5e7eb) ${Math.round(bancabiliteScore * 3.6)}deg)` }}><strong>{bancabiliteScore}</strong><span>/100</span></div>
             <div>
               <strong>Dossier bancaire FresCoop</strong>
               <p>{bancabiliteScore >= 75 ? "Votre profil est éligible. Exportez votre dossier." : "Continuez à vendre pour devenir bancable."}</p>
@@ -2950,7 +2950,7 @@ function AttestationsPage({ actions, currentUser, notify, store }) {
               const score = computeEvidenceScore(dossier, store);
               return (
                 <article className="eligibility-card" key={dossier.id}>
-                  <div className="score-ring"><strong>{score.total}</strong><span>/100</span></div>
+                  <div className="score-ring" style={{ background: `conic-gradient(${score.total >= 75 ? '#1f835d' : score.total >= 40 ? '#4fb07e' : score.total >= 20 ? '#d99912' : '#e54d35'} 0deg ${Math.round(score.total * 3.6)}deg, var(--line, #e5e7eb) ${Math.round(score.total * 3.6)}deg)` }}><strong>{score.total}</strong><span>/100</span></div>
                   <div>
                     <Badge>{score.total >= 70 || dossier.status === 'Valide' ? 'Eligible' : 'Preuves insuffisantes'}</Badge>
                     <h3>{dossier.title}</h3>
@@ -7330,7 +7330,7 @@ function FinanceScoreCard({ navigate, store, user }) {
 
   return (
     <div className="finance-score-card">
-      <div className="score-ring"><strong>{score}</strong><span>/100</span></div>
+      <div className="score-ring" style={{ background: `conic-gradient(${score >= 75 ? '#1f835d' : score >= 40 ? '#4fb07e' : score >= 20 ? '#d99912' : '#e54d35'} 0deg ${Math.round(score * 3.6)}deg, var(--line, #e5e7eb) ${Math.round(score * 3.6)}deg)` }}><strong>{score}</strong><span>/100</span></div>
       <div>
         <strong>Score de revenus prouvables</strong>
         <p>{nextStep}</p>
