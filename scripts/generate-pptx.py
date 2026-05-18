@@ -1,5 +1,5 @@
 """
-AgriScore — Pitch Deck PPTX Generator
+FresCoop — Pitch Deck PPTX Generator
 Generates a professional 12-slide presentation for the GIM-UEMOA Hackathon
 """
 from pptx import Presentation
@@ -134,13 +134,13 @@ add_gradient_bg(slide, GREEN_DARK, GREEN_MID)
 add_shape_card(slide, Inches(4.5), Inches(1.2), Inches(4.3), Inches(0.5), RGBColor(0x13, 0x6B, 0x5A), 'HACKATHON FILIERES AGRICOLES GIM-UEMOA 2026', 9, WHITE)
 
 # Title
-add_text_box(slide, Inches(2), Inches(2.3), Inches(9), Inches(1.5), 'AgriScore', 60, True, WHITE, PP_ALIGN.CENTER)
+add_text_box(slide, Inches(2), Inches(2.3), Inches(9), Inches(1.5), 'FresCoop', 60, True, WHITE, PP_ALIGN.CENTER)
 
 # Subtitle
-add_text_box(slide, Inches(2.5), Inches(3.6), Inches(8), Inches(0.6), 'Transformer les realites terrain en preuves bancables', 22, False, GREEN_PALE, PP_ALIGN.CENTER)
+add_text_box(slide, Inches(2.5), Inches(3.6), Inches(8), Inches(0.6), 'De la recolte au credit : la chaine de valeur agricole digitalisee', 22, False, GREEN_PALE, PP_ALIGN.CENTER)
 
 # Tagline
-add_text_box(slide, Inches(2.5), Inches(4.5), Inches(8), Inches(1), 'Solution de scoring credit agricole contextualise\npour debloquer l\'acces au financement des agriculteurs UEMOA', 14, False, RGBColor(0xA7, 0xF3, 0xD0), PP_ALIGN.CENTER)
+add_text_box(slide, Inches(2.5), Inches(4.5), Inches(8), Inches(1), 'Micro-hubs solaires, intelligence marche, scoring agricole (AgriScore)\net paiement partenaire pour rendre chaque agriculteur financable', 14, False, RGBColor(0xA7, 0xF3, 0xD0), PP_ALIGN.CENTER)
 
 # Bottom
 add_text_box(slide, Inches(3), Inches(6.3), Inches(7), Inches(0.5), 'Friction 4 : Acces limite aux financements agricoles  |  Equipe FresCoop  |  Mai 2026', 10, False, RGBColor(0x6E, 0xE7, 0xB7), PP_ALIGN.CENTER)
@@ -178,7 +178,7 @@ slide = prs.slides.add_slide(prs.slide_layouts[6])
 add_bg(slide, WHITE)
 
 add_text_box(slide, Inches(0.8), Inches(0.4), Inches(8), Inches(0.6), 'NOTRE SOLUTION', 12, True, GREEN_MID)
-add_text_box(slide, Inches(0.8), Inches(0.9), Inches(10), Inches(0.6), 'AgriScore : du terrain au dossier bancaire en 5 etapes', 22, True, DARK)
+add_text_box(slide, Inches(0.8), Inches(0.9), Inches(10), Inches(0.6), 'FresCoop : du terrain au dossier bancaire en 5 etapes', 22, True, DARK)
 
 # 5 piliers en cards
 piliers = [
@@ -212,7 +212,7 @@ for i, (num, title, desc) in enumerate(piliers):
     card = add_shape_card(slide, left, Inches(3.4), Inches(2.3), Inches(1.8), GREEN_PALE, desc, 10, DARK)
 
 # Arrow flow at bottom
-add_text_box(slide, Inches(0.8), Inches(5.6), Inches(11.5), Inches(0.5), 'AGRICULTEUR  ───────>  AGENT TERRAIN  ───────>  AGRISCORE  ───────>  BANQUE / IMF  ───────>  CREDIT', 11, True, GREEN_MID, PP_ALIGN.CENTER)
+add_text_box(slide, Inches(0.8), Inches(5.6), Inches(11.5), Inches(0.5), 'AGRICULTEUR  ───────>  AGENT TERRAIN  ───────>  FRESCOOP (AgriScore)  ───────>  BANQUE / IMF  ───────>  CREDIT', 11, True, GREEN_MID, PP_ALIGN.CENTER)
 
 # Key message
 add_shape_card(slide, Inches(2), Inches(6.2), Inches(9), Inches(0.8), GREEN_DARK, 'L\'agriculteur ne s\'inscrit pas seul sur une app. Il est accompagne par un agent de confiance, dans sa langue.', 12, WHITE)
@@ -227,7 +227,7 @@ add_text_box(slide, Inches(0.8), Inches(0.4), Inches(8), Inches(0.6), 'SCORING C
 add_text_box(slide, Inches(0.8), Inches(0.9), Inches(10), Inches(0.6), '13 criteres adaptes a la realite agricole africaine', 20, True, DARK)
 
 # Two columns comparison
-add_text_box(slide, Inches(0.8), Inches(1.7), Inches(5.5), Inches(0.4), 'AgriScore (notre approche)', 14, True, GREEN_DARK)
+add_text_box(slide, Inches(0.8), Inches(1.7), Inches(5.5), Inches(0.4), 'FresCoop — Scoring AgriScore', 14, True, GREEN_DARK)
 criteria_left = [
     'Anciennete du compte agriculteur',
     'Transactions verifiees (ventes reelles)',
@@ -563,7 +563,7 @@ slide = prs.slides.add_slide(prs.slide_layouts[6])
 add_bg(slide, WHITE)
 
 add_text_box(slide, Inches(0.8), Inches(0.4), Inches(8), Inches(0.6), 'NOTRE AVANTAGE', 12, True, GREEN_MID)
-add_text_box(slide, Inches(0.8), Inches(0.9), Inches(10), Inches(0.6), 'Pourquoi AgriScore va reussir la ou les autres echouent', 20, True, DARK)
+add_text_box(slide, Inches(0.8), Inches(0.9), Inches(10), Inches(0.6), 'Pourquoi FresCoop va reussir la ou les autres echouent', 20, True, DARK)
 
 advantages = [
     ('Realisme', 'Pas de techno-solutionnisme.\nNous partons des acteurs existants\n(agents, cooperatives, tontines).'),
@@ -589,8 +589,8 @@ for i, (title, desc) in enumerate(advantages):
 slide = prs.slides.add_slide(prs.slide_layouts[6])
 add_gradient_bg(slide, GREEN_DARK, GREEN_MID)
 
-add_text_box(slide, Inches(2), Inches(1.5), Inches(9), Inches(1), 'AgriScore', 48, True, WHITE, PP_ALIGN.CENTER)
-add_text_box(slide, Inches(2), Inches(2.5), Inches(9), Inches(0.6), 'Transformer la confiance terrain en preuves bancables', 18, False, GREEN_PALE, PP_ALIGN.CENTER)
+add_text_box(slide, Inches(2), Inches(1.5), Inches(9), Inches(1), 'FresCoop', 48, True, WHITE, PP_ALIGN.CENTER)
+add_text_box(slide, Inches(2), Inches(2.5), Inches(9), Inches(0.6), 'De la recolte au credit — la chaine de valeur agricole digitalisee', 18, False, GREEN_PALE, PP_ALIGN.CENTER)
 
 # Ask boxes
 add_shape_card(slide, Inches(2), Inches(3.6), Inches(4.2), Inches(1.8), RGBColor(0x13, 0x6B, 0x5A))
@@ -599,7 +599,7 @@ add_text_box(slide, Inches(2.2), Inches(4.4), Inches(3.8), Inches(0.8), 'Finance
 
 add_shape_card(slide, Inches(7), Inches(3.6), Inches(4.2), Inches(1.8), RGBColor(0x13, 0x6B, 0x5A))
 add_text_box(slide, Inches(7.2), Inches(3.8), Inches(3.8), Inches(0.5), '6 mois', 28, True, WHITE, PP_ALIGN.CENTER)
-add_text_box(slide, Inches(7.2), Inches(4.4), Inches(3.8), Inches(0.8), 'Pour prouver le modele :\n1er credit debloque via AgriScore', 11, False, GREEN_PALE, PP_ALIGN.CENTER)
+add_text_box(slide, Inches(7.2), Inches(4.4), Inches(3.8), Inches(0.8), 'Pour prouver le modele :\n1er credit debloque via FresCoop', 11, False, GREEN_PALE, PP_ALIGN.CENTER)
 
 # Final quote
 add_text_box(slide, Inches(1.5), Inches(5.8), Inches(10), Inches(1), '"Notre ambition est claire : ne pas remplacer la banque,\nmais lui donner les preuves necessaires pour financer ceux qui nourrissent le pays."', 13, False, RGBColor(0xA7, 0xF3, 0xD0), PP_ALIGN.CENTER)
@@ -610,7 +610,7 @@ add_text_box(slide, Inches(3), Inches(6.8), Inches(7), Inches(0.5), 'Equipe Fres
 # ══════════════════════════════════════════════════════════════════════════════
 # SAVE
 # ══════════════════════════════════════════════════════════════════════════════
-output_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'AGRISCORE_PITCH_DECK.pptx')
+output_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'FRESCOOP_PITCH_DECK.pptx')
 prs.save(output_path)
 print(f'Presentation sauvegardee : {output_path}')
 print(f'Nombre de slides : {len(prs.slides)}')
