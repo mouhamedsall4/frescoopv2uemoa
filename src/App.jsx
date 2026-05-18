@@ -4083,22 +4083,58 @@ function getClientVerificationLevel(score) {
 function openAttachment(attachment) {
   const src = attachment.url || attachment.dataUrl;
   if (!src) return;
-  if (src.startsWith('data:')) {
-    const win = window.open('', '_blank');
-    if (!win) return;
-    const isImage = src.startsWith('data:image');
-    const isPdf = src.startsWith('data:application/pdf');
-    if (isImage) {
-      win.document.write(`<html><head><title>${attachment.name || 'Document'}</title></head><body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#1a1a1a"><img src="${src}" style="max-width:100%;max-height:100vh;object-fit:contain" /></body></html>`);
-    } else if (isPdf) {
-      win.document.write(`<html><head><title>${attachment.name || 'Document'}</title></head><body style="margin:0"><embed src="${src}" type="application/pdf" width="100%" height="100%" style="position:fixed;inset:0" /></body></html>`);
-    } else {
-      win.document.write(`<html><head><title>${attachment.name || 'Document'}</title></head><body style="padding:2rem;font-family:system-ui"><h2>${attachment.name || 'Fichier'}</h2><p>Type: ${attachment.type || 'inconnu'}</p><a href="${src}" download="${attachment.name || 'fichier'}">Télécharger le fichier</a></body></html>`);
-    }
-    win.document.close();
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem;';
+
+  const toolbar = document.createElement('div');
+  toolbar.style.cssText = 'position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;background:rgba(0,0,0,0.5);z-index:1;';
+
+  const title = document.createElement('span');
+  title.style.cssText = 'color:#fff;font-size:0.85rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;';
+  title.textContent = attachment.name || 'Document';
+
+  const btnGroup = document.createElement('div');
+  btnGroup.style.cssText = 'display:flex;gap:0.5rem;';
+
+  const downloadBtn = document.createElement('a');
+  downloadBtn.href = src;
+  downloadBtn.download = attachment.name || 'document';
+  downloadBtn.style.cssText = 'padding:0.4rem 0.8rem;background:#fff;color:#111;border-radius:6px;font-size:0.8rem;font-weight:600;text-decoration:none;';
+  downloadBtn.textContent = 'Télécharger';
+
+  const closeBtn = document.createElement('button');
+  closeBtn.style.cssText = 'padding:0.4rem 0.8rem;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;';
+  closeBtn.textContent = 'Fermer';
+  closeBtn.onclick = () => overlay.remove();
+
+  btnGroup.append(downloadBtn, closeBtn);
+  toolbar.append(title, btnGroup);
+  overlay.append(toolbar);
+
+  const isImage = src.startsWith('data:image') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(src);
+  const isPdf = src.startsWith('data:application/pdf') || /\.pdf$/i.test(src);
+
+  if (isImage) {
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = 'max-width:95%;max-height:85vh;object-fit:contain;border-radius:8px;margin-top:3rem;';
+    overlay.append(img);
+  } else if (isPdf) {
+    const embed = document.createElement('embed');
+    embed.src = src;
+    embed.type = 'application/pdf';
+    embed.style.cssText = 'width:95%;height:85vh;border-radius:8px;margin-top:3rem;';
+    overlay.append(embed);
   } else {
-    window.open(src, '_blank');
+    const msg = document.createElement('div');
+    msg.style.cssText = 'color:#fff;text-align:center;margin-top:3rem;font-size:1.1rem;';
+    msg.innerHTML = `<p style="margin-bottom:1rem">Fichier : <strong>${attachment.name || 'document'}</strong></p><p>Cliquez sur "Télécharger" pour ouvrir ce fichier.</p>`;
+    overlay.append(msg);
   }
+
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.body.append(overlay);
 }
 
 function ActivityProofPage({ actions, currentUser, navigate, notify, store }) {
