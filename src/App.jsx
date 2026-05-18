@@ -583,6 +583,7 @@ function App() {
         {accessAllowed && route.pathname === '/utilisateurs' && <UsersPage actions={actions} currentUser={currentUser} navigate={navigate} notify={notify} store={store} />}
         {accessAllowed && route.pathname === '/impact' && <ImpactPage stats={stats} store={store} />}
         {accessAllowed && route.pathname === '/bancabilite' && <BancabilitePage actions={actions} currentUser={currentUser} notify={notify} store={store} />}
+        {accessAllowed && route.pathname === '/collecte-agriscore' && <AgriScoreCollectePage actions={actions} currentUser={currentUser} notify={notify} store={store} />}
         {accessAllowed && route.pathname === '/ussd' && <UssdSimulatorPage currentUser={currentUser} store={store} />}
         {accessAllowed && route.pathname === '/donnees' && <DataPage actions={actions} currentUser={currentUser} notify={notify} store={store} />}
         {accessAllowed && route.pathname === '/compte' && <AccountPage actions={actions} currentUser={currentUser} notify={notify} store={store} />}
@@ -1707,7 +1708,7 @@ function FieldAgentHomePage({ currentUser, navigate, store }) {
         <QuickAction icon={Users} title="Former les acteurs" body="Accompagner agriculteurs et transporteurs sur les parcours FresCoop et USSD." onClick={() => navigate('/ussd')} />
         <QuickAction icon={ShieldCheck} title="Vérifier les produits" body="Confirmer la disponibilité, la zone, la qualité annoncée et la coherence terrain." onClick={() => navigate('/produits')} />
         <QuickAction icon={PhoneCall} title="Coordonner commandes" body="Appeler l'agriculteur, contacter le transporteur et confirmer la preparation." onClick={() => navigate('/commandes')} />
-        <QuickAction icon={ClipboardCheck} title="Surveys terrain" body="Questionnaires et relevés terrain prévus dans une prochaine iteration." onClick={() => navigate('/operations')} />
+        <QuickAction icon={ClipboardCheck} title="Collecte AgriScore" body="Collecter les données terrain d'un agriculteur pour son dossier de crédit." onClick={() => navigate('/collecte-agriscore')} />
       </div>
     </PageFrame>
   );
@@ -5898,6 +5899,37 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
     notify(`Demande ${decision.toLowerCase()}`);
   }
 
+  function updateLoanStatus(loan, newStatus) {
+    actions.setLoans((items) => items.map((item) => item.id === loan.id ? { ...item, status: newStatus, statusUpdatedAt: new Date().toISOString() } : item));
+    if (newStatus === 'Remboursé' || newStatus === 'Défaut') {
+      const repayment = {
+        id: uid('repay'),
+        createdAt: new Date().toISOString(),
+        loanId: loan.id,
+        farmerId: loan.farmerId,
+        farmerName: loan.farmerName,
+        partnerId: currentUser.id,
+        amount: loan.amount,
+        status: newStatus,
+      };
+      actions.setLoanRepayments((items) => [repayment, ...items]);
+    }
+    const farmer = store.users.find((u) => u.id === loan.farmerId);
+    if (farmer) {
+      const notif = createAppNotification({
+        actor: currentUser,
+        body: `Votre prêt de ${formatMoney(loan.amount)} est maintenant "${newStatus}".`,
+        path: '/bancabilite',
+        recipientId: farmer.id,
+        title: `Prêt ${newStatus}`,
+        type: 'loan-status-update',
+      });
+      actions.setNotifications((items) => [notif, ...items]);
+    }
+    actions.setAuditLogs((items) => [createAuditLog(currentUser, 'loan_status_update', `Prêt ${loan.farmerName} → ${newStatus}`, loan.id), ...items]);
+    notify(`Statut mis à jour : ${newStatus}`);
+  }
+
   const summary = {
     total: enriched.length,
     eligible: enriched.filter(({ dossier }) => dossier.score >= 60).length,
@@ -6062,6 +6094,22 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                       <Button variant="secondary" onClick={() => farmer && exportDossier(farmer)}><Download size={16} /> Voir dossier complet</Button>
                     </div>
                   )}
+                  {isFinancePartner && (loan.status === 'Approuvé' || loan.status === 'En cours') && (
+                    <div className="loan-post-credit">
+                      <small style={{ fontWeight: 600, marginBottom: '0.4rem', display: 'block' }}>Suivi post-crédit</small>
+                      <div className="button-row">
+                        <Button variant="secondary" onClick={() => updateLoanStatus(loan, 'En cours')} disabled={loan.status === 'En cours'}><Activity size={14} /> En cours</Button>
+                        <Button variant="secondary" onClick={() => updateLoanStatus(loan, 'Remboursé')}><CheckCircle2 size={14} /> Remboursé</Button>
+                        <Button variant="secondary" onClick={() => updateLoanStatus(loan, 'Retard')}><CircleAlert size={14} /> Retard</Button>
+                        <Button variant="secondary" onClick={() => updateLoanStatus(loan, 'Défaut')}><X size={14} /> Défaut</Button>
+                      </div>
+                    </div>
+                  )}
+                  {(loan.status === 'Remboursé' || loan.status === 'Retard' || loan.status === 'Défaut' || loan.status === 'En cours') && (
+                    <div style={{ marginTop: '0.5rem', padding: '0.4rem 0.6rem', borderRadius: '0.375rem', fontSize: '0.8rem', background: loan.status === 'Remboursé' ? '#dcfce7' : loan.status === 'Retard' ? '#fef3c7' : loan.status === 'Défaut' ? '#fee2e2' : '#dbeafe' }}>
+                      Statut actuel : <strong>{loan.status}</strong>{loan.statusUpdatedAt && <span> · mis à jour le {formatDate(loan.statusUpdatedAt)}</span>}
+                    </div>
+                  )}
                 </article>
               );
             })}
@@ -6176,6 +6224,266 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
   );
 }
 
+function computeAgentReliability(agent, store) {
+  const collections = (store.agriScoreCollections || []).filter((c) => c.agentId === agent.id);
+  const totalCollections = collections.length;
+  const withWitness = collections.filter((c) => c.witnessName).length;
+  const witnessRate = totalCollections > 0 ? Math.round((withWitness / totalCollections) * 100) : 0;
+  const monthsActive = Math.max(1, Math.round((Date.now() - new Date(agent.createdAt || Date.now()).getTime()) / (86400000 * 30)));
+  const anciennetePoints = Math.min(25, monthsActive * 3);
+  const volumePoints = Math.min(30, totalCollections * 5);
+  const coherencePoints = Math.min(25, witnessRate / 4);
+  const loansFromCollections = collections.reduce((acc, c) => {
+    const loans = (store.loans || []).filter((l) => l.farmerId === c.farmerId && l.status === 'Approuvé');
+    return acc + loans.length;
+  }, 0);
+  const successPoints = Math.min(20, loansFromCollections * 5);
+  const score = Math.min(100, anciennetePoints + volumePoints + coherencePoints + successPoints);
+  const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : 'D';
+  return { score, grade, totalCollections, witnessRate, monthsActive, anciennetePoints, volumePoints, coherencePoints, successPoints };
+}
+
+function AgriScoreCollectePage({ actions, currentUser, notify, store }) {
+  const LANGUES = ['Français', 'Wolof', 'Pulaar', 'Serer', 'Mandingue', 'Diola', 'Soninké'];
+  const FONCIER_OPTIONS = ['Titre foncier formel', 'Droit coutumier reconnu', 'Bail communautaire', 'Prêt familial', 'Aucun'];
+  const GROUPEMENTS = ['Coopérative agricole', 'GIE', 'Groupement villageois', 'Tontine', 'Association de femmes', 'Aucun'];
+
+  const isAgent = currentUser.role === 'agentTerrain' || currentUser.role === 'admin';
+  const agriculteurs = store.users.filter((u) => u.role === 'agriculteur');
+  const collections = (store.agriScoreCollections || []).filter((c) => isAgent ? c.agentId === currentUser.id : c.farmerId === currentUser.id);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    farmerId: '',
+    langue: 'Français',
+    surfaces: '',
+    cultures: '',
+    recoltesAnnuelles: '',
+    foncier: '',
+    groupement: '',
+    experienceAnnees: '',
+    tontineMontant: '',
+    mobileMoneyCompte: false,
+    mobileMoneyFrequence: '',
+    witnessName: '',
+    witnessPhone: '',
+    consentOral: false,
+    consentLangue: 'Français',
+    notes: '',
+  });
+
+  function submitCollection(event) {
+    event.preventDefault();
+    if (!form.farmerId) { notify('Sélectionnez un agriculteur', 'error'); return; }
+    if (!form.consentOral) { notify('Le consentement oral est obligatoire', 'error'); return; }
+    if (!form.cultures) { notify('Indiquez au moins une culture', 'error'); return; }
+    const collection = {
+      id: uid('agcol'),
+      createdAt: new Date().toISOString(),
+      agentId: currentUser.id,
+      agentName: currentUser.name,
+      farmerId: form.farmerId,
+      farmerName: (agriculteurs.find((u) => u.id === form.farmerId) || {}).name || '',
+      langue: form.langue,
+      surfaces: Number(form.surfaces) || 0,
+      cultures: form.cultures,
+      recoltesAnnuelles: Number(form.recoltesAnnuelles) || 0,
+      foncier: form.foncier,
+      groupement: form.groupement,
+      experienceAnnees: Number(form.experienceAnnees) || 0,
+      tontineMontant: Number(form.tontineMontant) || 0,
+      mobileMoneyCompte: form.mobileMoneyCompte,
+      mobileMoneyFrequence: form.mobileMoneyFrequence,
+      witnessName: form.witnessName,
+      witnessPhone: form.witnessPhone,
+      consentOral: true,
+      consentLangue: form.consentLangue,
+      notes: form.notes,
+    };
+    actions.setAgriScoreCollections((items) => [collection, ...items]);
+    actions.setAuditLogs((items) => [
+      createAuditLog(currentUser, 'agriscore_collection', `Collecte AgriScore pour ${collection.farmerName} en ${form.consentLangue}${form.witnessName ? ` — témoin: ${form.witnessName}` : ''}`, collection.id),
+      ...items,
+    ]);
+    const farmer = agriculteurs.find((u) => u.id === form.farmerId);
+    if (farmer) {
+      const notif = createAppNotification({
+        actor: currentUser,
+        body: `L'agent ${currentUser.name} a collecté vos données AgriScore en ${form.consentLangue}. Votre score sera mis à jour.`,
+        path: '/bancabilite',
+        recipientId: farmer.id,
+        title: 'Collecte AgriScore effectuée',
+        type: 'agriscore-collection',
+      });
+      actions.setNotifications((items) => [notif, ...items]);
+    }
+    notify(`Collecte AgriScore enregistrée pour ${collection.farmerName}`);
+    setForm({ farmerId: '', langue: 'Français', surfaces: '', cultures: '', recoltesAnnuelles: '', foncier: '', groupement: '', experienceAnnees: '', tontineMontant: '', mobileMoneyCompte: false, mobileMoneyFrequence: '', witnessName: '', witnessPhone: '', consentOral: false, consentLangue: 'Français', notes: '' });
+    setShowForm(false);
+  }
+
+  const reliability = isAgent ? computeAgentReliability(currentUser, store) : null;
+
+  return (
+    <PageFrame>
+      <section className="panel uemoa-hero">
+        <div>
+          <span className="uemoa-badge">AGRISCORE</span>
+          <h2>Collecte terrain assistée — Scoring agricole</h2>
+          <p>Collectez les données de l'agriculteur en langue locale, avec consentement oral et témoin. Ces données alimentent directement le score AgriScore pour le dossier bancaire.</p>
+        </div>
+      </section>
+
+      {isAgent && reliability && (
+        <section className="panel">
+          <PanelTitle icon={ShieldCheck} title="Votre fiabilité agent" />
+          <div className="status-grid">
+            <StatCard icon={ShieldCheck} label="Score fiabilité" value={`${reliability.score}/100 (${reliability.grade})`} tone={reliability.score >= 60 ? 'green' : reliability.score >= 40 ? 'gold' : 'coral'} />
+            <StatCard icon={ClipboardCheck} label="Collectes effectuées" value={reliability.totalCollections} tone="blue" />
+            <StatCard icon={UserCheck} label="Taux avec témoin" value={`${reliability.witnessRate}%`} tone={reliability.witnessRate >= 70 ? 'green' : 'gold'} />
+            <StatCard icon={Activity} label="Ancienneté" value={`${reliability.monthsActive} mois`} tone="blue" />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.5rem', marginTop: '0.75rem', fontSize: '0.82rem' }}>
+            <div><em>Ancienneté</em> <b>{reliability.anciennetePoints}/25 pts</b></div>
+            <div><em>Volume collectes</em> <b>{reliability.volumePoints}/30 pts</b></div>
+            <div><em>Cohérence (témoins)</em> <b>{reliability.coherencePoints}/25 pts</b></div>
+            <div><em>Succès crédits</em> <b>{reliability.successPoints}/20 pts</b></div>
+          </div>
+        </section>
+      )}
+
+      <section className="panel">
+        <PanelToolbar icon={ClipboardCheck} title={`Collectes AgriScore (${collections.length})`} action={
+          isAgent && <Button onClick={() => setShowForm((v) => !v)}>{showForm ? 'Annuler' : <><Plus size={16} /> Nouvelle collecte</>}</Button>
+        } />
+
+        {showForm && (
+          <form className="stack-form" onSubmit={submitCollection}>
+            <div className="field-row">
+              <Field label="Agriculteur" required>
+                <select value={form.farmerId} onChange={(e) => updateForm(setForm, 'farmerId', e.target.value)}>
+                  <option value="">— Sélectionner —</option>
+                  {agriculteurs.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.region || 'sans région'})</option>)}
+                </select>
+              </Field>
+              <Field label="Langue de collecte" required>
+                <select value={form.langue} onChange={(e) => { updateForm(setForm, 'langue', e.target.value); updateForm(setForm, 'consentLangue', e.target.value); }}>
+                  {LANGUES.map((l) => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </Field>
+            </div>
+
+            <div className="field-row">
+              <Field label="Surfaces cultivées (hectares)">
+                <input type="number" min="0" step="0.1" value={form.surfaces} onChange={(e) => updateForm(setForm, 'surfaces', e.target.value)} />
+              </Field>
+              <Field label="Cultures principales" required>
+                <input type="text" placeholder="Riz, mil, arachide..." value={form.cultures} onChange={(e) => updateForm(setForm, 'cultures', e.target.value)} />
+              </Field>
+              <Field label="Récoltes / an (tonnes)">
+                <input type="number" min="0" step="0.1" value={form.recoltesAnnuelles} onChange={(e) => updateForm(setForm, 'recoltesAnnuelles', e.target.value)} />
+              </Field>
+            </div>
+
+            <div className="field-row">
+              <Field label="Type de foncier">
+                <select value={form.foncier} onChange={(e) => updateForm(setForm, 'foncier', e.target.value)}>
+                  <option value="">— Sélectionner —</option>
+                  {FONCIER_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </Field>
+              <Field label="Groupement / Organisation">
+                <select value={form.groupement} onChange={(e) => updateForm(setForm, 'groupement', e.target.value)}>
+                  <option value="">— Sélectionner —</option>
+                  {GROUPEMENTS.map((g) => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </Field>
+              <Field label="Expérience agricole (années)">
+                <input type="number" min="0" value={form.experienceAnnees} onChange={(e) => updateForm(setForm, 'experienceAnnees', e.target.value)} />
+              </Field>
+            </div>
+
+            <div className="field-row">
+              <Field label="Tontine — montant mensuel (FCFA)">
+                <input type="number" min="0" value={form.tontineMontant} onChange={(e) => updateForm(setForm, 'tontineMontant', e.target.value)} />
+              </Field>
+              <Field label="Compte Mobile Money">
+                <select value={form.mobileMoneyCompte ? 'oui' : 'non'} onChange={(e) => updateForm(setForm, 'mobileMoneyCompte', e.target.value === 'oui')}>
+                  <option value="non">Non</option>
+                  <option value="oui">Oui</option>
+                </select>
+              </Field>
+              {form.mobileMoneyCompte && (
+                <Field label="Fréquence Mobile Money">
+                  <select value={form.mobileMoneyFrequence} onChange={(e) => updateForm(setForm, 'mobileMoneyFrequence', e.target.value)}>
+                    <option value="">— Sélectionner —</option>
+                    <option value="quotidien">Quotidien</option>
+                    <option value="hebdomadaire">Hebdomadaire</option>
+                    <option value="mensuel">Mensuel</option>
+                    <option value="occasionnel">Occasionnel</option>
+                  </select>
+                </Field>
+              )}
+            </div>
+
+            <fieldset style={{ border: '1px solid var(--border, #e5e7eb)', borderRadius: '0.5rem', padding: '1rem', margin: '0.5rem 0' }}>
+              <legend style={{ fontWeight: 600, fontSize: '0.9rem', padding: '0 0.5rem' }}>Consentement & Validation</legend>
+              <div className="field-row">
+                <Field label="Témoin — Nom">
+                  <input type="text" placeholder="Nom du témoin présent" value={form.witnessName} onChange={(e) => updateForm(setForm, 'witnessName', e.target.value)} />
+                </Field>
+                <Field label="Témoin — Téléphone">
+                  <input type="tel" placeholder="77 000 00 00" value={form.witnessPhone} onChange={(e) => updateForm(setForm, 'witnessPhone', e.target.value)} />
+                </Field>
+              </div>
+              <Field label="Langue du consentement">
+                <select value={form.consentLangue} onChange={(e) => updateForm(setForm, 'consentLangue', e.target.value)}>
+                  {LANGUES.map((l) => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </Field>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', fontWeight: 500 }}>
+                <input type="checkbox" checked={form.consentOral} onChange={(e) => updateForm(setForm, 'consentOral', e.target.checked)} />
+                L'agriculteur a donné son consentement oral en {form.consentLangue} (lecture expliquée par l'agent)
+              </label>
+            </fieldset>
+
+            <Field label="Notes complémentaires">
+              <textarea rows="2" value={form.notes} onChange={(e) => updateForm(setForm, 'notes', e.target.value)} placeholder="Observations terrain, contexte particulier..." />
+            </Field>
+
+            <Button type="submit"><Save size={16} /> Enregistrer la collecte</Button>
+          </form>
+        )}
+
+        {collections.length > 0 && (
+          <div className="compact-list" style={{ marginTop: '1rem' }}>
+            {collections.map((c) => (
+              <article key={c.id} className="panel" style={{ padding: '0.75rem', marginBottom: '0.5rem' }}>
+                <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong>{c.farmerName}</strong>
+                  <small>{formatDate(c.createdAt)}</small>
+                </header>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.4rem', marginTop: '0.4rem', fontSize: '0.82rem' }}>
+                  <span><em>Cultures:</em> {c.cultures}</span>
+                  <span><em>Surfaces:</em> {c.surfaces} ha</span>
+                  <span><em>Foncier:</em> {c.foncier || '—'}</span>
+                  <span><em>Groupement:</em> {c.groupement || '—'}</span>
+                  <span><em>Expérience:</em> {c.experienceAnnees} ans</span>
+                  <span><em>Langue:</em> {c.consentLangue}</span>
+                  <span><em>Témoin:</em> {c.witnessName || 'Aucun'}</span>
+                  <span><em>Mobile Money:</em> {c.mobileMoneyCompte ? c.mobileMoneyFrequence : 'Non'}</span>
+                </div>
+                {c.agentName && <small style={{ opacity: 0.7 }}>Agent : {c.agentName}</small>}
+              </article>
+            ))}
+          </div>
+        )}
+        {!collections.length && !showForm && <EmptyState icon={ClipboardCheck} title="Aucune collecte" body="Démarrez une collecte AgriScore pour un agriculteur." />}
+      </section>
+    </PageFrame>
+  );
+}
+
 function buildBancabiliteDossier(user, store) {
   const transactions = (store.transactions || []).filter((item) => item.ownerId === user.id);
   const orders = (store.orders || []).filter((item) => item.sellerId === user.id);
@@ -6190,14 +6498,33 @@ function buildBancabiliteDossier(user, store) {
   const monthsActive = Math.max(1, Math.round((Date.now() - new Date(user.createdAt || Date.now()).getTime()) / (86400000 * 30)));
   const monthlyAverage = Math.round(totalRevenue / monthsActive);
 
+  const agriCollections = (store.agriScoreCollections || []).filter((c) => c.farmerId === user.id);
+  const latestCollection = agriCollections[0] || null;
+  const hasGroupement = latestCollection && latestCollection.groupement && latestCollection.groupement !== 'Aucun';
+  const hasFoncier = latestCollection && latestCollection.foncier && latestCollection.foncier !== 'Aucun';
+  const hasMobileMoney = latestCollection && latestCollection.mobileMoneyCompte;
+  const experienceYears = latestCollection ? latestCollection.experienceAnnees : 0;
+  const hasTontine = latestCollection && latestCollection.tontineMontant > 0;
+
+  const repayments = (store.loanRepayments || []).filter((r) => r.farmerId === user.id);
+  const repaid = repayments.filter((r) => r.status === 'Remboursé').length;
+  const defaults = repayments.filter((r) => r.status === 'Défaut').length;
+  const repaymentBonus = Math.min(10, repaid * 5) - (defaults * 8);
+
   const criteria = [
-    { label: 'Anciennete compte', value: `${monthsActive} mois`, points: Math.min(20, monthsActive * 2) },
-    { label: 'Transactions vérifiées', value: transactions.length + paidOrders.length, points: Math.min(20, (transactions.length + paidOrders.length) * 2) },
-    { label: 'Paiements PayDunya', value: paydunyaTx.length, points: Math.min(15, paydunyaTx.length * 3) },
-    { label: 'Lots traces avec capteurs', value: lots.length, points: Math.min(10, lots.length * 2) },
-    { label: 'Attestations qualifiees', value: attestations.length, points: Math.min(10, attestations.length * 3) },
-    { label: 'Preuves économiques', value: proofs.length, points: Math.min(10, proofs.length * 2) },
-    { label: 'Revenu mensuel moyen', value: `${formatCompact(monthlyAverage)} FCFA`, points: Math.min(15, Math.floor(monthlyAverage / 50000) * 2) },
+    { label: 'Anciennete compte', value: `${monthsActive} mois`, points: Math.min(15, monthsActive * 2) },
+    { label: 'Transactions vérifiées', value: transactions.length + paidOrders.length, points: Math.min(15, (transactions.length + paidOrders.length) * 2) },
+    { label: 'Paiements PayDunya', value: paydunyaTx.length, points: Math.min(10, paydunyaTx.length * 3) },
+    { label: 'Lots traces avec capteurs', value: lots.length, points: Math.min(8, lots.length * 2) },
+    { label: 'Attestations qualifiees', value: attestations.length, points: Math.min(7, attestations.length * 3) },
+    { label: 'Preuves économiques', value: proofs.length, points: Math.min(7, proofs.length * 2) },
+    { label: 'Revenu mensuel moyen', value: `${formatCompact(monthlyAverage)} FCFA`, points: Math.min(10, Math.floor(monthlyAverage / 50000) * 2) },
+    { label: 'Groupement / GIE / Coop', value: hasGroupement ? latestCollection.groupement : '—', points: hasGroupement ? 5 : 0 },
+    { label: 'Foncier (formel ou coutumier)', value: hasFoncier ? latestCollection.foncier : '—', points: hasFoncier ? 5 : 0 },
+    { label: 'Expérience agricole', value: `${experienceYears} ans`, points: Math.min(5, Math.floor(experienceYears / 2)) },
+    { label: 'Mobile Money actif', value: hasMobileMoney ? 'Oui' : 'Non', points: hasMobileMoney ? 4 : 0 },
+    { label: 'Tontine / épargne informelle', value: hasTontine ? 'Oui' : 'Non', points: hasTontine ? 4 : 0 },
+    { label: 'Historique remboursement', value: repaid > 0 ? `${repaid} remboursé(s)${defaults > 0 ? `, ${defaults} défaut(s)` : ''}` : '—', points: Math.max(0, repaymentBonus) },
   ];
   const score = Math.min(100, criteria.reduce((sum, c) => sum + c.points, 0));
   const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : 'D';
@@ -6217,6 +6544,8 @@ function buildBancabiliteDossier(user, store) {
     paydunyaCount: paydunyaTx.length,
     lotsCount: lots.length,
     attestationsCount: attestations.length,
+    agriCollectionCount: agriCollections.length,
+    repaymentHistory: { repaid, defaults },
     verificationCode: `BANC-${user.id.slice(-6).toUpperCase()}-${grade}${score}`,
   };
 }
@@ -8303,6 +8632,8 @@ function makeActions(setStore, forceReplaceStore) {
     setConsentRecords: (updater) => setStore((store) => ({ ...store, consentRecords: resolveUpdate(store.consentRecords || [], updater) })),
     setAuditLogs: (updater) => setStore((store) => ({ ...store, auditLogs: resolveUpdate(store.auditLogs || [], updater) })),
     setLoans: (updater) => setStore((store) => ({ ...store, loans: resolveUpdate(store.loans || [], updater) })),
+    setLoanRepayments: (updater) => setStore((store) => ({ ...store, loanRepayments: resolveUpdate(store.loanRepayments || [], updater) })),
+    setAgriScoreCollections: (updater) => setStore((store) => ({ ...store, agriScoreCollections: resolveUpdate(store.agriScoreCollections || [], updater) })),
     setSurveyLeads: (updater) => setStore((store) => ({ ...store, surveyLeads: resolveUpdate(store.surveyLeads || [], updater) })),
     replaceStore: (next) => setStore(normalizeStore(next)),
     forceReplaceStore: (next) => forceReplaceStore(next),
@@ -8342,6 +8673,8 @@ function createEmptyStore() {
     auditLogs: [],
     kpiAggregates: [],
     loans: [],
+    loanRepayments: [],
+    agriScoreCollections: [],
     surveyLeads: [],
   };
 }
@@ -9649,6 +9982,7 @@ function getMenuLinks(role) {
     admin: [
       '/',
       '/utilisateurs',
+      '/collecte-agriscore',
       '/verification',
       '/produits',
       '/lots',
@@ -9672,6 +10006,7 @@ function getMenuLinks(role) {
     ],
     agentTerrain: [
       '/',
+      '/collecte-agriscore',
       '/verification',
       '/commandes',
       '/produits',
@@ -9720,7 +10055,7 @@ function getMenuGroups(role, menuLinks) {
       { title: 'Mon financement', paths: ['/verification', '/bancabilite', '/ussd'] },
     ],
     agentTerrain: [
-      { title: 'Terrain', paths: ['/', '/verification', '/commandes', '/produits', '/operations', '/lots', '/compte'] },
+      { title: 'Terrain', paths: ['/', '/collecte-agriscore', '/verification', '/commandes', '/produits', '/operations', '/lots', '/compte'] },
       { title: 'Inclusion', paths: ['/impact', '/ussd'] },
     ],
     client: [
@@ -9770,6 +10105,7 @@ function navItemByPath(path) {
     '/operations': { path: '/operations', label: 'Opérations', icon: Warehouse, description: 'Hubs, stockage et logistique' },
     '/utilisateurs': { path: '/utilisateurs', label: 'Utilisateurs', icon: Users, description: 'Comptes, rôles et statuts' },
     '/impact': { path: '/impact', label: 'Impact', icon: BarChart3, description: 'KPI filières UEMOA: pertes évitées, revenu +, genre, CO2' },
+    '/collecte-agriscore': { path: '/collecte-agriscore', label: 'Collecte AgriScore', icon: ClipboardCheck, description: 'Collecte terrain assistée pour scoring agricole' },
     '/bancabilite': { path: '/bancabilite', label: 'Bancabilité', icon: Landmark, description: 'Score crédit et dossier finance exportable' },
     '/ussd': { path: '/ussd', label: 'USSD', icon: PhoneCall, description: 'Accès *384*FRES# pour téléphones sans Internet' },
     '/donnees': { path: '/donnees', label: 'Données', icon: Database, description: 'Export, import et maintenance' },
