@@ -33,6 +33,8 @@ import {
   MapPin,
   Menu,
   MessageSquare,
+  Mic,
+  MicOff,
   PackageCheck,
   PhoneCall,
   Plus,
@@ -3135,6 +3137,10 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
   const [conversationDrafts, setConversationDrafts] = useState({});
   const [openConversationId, setOpenConversationId] = useState('');
   const [activeOrderTab, setActiveOrderTab] = useState(() => (isBuyerRole(currentUser.role) ? 'cart' : 'orders'));
+  const [voiceRecording, setVoiceRecording] = useState(false);
+  const [voiceBlob, setVoiceBlob] = useState(null);
+  const voiceRecorderRef = useRef(null);
+  const voiceChunksRef = useRef([]);
   const orders = getVisibleOrders(store.orders, currentUser);
   const hiddenOrderSet = useMemo(() => new Set(hiddenOrderIds), [hiddenOrderIds]);
   const scopedOrders = useMemo(() => (
@@ -3547,6 +3553,74 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
     notify('Message envoyé');
   }
 
+  async function startVoiceRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      voiceRecorderRef.current = recorder;
+      voiceChunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) voiceChunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(voiceChunksRef.current, { type: 'audio/webm' });
+        setVoiceBlob(blob);
+        stream.getTracks().forEach((track) => track.stop());
+      };
+      recorder.start();
+      setVoiceRecording(true);
+    } catch {
+      notify('Impossible d\'accéder au microphone. Vérifiez les permissions du navigateur.');
+    }
+  }
+
+  function stopVoiceRecording() {
+    if (voiceRecorderRef.current && voiceRecording) {
+      voiceRecorderRef.current.stop();
+      setVoiceRecording(false);
+    }
+  }
+
+  function sendVoiceReply(conversation) {
+    if (!voiceBlob) return;
+    const audioUrl = URL.createObjectURL(voiceBlob);
+    const now = new Date().toISOString();
+    const root = conversation.root;
+    const reply = {
+      id: uid('msg'),
+      createdAt: now,
+      productId: root.productId,
+      sellerId: root.sellerId,
+      clientId: root.clientId,
+      senderId: currentUser.id,
+      senderRole: currentUser.role,
+      subject: root.subject?.startsWith('Re:') ? root.subject : `Re: ${root.subject}`,
+      body: '🎤 Message vocal',
+      audio: audioUrl,
+      status: 'Repondu',
+      parentId: root.id,
+    };
+    actions.setMessages((items) => [
+      reply,
+      ...items.map((item) => item.id === root.id ? { ...item, status: 'Repondu', updatedAt: now } : item),
+    ]);
+    const recipientId = currentUser.id === root.clientId ? root.sellerId : root.clientId;
+    if (recipientId && recipientId !== currentUser.id) {
+      actions.setNotifications((items) => [
+        createMessageNotification({
+          actor: currentUser,
+          body: '🎤 Message vocal',
+          message: reply,
+          recipientId,
+          title: currentUser.id === root.clientId ? 'Nouveau message vocal client' : 'Message vocal vendeur',
+        }),
+        ...items,
+      ]);
+    }
+    setVoiceBlob(null);
+    notify('Message vocal envoyé');
+  }
+
   function selectOrderTab(tabId) {
     setActiveOrderTab(tabId);
     navigate(`/commandes?tab=${encodeURIComponent(tabId)}`, { preserveScroll: true });
@@ -3721,9 +3795,17 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
                             <div key={message.id} className={`conversation-bubble ${isMessageFromUser(message, currentUser) ? 'mine' : ''}`}>
                               <span>{getMessageSenderName(message, store)} - {formatDate(message.createdAt)}</span>
                               <p>{message.body}</p>
+                              {message.audio && <audio src={message.audio} controls style={{ width: '100%', height: '32px', marginTop: '4px' }} />}
                             </div>
                           ))}
                         </div>
+                        {voiceBlob && (
+                          <div className="conversation-voice-preview">
+                            <audio src={URL.createObjectURL(voiceBlob)} controls style={{ height: '32px', flex: 1 }} />
+                            <Button onClick={() => sendVoiceReply(conversation)}><Send size={14} /> Envoyer</Button>
+                            <button type="button" className="voice-btn" onClick={() => setVoiceBlob(null)} aria-label="Annuler"><X size={14} /></button>
+                          </div>
+                        )}
                         <div className="conversation-reply">
                           <textarea
                             rows={2}
@@ -3731,8 +3813,11 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
                             onChange={(event) => setConversationDrafts((items) => ({ ...items, [conversation.id]: event.target.value }))}
                             placeholder="Ecrire un message..."
                           />
+                          <button type="button" onClick={voiceRecording ? stopVoiceRecording : startVoiceRecording} className={voiceRecording ? 'voice-btn recording' : 'voice-btn'} aria-label={voiceRecording ? 'Arrêter' : 'Message vocal'}>
+                            {voiceRecording ? <MicOff size={16} /> : <Mic size={16} />}
+                          </button>
                           <Button onClick={() => sendConversationReply(conversation)} disabled={!draft.trim()}>
-                            <MessageSquare size={16} /> Envoyer
+                            <Send size={16} /> Envoyer
                           </Button>
                         </div>
                       </>
@@ -7963,7 +8048,7 @@ function LanguageAssistant({ currentUser, store }) {
               aria-label="Votre message"
             />
             <button type="button" onClick={isRecording ? stopRecording : startRecording} aria-label={isRecording ? 'Arrêter' : 'Enregistrer vocal'} className={isRecording ? 'voice-btn recording' : 'voice-btn'}>
-              {isRecording ? <CircleAlert size={16} /> : <PhoneCall size={16} />}
+              {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
             </button>
             <button type="submit" aria-label="Envoyer"><ArrowRight size={16} /></button>
           </form>

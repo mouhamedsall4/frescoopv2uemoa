@@ -317,7 +317,7 @@ button:disabled {
   position: fixed;
   top: 92px;
   right: 18px;
-  z-index: 200;
+  z-index: 9999;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   width: min(460px, calc(100vw - 28px));
@@ -332,7 +332,7 @@ button:disabled {
 .notification-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 180;
+  z-index: 9990;
   background: rgba(7, 27, 20, 0.25);
   cursor: pointer;
 }
@@ -5056,9 +5056,19 @@ button:disabled {
 
 .conversation-reply {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 10px;
   align-items: end;
+}
+
+.conversation-voice-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
 
 .conversation-reply textarea {
