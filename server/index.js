@@ -363,29 +363,26 @@ async function handleAuth(request, response) {
       sendJson(response, 400, { error: 'Email et mot de passe requis' });
       return;
     }
-    const loginResult = await storeMutex.withLock(async () => {
-      const store = await readStore();
-      const normalized = String(email).trim().toLowerCase();
-      const target = store.users.find((u) => String(u?.email || '').trim().toLowerCase() === normalized);
-      if (!target) return { status: 401, body: { error: 'Aucun compte avec cet e-mail' } };
-      const acctStatus = String(target.status || 'Actif').toLowerCase();
-      if (acctStatus === 'suspendu' || acctStatus === 'inactif' || acctStatus === 'bloque' || acctStatus === 'bloqué') {
-        return { status: 403, body: { error: 'Votre compte est suspendu. Contactez un administrateur.' } };
+    const store = memoryStoreCache || await readStore();
+    const normalized = String(email).trim().toLowerCase();
+    const target = store.users.find((u) => String(u?.email || '').trim().toLowerCase() === normalized);
+    if (!target) { sendJson(response, 401, { error: 'Aucun compte avec cet e-mail' }); return; }
+    const acctStatus = String(target.status || 'Actif').toLowerCase();
+    if (acctStatus === 'suspendu' || acctStatus === 'inactif' || acctStatus === 'bloque' || acctStatus === 'bloqué') {
+      sendJson(response, 403, { error: 'Votre compte est suspendu. Contactez un administrateur.' }); return;
+    }
+    const hash = createHash('sha256').update(password).digest('hex');
+    if (!isAcceptedPasswordHash(target, hash)) {
+      if (!target.passwordHash) {
+        target.passwordHash = hash;
+        storeMutex.withLock(async () => { await writeStore(store); }).catch(() => {});
+        console.log(`[Auth] Recovered passwordHash for ${target.email} (was missing)`);
+      } else {
+        sendJson(response, 401, { error: 'Mot de passe incorrect' }); return;
       }
-      const hash = createHash('sha256').update(password).digest('hex');
-      if (!isAcceptedPasswordHash(target, hash)) {
-        if (!target.passwordHash) {
-          target.passwordHash = hash;
-          await writeStore(store);
-          console.log(`[Auth] Recovered passwordHash for ${target.email} (was missing)`);
-        } else {
-          return { status: 401, body: { error: 'Mot de passe incorrect' } };
-        }
-      }
-      const token = createToken(target.id, target.role);
-      return { status: 200, body: { ok: true, token, user: sanitizeUser(target) } };
-    });
-    sendJson(response, loginResult.status, loginResult.body);
+    }
+    const token = createToken(target.id, target.role);
+    sendJson(response, 200, { ok: true, token, user: sanitizeUser(target) });
     return;
   }
 
@@ -1512,7 +1509,7 @@ await mkdir(backupsDir, { recursive: true });
 
 async function handleStore(request, response) {
   if (request.method === 'GET') {
-    const store = await readStore();
+    const store = memoryStoreCache || await readStore();
     sendJson(response, 200, sanitizeStoreForClient(store));
     return;
   }
@@ -1730,7 +1727,11 @@ async function ensureDatabase() {
     if (!doc) {
       const initial = await createInitialStore();
       await col.insertOne({ _id: 'main', ...initial });
+      memoryStoreCache = initial;
       console.log(`[MongoDB] Store initial cree (${useDemoSeedData ? 'avec' : 'sans'} donnees demo)`);
+    } else {
+      const { _id, ...data } = doc;
+      memoryStoreCache = normalizeStore(data);
     }
     return;
   }
@@ -1769,10 +1770,18 @@ async function loadSeedDataIfAvailable() {
 
 async function readStore() {
   if (mongoDb) {
-    const doc = await mongoDb.collection('store').findOne({ _id: 'main' });
-    if (!doc) return normalizeStore({});
-    const { _id, ...data } = doc;
-    return normalizeStore(data);
+    try {
+      const doc = await mongoDb.collection('store').findOne({ _id: 'main' });
+      if (!doc) { const empty = normalizeStore({}); memoryStoreCache = empty; return empty; }
+      const { _id, ...data } = doc;
+      const result = normalizeStore(data);
+      memoryStoreCache = result;
+      return result;
+    } catch (err) {
+      console.warn('[readStore] MongoDB read failed, using cache:', err.message);
+      if (memoryStoreCache) return memoryStoreCache;
+      return normalizeStore({});
+    }
   }
   try {
     const raw = await readFile(dbPath, 'utf8');
