@@ -88,8 +88,8 @@ setInterval(() => {
 // ============================================================================
 const rateBuckets = new Map();
 const RATE_WINDOW_MS = 60_000;
-const RATE_MAX_REQUESTS = 120;
-const AUTH_RATE_MAX = 10;
+const RATE_MAX_REQUESTS = 600;
+const AUTH_RATE_MAX = 20;
 
 function checkRateLimit(ip, isAuthEndpoint = false) {
   const now = Date.now();
@@ -242,12 +242,15 @@ createServer(async (request, response) => {
     return;
   }
 
-  // Rate limiting
-  const clientIp = request.headers['x-forwarded-for']?.split(',')[0]?.trim() || request.socket.remoteAddress || '0.0.0.0';
-  const isAuthRoute = request.url?.startsWith('/api/auth/');
-  if (!checkRateLimit(clientIp, isAuthRoute)) {
-    sendJson(response, 429, { error: 'Trop de requêtes. Réessayez dans une minute.' });
-    return;
+  // Rate limiting (only API routes, not static files)
+  const isApiRoute = request.url?.startsWith('/api/');
+  if (isApiRoute) {
+    const clientIp = request.headers['x-forwarded-for']?.split(',')[0]?.trim() || request.socket.remoteAddress || '0.0.0.0';
+    const isAuthRoute = request.url?.startsWith('/api/auth/');
+    if (!checkRateLimit(clientIp, isAuthRoute)) {
+      sendJson(response, 429, { error: 'Trop de requêtes. Réessayez dans une minute.' });
+      return;
+    }
   }
 
   try {
