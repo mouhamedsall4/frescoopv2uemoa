@@ -242,9 +242,10 @@ createServer(async (request, response) => {
     return;
   }
 
-  // Rate limiting (only API routes, not static files)
+  // Rate limiting (only mutating API routes, not polling or static files)
   const isApiRoute = request.url?.startsWith('/api/');
-  if (isApiRoute) {
+  const isReadPoll = request.method === 'GET' && (request.url?.startsWith('/api/store') || request.url?.startsWith('/api/health'));
+  if (isApiRoute && !isReadPoll) {
     const clientIp = request.headers['x-forwarded-for']?.split(',')[0]?.trim() || request.socket.remoteAddress || '0.0.0.0';
     const isAuthRoute = request.url?.startsWith('/api/auth/');
     if (!checkRateLimit(clientIp, isAuthRoute)) {
