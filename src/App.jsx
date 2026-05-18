@@ -3842,6 +3842,29 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
       updatedAt: now,
     } : order));
     actions.setPaymentRecords((items) => [...paymentRecords, ...items]);
+
+    const sellerTransactions = eligibleOrders.map((order) => {
+      const product = getOrderProduct(order, store);
+      return {
+        id: uid('trx'),
+        createdAt: now,
+        date: now,
+        userId: order.sellerId,
+        ownerId: order.sellerId,
+        label: `Vente ${product?.name || 'produit'} (${formatNumber(order.quantity)} ${order.unit || product?.unit || 'kg'})`,
+        amount: getOrderTotal(order, store),
+        paymentMethod: `PayDunya`,
+        status: 'Paye',
+        buyer: currentUser.name || 'Client',
+        orderId: order.id,
+        receiptCode,
+        paydunyaToken: token,
+      };
+    });
+    if (sellerTransactions.length) {
+      actions.setTransactions((items) => [...sellerTransactions, ...items]);
+    }
+
     actions.setNotifications((items) => [...notifications, ...items]);
     actions.setAuditLogs((items) => [createAuditLog(currentUser, 'payment_paydunya_confirmed', `Paiement PayDunya confirmé: ${receiptCode} (token ${token})`, receiptCode), ...items]);
     setReceipt({ code: receiptCode, orders: eligibleOrders, total: totalAmount, paidAt: now, token, paydunyaReceiptUrl: paydunyaData?.receiptUrl || '' });
