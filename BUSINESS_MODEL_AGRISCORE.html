@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriScore — Business Model & Plan Stratégique</title>
+<style>
+@page { size: A4; margin: 2cm; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', -apple-system, sans-serif; color: #1a1a1a; line-height: 1.6; font-size: 11pt; background: #fff; }
+.page { page-break-after: always; min-height: 100vh; padding: 40px 50px; position: relative; }
+.page:last-child { page-break-after: avoid; }
+
+/* Cover */
+.cover { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, #064e3b 0%, #0f766e 50%, #115e59 100%); color: #fff; }
+.cover h1 { font-size: 42pt; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+.cover .subtitle { font-size: 16pt; opacity: 0.9; margin-bottom: 40px; font-weight: 300; }
+.cover .meta { font-size: 10pt; opacity: 0.7; margin-top: 60px; }
+.cover .badge { display: inline-block; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 8px 24px; border-radius: 20px; font-size: 10pt; margin-bottom: 30px; letter-spacing: 1px; text-transform: uppercase; }
+.cover .tagline { font-size: 13pt; max-width: 500px; opacity: 0.85; margin-top: 20px; font-style: italic; }
+
+/* Headers */
+h2 { font-size: 18pt; color: #064e3b; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #d1fae5; }
+h3 { font-size: 13pt; color: #0f766e; margin: 20px 0 8px; }
+h4 { font-size: 11pt; color: #374151; margin: 14px 0 6px; }
+p { margin-bottom: 10px; }
+.section-number { display: inline-block; width: 28px; height: 28px; background: #064e3b; color: #fff; border-radius: 50%; text-align: center; line-height: 28px; font-size: 12pt; font-weight: 700; margin-right: 10px; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; margin: 14px 0 20px; font-size: 10pt; }
+th { background: #064e3b; color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; }
+td { padding: 9px 12px; border-bottom: 1px solid #e5e7eb; }
+tr:nth-child(even) td { background: #f0fdf4; }
+.highlight-row td { background: #d1fae5; font-weight: 600; }
+
+/* Cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+.card { background: #f0fdf4; border: 1px solid #d1fae5; border-radius: 10px; padding: 16px; }
+.card h4 { margin-top: 0; color: #064e3b; }
+.card .number { font-size: 22pt; font-weight: 800; color: #064e3b; }
+.card .label { font-size: 9pt; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Lists */
+ul { margin: 8px 0 14px 18px; }
+li { margin-bottom: 5px; }
+.check-list { list-style: none; margin-left: 0; }
+.check-list li::before { content: "✓ "; color: #059669; font-weight: 700; }
+
+/* KPIs */
+.kpi-row { display: flex; gap: 12px; margin: 16px 0; }
+.kpi { flex: 1; background: #064e3b; color: #fff; border-radius: 10px; padding: 14px; text-align: center; }
+.kpi .value { font-size: 20pt; font-weight: 800; }
+.kpi .desc { font-size: 8.5pt; opacity: 0.8; margin-top: 4px; }
+
+/* Footer */
+.page-footer { position: absolute; bottom: 20px; left: 50px; right: 50px; display: flex; justify-content: space-between; font-size: 8pt; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+
+/* Canvas model */
+.canvas { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; grid-template-rows: auto auto; gap: 8px; margin: 16px 0; font-size: 9pt; }
+.canvas-cell { background: #f9fafb; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px; }
+.canvas-cell h5 { font-size: 8.5pt; color: #064e3b; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+.canvas-cell ul { margin: 0; padding-left: 12px; }
+.canvas-cell li { margin-bottom: 3px; font-size: 8.5pt; }
+.span-2 { grid-column: span 2; }
+.span-5 { grid-column: span 5; }
+
+/* Quotes */
+.quote { background: #ecfdf5; border-left: 4px solid #059669; padding: 12px 16px; margin: 16px 0; font-style: italic; border-radius: 0 8px 8px 0; }
+
+/* Timeline */
+.timeline { margin: 16px 0; }
+.timeline-item { display: flex; gap: 12px; margin-bottom: 12px; }
+.timeline-dot { width: 12px; height: 12px; background: #059669; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.timeline-content { flex: 1; }
+.timeline-content strong { display: block; color: #064e3b; }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1 : COVER -->
+<div class="page cover">
+  <div class="badge">Hackathon Filieres Agricoles GIM-UEMOA 2026</div>
+  <h1>AgriScore</h1>
+  <p class="subtitle">Business Model & Plan Strategique</p>
+  <p class="tagline">"Transformer les realites terrain des agriculteurs en preuves bancables pour debloquer l'acces au financement agricole en Afrique de l'Ouest."</p>
+  <div class="meta">
+    <p>Friction 4 : Acces limite aux financements agricoles</p>
+    <p style="margin-top:8px;">Equipe FresCoop &mdash; Mai 2026</p>
+    <p style="margin-top:4px; opacity:0.6;">Document confidentiel</p>
+  </div>
+</div>
+
+<!-- PAGE 2 : PROBLEME & MARCHE -->
+<div class="page">
+  <h2><span class="section-number">1</span> Probleme & Opportunite de Marche</h2>
+
+  <h3>Le probleme</h3>
+  <p><strong>80% des agriculteurs de l'espace UEMOA sont exclus du credit formel.</strong> Non pas parce qu'ils sont risques, mais parce que leur credibilite n'est pas documentee. Les banques manquent de donnees fiables : pas d'historique de recolte, pas de traces de ventes, pas de preuves de remboursement.</p>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="value">80%</div><div class="desc">Agriculteurs exclus du credit</div></div>
+    <div class="kpi"><div class="value">3%</div><div class="desc">Part du credit bancaire vers l'agriculture</div></div>
+    <div class="kpi"><div class="value">60M</div><div class="desc">Exploitants agricoles UEMOA</div></div>
+    <div class="kpi"><div class="value">$2.5Mds</div><div class="desc">Gap de financement agricole Afrique Ouest</div></div>
+  </div>
+
+  <h3>Taille du marche (TAM / SAM / SOM)</h3>
+  <table>
+    <tr><th>Segment</th><th>Definition</th><th>Valeur estimee</th></tr>
+    <tr><td><strong>TAM</strong></td><td>Marche total du scoring credit agricole en Afrique de l'Ouest (8 pays UEMOA)</td><td>$2.5 milliards / an</td></tr>
+    <tr><td><strong>SAM</strong></td><td>Senegal + Mali + Cote d'Ivoire — filieres porteuses (riz, arachide, mangue, oignon)</td><td>$450 millions / an</td></tr>
+    <tr><td><strong>SOM</strong></td><td>Pilote Senegal — 3 regions, 5 000 agriculteurs, 10 IMF partenaires (3 ans)</td><td>$12 millions / an</td></tr>
+  </table>
+
+  <h3>Pourquoi maintenant ?</h3>
+  <ul class="check-list">
+    <li>Mobile Money atteint 65% de penetration rurale au Senegal (Wave, Orange Money)</li>
+    <li>Le GIM-UEMOA pousse l'interoperabilite des paiements agricoles</li>
+    <li>Les IMF cherchent activement des outils de scoring alternatif</li>
+    <li>Les donnees terrain existent deja (cooperatives, agents ANCAR, tontines) — elles ne sont juste pas structurees</li>
+  </ul>
+
+  <div class="page-footer">
+    <span>AgriScore — Business Model</span>
+    <span>Page 2</span>
+  </div>
+</div>
+
+<!-- PAGE 3 : SOLUTION & PROPOSITION DE VALEUR -->
+<div class="page">
+  <h2><span class="section-number">2</span> Solution & Proposition de Valeur</h2>
+
+  <h3>Ce qu'est AgriScore</h3>
+  <p>AgriScore est une <strong>plateforme de scoring credit agricole contextualise</strong> qui transforme les preuves terrain (recoltes, ventes, groupements, foncier coutumier, Mobile Money, tontines) en un dossier de credit structure, comprehensible et verifiable par les institutions financieres.</p>
+
+  <h3>Les 5 piliers de la solution</h3>
+  <table>
+    <tr><th>#</th><th>Pilier</th><th>Description</th></tr>
+    <tr><td>1</td><td><strong>Collecte assistee par agent</strong></td><td>L'agent terrain collecte les donnees en langue locale avec consentement oral trace et temoin</td></tr>
+    <tr><td>2</td><td><strong>Score agricole contextualise</strong></td><td>13 criteres : recoltes, ventes, groupements, foncier, Mobile Money, experience, tontine, historique credit</td></tr>
+    <tr><td>3</td><td><strong>Dossier de credit verifiable</strong></td><td>PDF avec QR code, score, preuves, attestation agent, niveau de confiance, date de fraicheur</td></tr>
+    <tr><td>4</td><td><strong>Recommandation saisonniere</strong></td><td>Calendrier de remboursement aligne sur les cycles de culture et periodes de vente</td></tr>
+    <tr><td>5</td><td><strong>Boucle post-credit</strong></td><td>Suivi remboursement/retard/defaut qui enrichit progressivement l'historique financier</td></tr>
+  </table>
+
+  <h3>Proposition de valeur par segment</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Pour l'agriculteur</h4>
+      <ul>
+        <li>Identite financiere progressive (de invisible a financable)</li>
+        <li>Accompagnement en langue locale</li>
+        <li>Acces au micro-credit sans paperasse</li>
+        <li>Gratuit — l'agriculteur ne paie jamais</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Pour la banque / IMF / SFD</h4>
+      <ul>
+        <li>Reduction du risque credit (-40% taux de defaut)</li>
+        <li>Dossiers pre-qualifies et verifiables</li>
+        <li>Gain de temps : 5 min vs 3 semaines d'instruction</li>
+        <li>Nouveau portefeuille client (agriculteurs bancables)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="quote">
+    "AgriScore ne remplace pas la decision bancaire. Il rend les agriculteurs financables en transformant la confiance du terrain en preuves bancables."
+  </div>
+
+  <h3>Avantage competitif</h3>
+  <table>
+    <tr><th>AgriScore</th><th>Solutions classiques</th></tr>
+    <tr><td>Score contextualise (foncier coutumier, tontine, saisons)</td><td>Score binaire base sur le titre foncier uniquement</td></tr>
+    <tr><td>Agent terrain + langue locale + temoin</td><td>Application mobile en francais (exclut 70% des producteurs)</td></tr>
+    <tr><td>Boucle post-credit qui construit l'historique</td><td>Scoring ponctuel sans suivi</td></tr>
+    <tr><td>Indicateur fiabilite agent (anti-fraude)</td><td>Pas de verification croisee</td></tr>
+  </table>
+
+  <div class="page-footer">
+    <span>AgriScore — Business Model</span>
+    <span>Page 3</span>
+  </div>
+</div>
+
+<!-- PAGE 4 : BUSINESS MODEL CANVAS + REVENUS -->
+<div class="page">
+  <h2><span class="section-number">3</span> Business Model</h2>
+
+  <h3>Business Model Canvas</h3>
+  <div class="canvas">
+    <div class="canvas-cell">
+      <h5>Partenaires cles</h5>
+      <ul>
+        <li>GIM-UEMOA</li>
+        <li>IMF / SFD / Banques</li>
+        <li>Cooperatives agricoles</li>
+        <li>ANCAR (agents)</li>
+        <li>Orange Money / Wave</li>
+      </ul>
+    </div>
+    <div class="canvas-cell">
+      <h5>Activites cles</h5>
+      <ul>
+        <li>Collecte terrain assistee</li>
+        <li>Scoring & verification</li>
+        <li>Generation dossiers</li>
+        <li>Formation agents</li>
+        <li>Suivi post-credit</li>
+      </ul>
+    </div>
+    <div class="canvas-cell">
+      <h5>Valeur</h5>
+      <ul>
+        <li>Agriculteurs financables</li>
+        <li>Dossiers pre-qualifies</li>
+        <li>Risque credit reduit</li>
+        <li>Historique progressif</li>
+        <li>Inclusion sans friction</li>
+      </ul>
+    </div>
+    <div class="canvas-cell">
+      <h5>Relations</h5>
+      <ul>
+        <li>Agent = interface humaine</li>
+        <li>USSD pour sans smartphone</li>
+        <li>Chatbot multilingue</li>
+        <li>SMS / notifications</li>
+      </ul>
+    </div>
+    <div class="canvas-cell">
+      <h5>Segments clients</h5>
+      <ul>
+        <li>B2B : IMF, SFD, banques</li>
+        <li>B2G : programmes publics</li>
+        <li>Agriculteurs (beneficiaires gratuits)</li>
+      </ul>
+    </div>
+    <div class="canvas-cell span-2">
+      <h5>Ressources cles</h5>
+      <ul>
+        <li>Algorithme de scoring contextualise</li>
+        <li>Reseau d'agents terrain formes</li>
+        <li>Donnees historiques verificables</li>
+        <li>Partenariats IMF</li>
+      </ul>
+    </div>
+    <div class="canvas-cell span-3" style="grid-column: span 3;">
+      <h5>Canaux de distribution</h5>
+      <ul>
+        <li>Agents terrain (ANCAR, cooperatives)</li>
+        <li>API pour banques et IMF</li>
+        <li>Plateforme web (dashboard partenaires)</li>
+        <li>USSD *384*FRES# (agriculteurs sans smartphone)</li>
+      </ul>
+    </div>
+    <div class="canvas-cell span-5">
+      <h5>Structure de couts</h5>
+      <ul style="display: flex; gap: 30px; flex-wrap: wrap;">
+        <li>Developpement tech (40%)</li>
+        <li>Reseau agents terrain (25%)</li>
+        <li>Operations & hebergement (15%)</li>
+        <li>Commercial / partenariats (12%)</li>
+        <li>Juridique & conformite (8%)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Sources de revenus</h3>
+  <table>
+    <tr><th>Source</th><th>Modele</th><th>Prix indicatif</th><th>% revenus (an 3)</th></tr>
+    <tr><td><strong>Acces dossiers qualifies</strong></td><td>Fee par dossier consulte par une IMF</td><td>2 000 — 5 000 FCFA / dossier</td><td>45%</td></tr>
+    <tr><td><strong>Abonnement IMF / Banque</strong></td><td>Licence mensuelle plateforme + API</td><td>500 000 — 2M FCFA / mois</td><td>30%</td></tr>
+    <tr><td><strong>Commission sur credit debloque</strong></td><td>Success fee (% du montant finance)</td><td>1 — 2% du pret</td><td>15%</td></tr>
+    <tr><td><strong>Programmes institutionnels</strong></td><td>Contrats bailleurs / gouvernements</td><td>Sur mesure</td><td>10%</td></tr>
+    <tr class="highlight-row"><td colspan="3"><strong>Revenu annuel projete (Annee 3)</strong></td><td><strong>480M FCFA</strong></td></tr>
+  </table>
+
+  <div class="quote">
+    Regle d'or : l'agriculteur ne paie jamais. Le business model repose sur les institutions financieres qui paient pour acceder a des clients pre-qualifies.
+  </div>
+
+  <div class="page-footer">
+    <span>AgriScore — Business Model</span>
+    <span>Page 4</span>
+  </div>
+</div>
+
+<!-- PAGE 5 : PROJECTIONS FINANCIERES -->
+<div class="page">
+  <h2><span class="section-number">4</span> Projections Financieres</h2>
+
+  <h3>Hypotheses cles</h3>
+  <ul>
+    <li>Pilote an 1 : 3 regions Senegal, 5 agents, 500 agriculteurs inscrits</li>
+    <li>An 2 : expansion 3 pays UEMOA, 25 agents, 5 000 agriculteurs, 10 IMF</li>
+    <li>An 3 : 8 pays UEMOA, 80 agents, 25 000 agriculteurs, 30+ IMF</li>
+    <li>Taux de conversion dossier → credit : 35% (an 1) → 55% (an 3)</li>
+    <li>Credit moyen : 250 000 FCFA</li>
+  </ul>
+
+  <h3>Compte de resultat previsionnel (FCFA)</h3>
+  <table>
+    <tr><th>Poste</th><th>Annee 1 (Pilote)</th><th>Annee 2</th><th>Annee 3</th></tr>
+    <tr><td><strong>Revenus</strong></td><td></td><td></td><td></td></tr>
+    <tr><td>&nbsp;&nbsp;Dossiers qualifies</td><td>5 000 000</td><td>72 000 000</td><td>216 000 000</td></tr>
+    <tr><td>&nbsp;&nbsp;Abonnements IMF</td><td>12 000 000</td><td>60 000 000</td><td>144 000 000</td></tr>
+    <tr><td>&nbsp;&nbsp;Commissions credit</td><td>4 375 000</td><td>34 375 000</td><td>72 000 000</td></tr>
+    <tr><td>&nbsp;&nbsp;Programmes institutionnels</td><td>25 000 000</td><td>35 000 000</td><td>48 000 000</td></tr>
+    <tr class="highlight-row"><td><strong>Total Revenus</strong></td><td><strong>46 375 000</strong></td><td><strong>201 375 000</strong></td><td><strong>480 000 000</strong></td></tr>
+    <tr><td><strong>Couts</strong></td><td></td><td></td><td></td></tr>
+    <tr><td>&nbsp;&nbsp;Equipe tech + produit</td><td>24 000 000</td><td>60 000 000</td><td>96 000 000</td></tr>
+    <tr><td>&nbsp;&nbsp;Reseau agents</td><td>9 000 000</td><td>45 000 000</td><td>96 000 000</td></tr>
+    <tr><td>&nbsp;&nbsp;Infrastructure cloud</td><td>3 600 000</td><td>12 000 000</td><td>24 000 000</td></tr>
+    <tr><td>&nbsp;&nbsp;Commercial & partenariats</td><td>6 000 000</td><td>24 000 000</td><td>48 000 000</td></tr>
+    <tr><td>&nbsp;&nbsp;Juridique & conformite</td><td>3 000 000</td><td>8 000 000</td><td>18 000 000</td></tr>
+    <tr class="highlight-row"><td><strong>Total Couts</strong></td><td><strong>45 600 000</strong></td><td><strong>149 000 000</strong></td><td><strong>282 000 000</strong></td></tr>
+    <tr style="background:#d1fae5;"><td><strong>Resultat Net</strong></td><td><strong>+775 000</strong></td><td><strong>+52 375 000</strong></td><td><strong>+198 000 000</strong></td></tr>
+    <tr><td><strong>Marge nette</strong></td><td>1.7%</td><td>26%</td><td>41%</td></tr>
+  </table>
+
+  <h3>Metriques cles de performance (KPI)</h3>
+  <div class="kpi-row">
+    <div class="kpi"><div class="value">25K</div><div class="desc">Agriculteurs scores (an 3)</div></div>
+    <div class="kpi"><div class="value">55%</div><div class="desc">Taux conversion credit</div></div>
+    <div class="kpi"><div class="value">x10</div><div class="desc">Croissance revenus an1→an3</div></div>
+    <div class="kpi"><div class="value">41%</div><div class="desc">Marge nette an 3</div></div>
+  </div>
+
+  <h3>Besoin de financement</h3>
+  <table>
+    <tr><th>Phase</th><th>Montant</th><th>Utilisation</th></tr>
+    <tr><td>Pre-seed (hackathon + 6 mois)</td><td>15 000 000 FCFA</td><td>MVP, pilote 3 regions, 5 agents, validation terrain</td></tr>
+    <tr><td>Seed (annee 2)</td><td>75 000 000 FCFA</td><td>Expansion 3 pays, 25 agents, API bancaires, conformite</td></tr>
+    <tr><td>Serie A (annee 3)</td><td>300 000 000 FCFA</td><td>8 pays UEMOA, 80 agents, scoring IA avance, gouvernance</td></tr>
+  </table>
+
+  <div class="page-footer">
+    <span>AgriScore — Business Model</span>
+    <span>Page 5</span>
+  </div>
+</div>
+
+<!-- PAGE 6 : GO-TO-MARKET & ROADMAP -->
+<div class="page">
+  <h2><span class="section-number">5</span> Strategie Go-to-Market</h2>
+
+  <h3>Phase 1 — Pilote (0-6 mois)</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Objectifs</h4>
+      <ul>
+        <li>50 a 100 agriculteurs scores</li>
+        <li>3 agents terrain formes</li>
+        <li>2 IMF / SFD partenaires</li>
+        <li>Validation : 1er credit debloque via AgriScore</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Zones cibles</h4>
+      <ul>
+        <li>Niayes (maraichage)</li>
+        <li>Thies (arachide)</li>
+        <li>Saint-Louis (riz)</li>
+        <li>Partenaire : ANCAR + 1 cooperative locale</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Phase 2 — Croissance regionale (6-18 mois)</h3>
+  <ul class="check-list">
+    <li>Deploiement Mali (coton, riz) et Cote d'Ivoire (cacao, anacarde)</li>
+    <li>10 IMF partenaires avec API integree</li>
+    <li>Score contextualise par region et par culture</li>
+    <li>Lancement USSD pour couverture 2G totale</li>
+    <li>Integration historique Mobile Money (Wave, Orange Money)</li>
+  </ul>
+
+  <h3>Phase 3 — Echelle UEMOA (18-36 mois)</h3>
+  <ul class="check-list">
+    <li>8 pays UEMOA couverts</li>
+    <li>30+ institutions financieres connectees</li>
+    <li>Scoring IA avance avec donnees climatiques et satellitaires</li>
+    <li>Gouvernance institutionnelle et conformite reglementaire complete</li>
+    <li>Rapports d'impact pour bailleurs (AFD, BAD, FIDA)</li>
+  </ul>
+
+  <h3>Feuille de route technique</h3>
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-content">
+        <strong>Mois 1-3 : MVP valide (actuel)</strong>
+        <span>Scoring 13 criteres, collecte agent, boucle post-credit, dossier exportable, USSD, chatbot multilingue</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-content">
+        <strong>Mois 4-6 : Pilote terrain</strong>
+        <span>Deploiement reel, formation agents, partenariat IMF, API Mobile Money, feedback terrain</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-content">
+        <strong>Mois 7-12 : API bancaire + expansion</strong>
+        <span>Integration systemes bancaires, scoring avance par filiere, dashboard IMF, rapports automatiques</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-content">
+        <strong>Mois 13-24 : Multi-pays + IA</strong>
+        <span>Machine learning sur historiques de remboursement, donnees satellitaires, 3 pays, 25 agents</span>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-content">
+        <strong>Mois 25-36 : Echelle UEMOA</strong>
+        <span>8 pays, 80 agents, 30+ IMF, gouvernance, conformite, Series A</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>AgriScore — Business Model</span>
+    <span>Page 6</span>
+  </div>
+</div>
+
+<!-- PAGE 7 : IMPACT & EQUIPE -->
+<div class="page">
+  <h2><span class="section-number">6</span> Impact Social & Indicateurs</h2>
+
+  <h3>Impact mesurable a 3 ans</h3>
+  <div class="kpi-row">
+    <div class="kpi"><div class="value">25 000</div><div class="desc">Agriculteurs avec identite financiere</div></div>
+    <div class="kpi"><div class="value">$3.4M</div><div class="desc">Credits debloques</div></div>
+    <div class="kpi"><div class="value">60%</div><div class="desc">Femmes beneficiaires</div></div>
+    <div class="kpi"><div class="value">-40%</div><div class="desc">Reduction taux de defaut</div></div>
+  </div>
+
+  <h3>Alignement ODD (Objectifs de Developpement Durable)</h3>
+  <table>
+    <tr><th>ODD</th><th>Contribution AgriScore</th></tr>
+    <tr><td><strong>ODD 1 — Pas de pauvrete</strong></td><td>Acces au credit pour les producteurs les plus vulnerables</td></tr>
+    <tr><td><strong>ODD 2 — Faim zero</strong></td><td>Financement des intrants et equipements agricoles</td></tr>
+    <tr><td><strong>ODD 5 — Egalite des genres</strong></td><td>Scoring inclusif (GIE feminin, tontines, droit coutumier)</td></tr>
+    <tr><td><strong>ODD 8 — Travail decent</strong></td><td>Formalisation de l'activite economique agricole</td></tr>
+    <tr><td><strong>ODD 10 — Inegalites reduites</strong></td><td>Inclusion financiere des populations rurales exclues</td></tr>
+  </table>
+
+  <h3>Indicateurs de suivi (reporting trimestriel)</h3>
+  <ul>
+    <li><strong>Couverture :</strong> nombre d'agriculteurs scores, zones couvertes, agents actifs</li>
+    <li><strong>Conversion :</strong> % dossiers → credits debloques, montant moyen, delai de decision</li>
+    <li><strong>Qualite :</strong> taux de remboursement, taux de defaut, score moyen portefeuille</li>
+    <li><strong>Inclusion :</strong> % femmes, % sans titre foncier formel, % sans smartphone</li>
+    <li><strong>Agent :</strong> fiabilite moyenne, taux avec temoin, collectes / agent / mois</li>
+  </ul>
+
+  <h2 style="margin-top: 30px;"><span class="section-number">7</span> Equipe & Gouvernance</h2>
+
+  <h3>Competences cles de l'equipe</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4>Technologie</h4>
+      <ul>
+        <li>Developpement fullstack (React, Node.js)</li>
+        <li>Architecture scoring & API</li>
+        <li>Infrastructure cloud scalable</li>
+        <li>Securite & protection donnees</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Terrain & Metier</h4>
+      <ul>
+        <li>Connaissance filieres agricoles Senegal</li>
+        <li>Relations cooperatives et IMF</li>
+        <li>Experience agents terrain</li>
+        <li>Comprehension contexte UEMOA</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Gouvernance prevue</h3>
+  <ul>
+    <li><strong>Comite consultatif :</strong> 1 representant IMF + 1 representant cooperative + 1 expert fintech</li>
+    <li><strong>Protection donnees :</strong> Conformite loi senegalaise sur les donnees personnelles + RGPD UEMOA</li>
+    <li><strong>Audit externe :</strong> Verification annuelle du modele de scoring par un cabinet independant</li>
+  </ul>
+
+  <div class="page-footer">
+    <span>AgriScore — Business Model</span>
+    <span>Page 7</span>
+  </div>
+</div>
+
+<!-- PAGE 8 : RISQUES & CONCLUSION -->
+<div class="page">
+  <h2><span class="section-number">8</span> Risques & Mitigations</h2>
+
+  <table>
+    <tr><th>Risque</th><th>Probabilite</th><th>Impact</th><th>Mitigation</th></tr>
+    <tr><td>Fraude des agents terrain</td><td>Moyenne</td><td>Eleve</td><td>Score fiabilite agent, croisement donnees, verification par temoin</td></tr>
+    <tr><td>Faible adoption IMF</td><td>Moyenne</td><td>Eleve</td><td>Pilote gratuit 3 mois, preuves de reduction du risque, success fee</td></tr>
+    <tr><td>Reglementation contraignante</td><td>Faible</td><td>Moyen</td><td>Partenariat GIM-UEMOA, conformite proactive, pas de decision de credit</td></tr>
+    <tr><td>Qualite des donnees terrain</td><td>Moyenne</td><td>Moyen</td><td>Formation agents, consentement trace, audit logs, coherence croisee</td></tr>
+    <tr><td>Concurrence fintech credit</td><td>Faible</td><td>Moyen</td><td>Positionnement infrastructure (pas preteur), partenariats exclusifs regionaux</td></tr>
+    <tr><td>Defaut de remboursement eleve</td><td>Faible</td><td>Eleve</td><td>Calendrier saisonnier, suivi post-credit, scoring evolutif, alerte precoce</td></tr>
+  </table>
+
+  <h2 style="margin-top: 40px;"><span class="section-number">9</span> Synthese & Appel a l'Action</h2>
+
+  <div class="quote" style="font-size: 12pt;">
+    AgriScore ne demande pas aux agriculteurs de devenir digitaux du jour au lendemain. Il transforme progressivement leurs realites existantes en preuves bancables. Notre ambition : ne pas remplacer la banque, mais lui donner les preuves necessaires pour financer ceux qui nourrissent le continent.
+  </div>
+
+  <h3>Ce que nous demandons</h3>
+  <div class="card-grid">
+    <div class="card" style="text-align:center;">
+      <div class="number">15M FCFA</div>
+      <div class="label">Financement pre-seed</div>
+      <p style="margin-top:8px; font-size:9pt;">Pour valider le pilote terrain avec 100 agriculteurs, 5 agents, 2 IMF au Senegal</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div class="number">6 mois</div>
+      <div class="label">Pour prouver le modele</div>
+      <p style="margin-top:8px; font-size:9pt;">1er credit debloque via AgriScore, taux de conversion &gt;35%, fiabilite agent validee</p>
+    </div>
+  </div>
+
+  <h3>Pourquoi nous allons reussir</h3>
+  <ul class="check-list">
+    <li><strong>Realisme :</strong> pas de techno-solutionnisme — nous partons des acteurs existants (agents, cooperatives, tontines)</li>
+    <li><strong>Focus :</strong> nous ne faisons pas tout — nous faisons UNE chose bien (rendre l'agriculteur financable)</li>
+    <li><strong>Terrain :</strong> consentement en langue locale, temoin, foncier coutumier — nous comprenons la realite</li>
+    <li><strong>Modele viable :</strong> les IMF paient parce qu'on leur fait gagner du temps et reduire le risque</li>
+    <li><strong>Scalable :</strong> agent + USSD + API = fonctionne meme sans smartphone, meme en zone 2G</li>
+  </ul>
+
+  <div style="text-align: center; margin-top: 40px; padding: 20px; background: #064e3b; color: #fff; border-radius: 12px;">
+    <p style="font-size: 14pt; font-weight: 700; margin-bottom: 8px;">AgriScore</p>
+    <p style="font-size: 10pt; opacity: 0.9;">Transformer la confiance terrain en preuves bancables</p>
+    <p style="font-size: 9pt; opacity: 0.7; margin-top: 12px;">Hackathon Filieres Agricoles GIM-UEMOA 2026 — Friction 4</p>
+  </div>
+
+  <div class="page-footer">
+    <span>AgriScore — Business Model</span>
+    <span>Page 8</span>
+  </div>
+</div>
+
+</body>
+</html>
