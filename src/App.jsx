@@ -5808,7 +5808,9 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
   }, [isAgriculteur, currentUser, store.users]);
 
   const loans = store.loans || [];
-  const myLoans = loans.filter((loan) => loan.farmerId === currentUser.id || loan.partnerId === currentUser.id);
+  const myLoans = isFinancePartner
+    ? loans.filter((loan) => loan.partnerId === currentUser.id || loan.status === 'En attente')
+    : loans.filter((loan) => loan.farmerId === currentUser.id);
 
   const enriched = scope.map((user) => ({ user, dossier: buildBancabiliteDossier(user, store) }));
   const visible = enriched.filter(({ user, dossier }) => {
@@ -6031,31 +6033,42 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
 
       {(isAgriculteur || isFinancePartner) && myLoans.length > 0 && (
         <section className="panel">
-          <PanelTitle icon={ReceiptText} title={isFinancePartner ? 'Demandes à instruire' : 'Mes demandes de prêt'} />
+          <PanelTitle icon={ReceiptText} title={isFinancePartner ? 'Demandes de crédit à instruire' : 'Mes demandes de prêt'} />
           <div className="loan-list">
-            {myLoans.map((loan) => (
-              <article key={loan.id} className={`loan-card loan-${loan.status.toLowerCase().replace(/\s/g, '-')}`}>
-                <header>
-                  <div>
-                    <strong>{loan.farmerName}</strong>
-                    <small>Score {loan.score}/100 · Grade {loan.grade} · {formatDate(loan.createdAt)}</small>
+            {myLoans.map((loan) => {
+              const farmer = store.users.find((u) => u.id === loan.farmerId);
+              const farmerDossier = farmer ? buildBancabiliteDossier(farmer, store) : null;
+              return (
+                <article key={loan.id} className={`loan-card loan-${loan.status.toLowerCase().replace(/\s/g, '-')}`}>
+                  <header>
+                    <div>
+                      <strong>{loan.farmerName}</strong>
+                      <small>Score {loan.score}/100 · Grade {loan.grade} · {formatDate(loan.createdAt)}</small>
+                    </div>
+                    <span className={`loan-status loan-${loan.status.toLowerCase().replace(/\s/g, '-')}`}>{loan.status}</span>
+                  </header>
+                  <div className="loan-body">
+                    <div><em>Montant demandé</em><b>{formatMoney(loan.amount)}</b></div>
+                    <div><em>Durée</em><b>{loan.months} mois</b></div>
+                    <div><em>Objet</em><b>{loan.purpose}</b></div>
+                    {isFinancePartner && farmerDossier && (
+                      <>
+                        <div><em>Revenu mensuel moyen</em><b>{formatMoney(farmerDossier.monthlyAverage)}</b></div>
+                        <div><em>Transactions vérifiées</em><b>{farmerDossier.transactionsCount}</b></div>
+                        <div><em>Paiements PayDunya</em><b>{farmerDossier.paydunyaCount}</b></div>
+                      </>
+                    )}
                   </div>
-                  <span className={`loan-status loan-${loan.status.toLowerCase().replace(/\s/g, '-')}`}>{loan.status}</span>
-                </header>
-                <div className="loan-body">
-                  <div><em>Montant</em><b>{formatMoney(loan.amount)}</b></div>
-                  <div><em>Durée</em><b>{loan.months} mois</b></div>
-                  <div><em>Objet</em><b>{loan.purpose}</b></div>
-                </div>
-                {isFinancePartner && loan.status === 'En attente' && (
-                  <div className="button-row">
-                    <Button onClick={() => decideLoan(loan, 'Approuvé')}><CheckCircle2 size={16} /> Approuver</Button>
-                    <Button variant="secondary" onClick={() => decideLoan(loan, 'Refusé')}><X size={16} /> Refuser</Button>
-                    <Button variant="secondary" onClick={() => exportDossier(store.users.find((user) => user.id === loan.farmerId))}><Download size={16} /> Dossier</Button>
-                  </div>
-                )}
-              </article>
-            ))}
+                  {isFinancePartner && loan.status === 'En attente' && (
+                    <div className="button-row">
+                      <Button onClick={() => decideLoan(loan, 'Approuvé')}><CheckCircle2 size={16} /> Approuver le crédit</Button>
+                      <Button variant="secondary" onClick={() => decideLoan(loan, 'Refusé')}><X size={16} /> Refuser</Button>
+                      <Button variant="secondary" onClick={() => farmer && exportDossier(farmer)}><Download size={16} /> Voir dossier complet</Button>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
           </div>
         </section>
       )}
@@ -6124,20 +6137,21 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
             </div>
             <div className="button-row">
               <Button variant="secondary" onClick={() => exportDossier(user)}><Download size={16} /> Dossier PDF</Button>
-              {isFinancePartner && dossier.score >= 40 && !(store.loans || []).some((l) => l.farmerId === user.id && l.partnerId === currentUser.id && (l.status === 'Pré-approuvé' || l.status === 'En attente')) && (
+              {isFinancePartner && dossier.score >= 40 && !(store.loans || []).some((l) => l.farmerId === user.id && l.partnerId === currentUser.id && (l.status === 'Approuvé' || l.status === 'En attente')) && (
                 <Button onClick={() => {
-                  const existing = (store.loans || []).find((l) => l.farmerId === user.id && l.partnerId === currentUser.id);
-                  if (existing) { notify('Vous avez déjà pré-approuvé cet agriculteur.', 'info'); return; }
+                  const existing = (store.loans || []).find((l) => l.farmerId === user.id && l.partnerId === currentUser.id && (l.status === 'Approuvé' || l.status === 'En attente'));
+                  if (existing) { notify('Vous avez déjà approuvé cet agriculteur.', 'info'); return; }
+                  const maxAmount = Math.round(dossier.monthlyAverage * 6 * (dossier.score >= 80 ? 0.7 : dossier.score >= 60 ? 0.5 : 0.3));
                   const loan = {
                     id: uid('loan'),
                     createdAt: new Date().toISOString(),
                     farmerId: user.id,
                     farmerName: user.name,
                     partnerId: currentUser.id,
-                    amount: Math.round(dossier.monthlyAverage * 3),
-                    purpose: 'Pre-approbation crédit FresCoop (proposition partenaire)',
+                    amount: maxAmount,
+                    purpose: 'Proposition crédit FresCoop (initiative partenaire)',
                     months: 6,
-                    status: 'Pré-approuvé',
+                    status: 'Approuvé',
                     score: dossier.score,
                     grade: dossier.grade,
                     verificationCode: dossier.verificationCode,
@@ -6146,15 +6160,15 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                   actions.setLoans((items) => [loan, ...items]);
                   const notif = createAppNotification({
                     actor: currentUser,
-                    body: `${currentUser.name} vous pré-approuve ${formatMoney(loan.amount)} sur 6 mois.`,
+                    body: `${currentUser.name} vous approuve un crédit de ${formatMoney(maxAmount)} sur 6 mois. Consultez votre espace bancabilité.`,
                     path: '/bancabilite',
                     recipientId: user.id,
-                    title: 'Crédit pré-approuvé',
-                    type: 'loan-preapproval',
+                    title: 'Crédit approuvé',
+                    type: 'loan-decision',
                   });
                   actions.setNotifications((items) => [notif, ...items]);
-                  notify(`Pré-approbation envoyée à ${user.name}`);
-                }}><CheckCircle2 size={16} /> Pré-approuver</Button>
+                  notify(`Crédit approuvé pour ${user.name}`);
+                }}><CheckCircle2 size={16} /> Approuver un crédit</Button>
               )}
             </div>
           </article>

@@ -1803,8 +1803,27 @@ function normalizeStore(value) {
   const store = Object.fromEntries(Object.keys(emptyStore).map((key) => [key, Array.isArray(value?.[key]) ? value[key] : []]));
   store.users = ensureSeedAdmin(store.users);
   store.orders = dedupeOrders(store.orders);
+  store.loans = dedupeLoans(store.loans);
   store.notifications = normalizeNotifications(store.notifications);
   return store;
+}
+
+function dedupeLoans(loans) {
+  if (!Array.isArray(loans)) return [];
+  const seen = new Set();
+  return loans.filter((loan) => {
+    if (!loan || typeof loan !== 'object') return false;
+    const key = [
+      loan.farmerId || '',
+      loan.partnerId || '',
+      String(loan.amount || 0),
+      loan.status || '',
+      String(loan.date || '').slice(0, 10),
+    ].join('|');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function preservePrivateUserFields(incoming, current) {
