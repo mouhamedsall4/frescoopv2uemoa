@@ -314,7 +314,7 @@ const basePageMeta = {
     title: 'Pertes évitées, revenu additionnel, genre, CO2: des chiffres mesurables.',
     body: 'Les KPI du hackathon UEMOA sont calculés à partir des produits, transactions, commandes, dossiers et capteurs saisis.',
   },
-  '/bancabilité': {
+  '/bancabilite': {
     image: publicImages.impact,
     kicker: 'Inclusion financiere',
     title: 'Score de credit et dossier bancaire exportable.',
@@ -583,7 +583,7 @@ function App() {
         {accessAllowed && route.pathname === '/lots' && <LotIntelligencePage actions={actions} currentUser={currentUser} notify={notify} store={store} />}
         {accessAllowed && route.pathname === '/utilisateurs' && <UsersPage actions={actions} currentUser={currentUser} navigate={navigate} notify={notify} store={store} />}
         {accessAllowed && route.pathname === '/impact' && <ImpactPage stats={stats} store={store} />}
-        {accessAllowed && route.pathname === '/bancabilité' && <BancabilitéPage actions={actions} currentUser={currentUser} notify={notify} store={store} />}
+        {accessAllowed && route.pathname === '/bancabilite' && <BancabilitePage actions={actions} currentUser={currentUser} notify={notify} store={store} />}
         {accessAllowed && route.pathname === '/ussd' && <UssdSimulatorPage currentUser={currentUser} store={store} />}
         {accessAllowed && route.pathname === '/donnees' && <DataPage actions={actions} currentUser={currentUser} notify={notify} store={store} />}
         {accessAllowed && route.pathname === '/compte' && <AccountPage actions={actions} currentUser={currentUser} notify={notify} store={store} />}
@@ -1719,7 +1719,7 @@ function FrescoopRoleHomePage({ currentUser, navigate, store }) {
             <h2>Consultez les dossiers bancaires vérifiés des agriculteurs.</h2>
             <p>FresCoop genere des scores de bancabilité bases sur des données reelles de production, vente et livraison. Chaque dossier est verifiable par QR code et portable.</p>
             <div className="button-row">
-              <Button onClick={() => navigate('/bancabilité')}><Landmark size={18} /> Dossiers bancables</Button>
+              <Button onClick={() => navigate('/bancabilite')}><Landmark size={18} /> Dossiers bancables</Button>
               <Button variant="secondary" onClick={() => navigate('/impact')}><BarChart3 size={18} /> Indicateurs</Button>
             </div>
           </div>
@@ -1825,7 +1825,7 @@ function AdminHomePage({ navigate, stats, store }) {
           <h2>Rendre les agriculteurs bancables : le coeur de FresCoop.</h2>
           <p>Suivez combien de producteurs atteignent un score suffisant pour accéder au credit. Chaque vente, preuve et livraison les rapproche du financement.</p>
           <div className="button-row">
-            <Button onClick={() => navigate('/bancabilité')}><Landmark size={18} /> Vue bancabilité</Button>
+            <Button onClick={() => navigate('/bancabilite')}><Landmark size={18} /> Vue bancabilité</Button>
             <Button variant="secondary" onClick={() => navigate('/impact')}><BarChart3 size={18} /> Impact</Button>
             <Button variant="secondary" onClick={() => downloadHtml('rapport-uemoa-frescoop.html', renderBusinessReportHtml(store))}><Download size={18} /> Rapport UEMOA</Button>
             <Button variant="secondary" onClick={() => navigate('/donnees')}><Database size={18} /> Export</Button>
@@ -1955,7 +1955,7 @@ function SellerHomePage({ currentUser, navigate, store }) {
           <h2>Chaque vente et chaque preuve vous rapprochent du credit.</h2>
           <p>Vendez, livrez, accumulez des preuves : FresCoop transforme votre activité reelle en score de bancabilité reconnu par les banques et SFD de la zone UEMOA.</p>
           <div className="button-row">
-            <Button onClick={() => navigate('/bancabilité')}><Landmark size={18} /> Mon score et dossier</Button>
+            <Button onClick={() => navigate('/bancabilite')}><Landmark size={18} /> Mon score et dossier</Button>
             <Button variant="secondary" onClick={() => navigate('/produits')}><Plus size={18} /> Ajouter produit</Button>
             <Button variant="secondary" onClick={() => navigate('/commandes')}><ShoppingCart size={18} /> Commandes</Button>
           </div>
@@ -2040,8 +2040,8 @@ function SellerHomePage({ currentUser, navigate, store }) {
               <strong>Dossier bancaire FresCoop</strong>
               <p>{bancabiliteScore >= 75 ? "Votre profil est eligible à une demande de credit. Exportez votre dossier." : "Continuez à vendre et soumettre des preuves pour devenir bancable."}</p>
               <div className="button-row">
-                <Button variant="secondary" onClick={() => navigate('/bancabilité')}><FileCheck2 size={16} /> Voir mon dossier</Button>
-                {bancabiliteScore >= 60 && <Button onClick={() => navigate('/bancabilité')}><Landmark size={16} /> Demander un credit</Button>}
+                <Button variant="secondary" onClick={() => navigate('/bancabilite')}><FileCheck2 size={16} /> Voir mon dossier</Button>
+                {bancabiliteScore >= 60 && <Button onClick={() => navigate('/bancabilite')}><Landmark size={16} /> Demander un credit</Button>}
               </div>
             </div>
           </div>
@@ -5686,7 +5686,7 @@ function estimateShelfLife(key) {
   return 10;
 }
 
-function BancabilitéPage({ actions, currentUser, notify, store }) {
+function BancabilitePage({ actions, currentUser, notify, store }) {
   const isFinancePartner = currentUser.role === 'partenaire';
   const isAgriculteur = currentUser.role === 'agriculteur';
   const [filter, setFilter] = useState('all');
@@ -5751,7 +5751,7 @@ function BancabilitéPage({ actions, currentUser, notify, store }) {
     const notifs = partners.map((partner) => createAppNotification({
       actor: currentUser,
       body: `${currentUser.name} sollicite ${formatMoney(loan.amount)} sur ${loan.months} mois. Score: ${dossier.score}/100 (${dossier.grade}).`,
-      path: '/bancabilité',
+      path: '/bancabilite',
       recipientId: partner.id,
       title: 'Nouvelle demande de prêt',
       type: 'loan-request',
@@ -5776,7 +5776,7 @@ function BancabilitéPage({ actions, currentUser, notify, store }) {
       const notif = createAppNotification({
         actor: currentUser,
         body: `Votre demande de ${formatMoney(loan.amount)} a été ${decision.toLowerCase()}.`,
-        path: '/bancabilité',
+        path: '/bancabilite',
         recipientId: farmer.id,
         title: `Demande ${decision}`,
         type: 'loan-decision',
@@ -5809,7 +5809,12 @@ function BancabilitéPage({ actions, currentUser, notify, store }) {
 
       {isAgriculteur && (() => {
         const myDossier = buildBancabiliteDossier(currentUser, store);
-        const maxEligible = Math.round(myDossier.monthlyAverage * (myDossier.score >= 75 ? 6 : myDossier.score >= 60 ? 4 : myDossier.score >= 40 ? 2 : 0));
+        const scoreFactor = myDossier.score >= 80 ? 0.7 : myDossier.score >= 60 ? 0.5 : myDossier.score >= 40 ? 0.3 : 0;
+        const monthsFactor = Number(loanForm.months) / 6;
+        const regularityBonus = myDossier.transactionsCount >= 10 ? 1.2 : myDossier.transactionsCount >= 5 ? 1.1 : 1.0;
+        const paydunyaBonus = myDossier.paydunyaCount >= 3 ? 1.15 : 1.0;
+        const maxEligible = Math.round(myDossier.monthlyAverage * 6 * scoreFactor * regularityBonus * paydunyaBonus);
+        const suggestedForDuration = Math.round(maxEligible * monthsFactor);
         return (
           <section className="panel bancabilite-my-score">
             <div className="bancabilite-score">
@@ -5826,10 +5831,14 @@ function BancabilitéPage({ actions, currentUser, notify, store }) {
               <div><em>Revenu mensuel moyen</em><b>{formatMoney(myDossier.monthlyAverage)}</b></div>
               <div><em>Transactions vérifiées</em><b>{myDossier.transactionsCount}</b></div>
               <div><em>Paiements PayDunya</em><b>{myDossier.paydunyaCount}</b></div>
-              <div><em>Montant eligible estime</em><b>{maxEligible > 0 ? formatMoney(maxEligible) : 'Score insuffisant'}</b></div>
+              <div><em>Montant max éligible (IA)</em><b>{maxEligible > 0 ? formatMoney(maxEligible) : 'Score insuffisant'}</b></div>
             </div>
+            {maxEligible > 0 && (
+              <NoticeCard icon={Activity} title="Calcul IA du montant éligible" body={`Basé sur : revenu moyen (${formatMoney(myDossier.monthlyAverage)}/mois) × facteur score (${(scoreFactor * 100).toFixed(0)}%) × régularité (×${regularityBonus.toFixed(2)}) × bonus PayDunya (×${paydunyaBonus.toFixed(2)}). Montant max : ${formatMoney(maxEligible)} sur 6 mois.`} />
+            )}
             <div className="button-row">
               <Button variant="secondary" onClick={() => exportDossier(currentUser)}><Download size={16} /> Exporter mon dossier (PDF)</Button>
+              {maxEligible > 0 && <Button onClick={() => { setShowLoanForm(true); updateForm(setLoanForm, 'amount', String(suggestedForDuration)); }}><Landmark size={16} /> Demander un crédit ({formatMoney(suggestedForDuration)})</Button>}
             </div>
           </section>
         );
@@ -5845,7 +5854,7 @@ function BancabilitéPage({ actions, currentUser, notify, store }) {
           {showLoanForm && (
             <form className="stack-form" onSubmit={submitLoanRequest}>
               <div className="field-row">
-                <Field label="Montant souhaité (FCFA)" required><input type="number" min="0" value={loanForm.amount} onChange={(event) => updateForm(setLoanForm, 'amount', event.target.value)} /></Field>
+                <Field label="Montant souhaité (FCFA) — suggestion IA pré-remplie" required><input type="number" min="0" value={loanForm.amount} onChange={(event) => updateForm(setLoanForm, 'amount', event.target.value)} /></Field>
                 <Field label="Durée (mois)" required>
                   <select value={loanForm.months} onChange={(event) => updateForm(setLoanForm, 'months', event.target.value)}>
                     <option value="3">3 mois</option>
@@ -5980,7 +5989,7 @@ function BancabilitéPage({ actions, currentUser, notify, store }) {
                   const notif = createAppNotification({
                     actor: currentUser,
                     body: `${currentUser.name} vous pré-approuve ${formatMoney(loan.amount)} sur 6 mois.`,
-                    path: '/bancabilité',
+                    path: '/bancabilite',
                     recipientId: user.id,
                     title: 'Crédit pré-approuvé',
                     type: 'loan-preapproval',
@@ -7597,7 +7606,7 @@ function PitchPage({ navigate, store }) {
           <Button variant="secondary" onClick={() => navigate('/login')}>Lancer la demo</Button>
           <Button variant="secondary" onClick={() => navigate('/impact')}>Voir impact</Button>
           <Button variant="secondary" onClick={() => navigate('/lots')}>Explorer les lots</Button>
-          <Button variant="secondary" onClick={() => navigate('/bancabilité')}>Bancabilité</Button>
+          <Button variant="secondary" onClick={() => navigate('/bancabilite')}>Bancabilité</Button>
         </div>
       </section>
     </PageFrame>
@@ -7609,7 +7618,7 @@ function AppFooter({ currentUser, navigate }) {
     { label: 'Accueil', path: getRoleHomePath(currentUser.role) },
     { label: 'Marche', path: '/marche' },
     { label: 'Commandes', path: '/commandes' },
-    { label: 'Bancabilité', path: '/bancabilité' },
+    { label: 'Bancabilité', path: '/bancabilite' },
     { label: 'Mon compte', path: '/compte' },
   ].filter((item) => canAccessPath(currentUser.role, item.path));
 
@@ -9442,12 +9451,12 @@ function emptyLotForm() {
 
 function getPrimaryNavLinks(role) {
   const links = {
-    admin: ['/', '/utilisateurs', '/bancabilité', '/impact'],
-    agriculteur: ['/', '/produits', '/commandes', '/bancabilité'],
+    admin: ['/', '/utilisateurs', '/bancabilite', '/impact'],
+    agriculteur: ['/', '/produits', '/commandes', '/bancabilite'],
     agentTerrain: ['/', '/verification', '/commandes', '/operations'],
     client: ['/', '/marche', '/commandes'],
     acheteurB2B: ['/', '/marche', '/lots', '/commandes'],
-    partenaire: ['/', '/bancabilité', '/impact'],
+    partenaire: ['/', '/bancabilite', '/impact'],
   }[role] || ['/'];
 
   return links.map(navItemByPath).filter(Boolean);
@@ -9462,7 +9471,7 @@ function getMenuLinks(role) {
       '/produits',
       '/lots',
       '/operations',
-      '/bancabilité',
+      '/bancabilite',
       '/impact',
       '/ussd',
       '/donnees',
@@ -9475,7 +9484,7 @@ function getMenuLinks(role) {
       '/marche',
       '/commandes',
       '/lots',
-      '/bancabilité',
+      '/bancabilite',
       '/ussd',
       '/compte',
     ],
@@ -9507,7 +9516,7 @@ function getMenuLinks(role) {
     ],
     partenaire: [
       '/',
-      '/bancabilité',
+      '/bancabilite',
       '/impact',
       '/lots',
       '/compte',
@@ -9522,11 +9531,11 @@ function getMenuGroups(role, menuLinks) {
     admin: [
       { title: 'Pilotage', paths: ['/', '/utilisateurs', '/compte'] },
       { title: 'Activité & scoring', paths: ['/verification', '/produits', '/lots', '/operations'] },
-      { title: 'Financement & inclusion', paths: ['/bancabilité', '/impact', '/ussd', '/donnees'] },
+      { title: 'Financement & inclusion', paths: ['/bancabilite', '/impact', '/ussd', '/donnees'] },
     ],
     agriculteur: [
       { title: 'Mon activité', paths: ['/', '/produits', '/marche', '/commandes', '/lots', '/compte'] },
-      { title: 'Mon financement', paths: ['/verification', '/bancabilité', '/ussd'] },
+      { title: 'Mon financement', paths: ['/verification', '/bancabilite', '/ussd'] },
     ],
     agentTerrain: [
       { title: 'Terrain', paths: ['/', '/verification', '/commandes', '/produits', '/operations', '/lots', '/compte'] },
@@ -9539,7 +9548,7 @@ function getMenuGroups(role, menuLinks) {
       { title: 'Sourcing B2B', paths: ['/', '/marche', '/lots', '/commandes', '/paiement', '/compte'] },
     ],
     partenaire: [
-      { title: 'Finance & scoring', paths: ['/', '/bancabilité', '/impact', '/lots', '/compte'] },
+      { title: 'Finance & scoring', paths: ['/', '/bancabilite', '/impact', '/lots', '/compte'] },
       { title: 'Outils terrain', paths: ['/ussd'] },
     ],
   };
@@ -9579,7 +9588,7 @@ function navItemByPath(path) {
     '/operations': { path: '/operations', label: 'Opérations', icon: Warehouse, description: 'Hubs, stockage et logistique' },
     '/utilisateurs': { path: '/utilisateurs', label: 'Utilisateurs', icon: Users, description: 'Comptes, rôles et statuts' },
     '/impact': { path: '/impact', label: 'Impact', icon: BarChart3, description: 'KPI filières UEMOA: pertes évitées, revenu +, genre, CO2' },
-    '/bancabilité': { path: '/bancabilité', label: 'Bancabilité', icon: Landmark, description: 'Score crédit et dossier finance exportable' },
+    '/bancabilite': { path: '/bancabilite', label: 'Bancabilité', icon: Landmark, description: 'Score crédit et dossier finance exportable' },
     '/ussd': { path: '/ussd', label: 'USSD', icon: PhoneCall, description: 'Accès *384*FRES# pour téléphones sans Internet' },
     '/donnees': { path: '/donnees', label: 'Données', icon: Database, description: 'Export, import et maintenance' },
     '/compte': { path: '/compte', label: 'Compte', icon: UserCheck, description: 'Profil et coordonnées' },
