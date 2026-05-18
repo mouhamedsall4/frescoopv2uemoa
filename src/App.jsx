@@ -472,12 +472,10 @@ function App() {
   }, [currentUser, route.pathname]);
 
   function navigate(path, options = {}) {
-    const nextUrl = new URL(path, window.location.href);
-    const samePage = nextUrl.pathname === route.pathname;
     window.history.pushState({}, '', path);
     setRoute(getCurrentRoute());
     setMenuOpen(false);
-    if (!options.preserveScroll && !samePage && !nextUrl.search) {
+    if (!options.preserveScroll) {
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
   }
@@ -5214,7 +5212,7 @@ function UsersPage({ actions, currentUser, navigate, notify, store }) {
           body: status === 'Actif'
             ? `Votre compte ${roleLabel(user.role)} est maintenant actif. Vous pouvez vous connecter et utiliser FresCoop.`
             : `Votre demande de compte ${roleLabel(user.role)} a été rejetée. Contactez un administrateur FresCoop pour plus d'informations.`,
-          path: '/',
+          path: status === 'Actif' ? '/verification' : '/compte',
           recipientId: user.id,
           title: status === 'Actif' ? `Compte ${roleLabel(user.role)} approuve` : `Inscription ${roleLabel(user.role)} rejetee`,
           type: 'account-status',
@@ -8521,6 +8519,8 @@ function getNotificationActionLabel(item) {
   if (item.type === 'approval_request') return 'Valider le compte';
   if (item.type === 'account-status') return 'Voir mon espace';
   if (item.type === 'survey-lead') return 'Voir les prospects';
+  if (item.type === 'loan-request') return 'Instruire la demande';
+  if (item.type === 'loan-decision') return 'Voir mon dossier';
   return item.path ? 'Ouvrir' : 'Marquer comme lu';
 }
 
