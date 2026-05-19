@@ -881,7 +881,6 @@ function PublicSitePage({ navigate, path }) {
     ['problème', 'Problème'],
     ['solution', 'Solution'],
     ['comment', 'Comment ça marche'],
-    ['garanties', 'Garanties'],
     ['modele', 'Modèle économique'],
     ['impact', 'Impact'],
     ['contact', 'Contact'],
