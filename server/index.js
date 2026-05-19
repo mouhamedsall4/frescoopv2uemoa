@@ -154,6 +154,7 @@ if (mongoUri) {
 
 // In-memory cache for resilience when filesystem is ephemeral
 let memoryStoreCache = null;
+let storeVersion = Date.now();
 
 // ============================================================================
 // CLOUDINARY
@@ -1509,7 +1510,14 @@ await mkdir(backupsDir, { recursive: true });
 
 async function handleStore(request, response) {
   if (request.method === 'GET') {
+    const storeUrl = new URL(request.url || '/', `http://${request.headers.host}`);
+    const clientVersion = storeUrl.searchParams.get('v');
+    if (clientVersion && Number(clientVersion) >= storeVersion) {
+      sendJson(response, 304, null);
+      return;
+    }
     const store = memoryStoreCache || await readStore();
+    response.setHeader('X-Store-Version', String(storeVersion));
     sendJson(response, 200, sanitizeStoreForClient(store));
     return;
   }
@@ -1624,7 +1632,8 @@ async function handleStore(request, response) {
     } catch {}
 
     await writeStore(incoming);
-    sendJson(response, 200, { ok: true });
+    storeVersion = Date.now();
+    sendJson(response, 200, { ok: true, v: storeVersion });
     return;
   }
 
@@ -1807,6 +1816,7 @@ async function readStore() {
 
 async function writeStore(data) {
   memoryStoreCache = data;
+  storeVersion = Date.now();
   if (mongoDb) {
     await mongoDb.collection('store').replaceOne({ _id: 'main' }, { _id: 'main', ...data }, { upsert: true });
     return;
@@ -1993,6 +2003,11 @@ function readBody(request) {
 }
 
 function sendJson(response, statusCode, payload) {
+  if (statusCode === 304) {
+    response.writeHead(304);
+    response.end();
+    return;
+  }
   response.writeHead(statusCode, {
     'Content-Type': 'application/json;charset=utf-8',
     'Cache-Control': 'no-store',

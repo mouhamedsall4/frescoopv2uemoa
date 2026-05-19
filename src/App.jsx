@@ -8539,6 +8539,7 @@ function useProductionStore() {
   });
   const loadedRemote = useRef(false);
   const lastSyncedSerialized = useRef('');
+  const remoteVersion = useRef(0);
   // Flag set à true dès qu'une mutation localé est en cours (entre le setState
   // et la fin du PUT réseau). Pendant ce temps, le polling NE remplace PAS le
   // store local, pour éviter d'écraser la mutation (race condition).
@@ -8559,32 +8560,32 @@ function useProductionStore() {
     let cancelled = false;
 
     async function syncFromRemote() {
-      // Mutation localé en cours → on attend qu'elle se termine
       if (pendingMutation.current) return;
       try {
-        const response = await fetch(API_BASE + '/api/store');
-        if (!response.ok) return;
-        const remote = await response.json();
-        if (cancelled || !remote) return;
-        // Double-check après le await (une mutation a pu démarrer entre-temps)
-        if (pendingMutation.current) return;
-        const normalized = normalizeStore(remote);
-        const serialized = JSON.stringify(normalized);
-        if (serialized === lastSyncedSerialized.current) {
+        const vParam = remoteVersion.current ? `?v=${remoteVersion.current}` : '';
+        const response = await fetch(API_BASE + '/api/store' + vParam);
+        if (response.status === 304) {
           if (!loadedRemote.current) loadedRemote.current = true;
           return;
         }
-        lastSyncedSerialized.current = serialized;
+        if (!response.ok) return;
+        const serverVersion = response.headers.get('X-Store-Version');
+        if (serverVersion) remoteVersion.current = Number(serverVersion);
+        const remote = await response.json();
+        if (cancelled || !remote) return;
+        if (pendingMutation.current) return;
+        const normalized = normalizeStore(remote);
+        lastSyncedSerialized.current = JSON.stringify(normalized);
         setStoreRaw(normalized);
       } catch {
-        /* offline ou erreur */
+        /* offline */
       } finally {
         if (!loadedRemote.current) loadedRemote.current = true;
       }
     }
 
     syncFromRemote();
-    const id = setInterval(syncFromRemote, 3000);
+    const id = setInterval(syncFromRemote, 6000);
     const onVisibility = () => {
       if (document.visibilityState === 'visible') syncFromRemote();
     };
@@ -8611,33 +8612,45 @@ function useProductionStore() {
   }, []);
 
   const quotaWarnedRef = useRef(false);
-  useEffect(() => {
-    const payload = JSON.stringify(store);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, payload);
-    } catch (error) {
-      if (!quotaWarnedRef.current && (error.name === 'QuotaExceededError' || error.code === 22)) {
-        quotaWarnedRef.current = true;
-        console.error('[FresCoop] localStorage saturé — les images sont trop volumineuses. Veuillez en supprimer.');
-        try {
-          const lightStore = {
-            ...store,
-            products: (store.products || []).map((p) => ({ ...p, image: p.image ? { id: p.image.id, name: p.image.name } : null, images: [] })),
-          };
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lightStore));
-        } catch {}
-      }
-    }
-    if (!loadedRemote.current) return;
-    // Si le store local est identique à la dernière version synchronisée remote,
-    // ce changement vient du polling — on NE fait PAS de PUT.
-    if (payload === lastSyncedSerialized.current) return;
+  const putTimerRef = useRef(null);
+  const localStorageTimerRef = useRef(null);
+  const storeRef = useRef(store);
+  storeRef.current = store;
 
-    // Mutation localé détectée → verrouiller le polling et PUT immédiat
+  useEffect(() => {
+    // Debounce localStorage write (non-blocking)
+    clearTimeout(localStorageTimerRef.current);
+    localStorageTimerRef.current = setTimeout(() => {
+      try {
+        const payload = JSON.stringify(storeRef.current);
+        window.localStorage.setItem(STORAGE_KEY, payload);
+      } catch (error) {
+        if (!quotaWarnedRef.current && (error.name === 'QuotaExceededError' || error.code === 22)) {
+          quotaWarnedRef.current = true;
+          try {
+            const lightStore = {
+              ...storeRef.current,
+              products: (storeRef.current.products || []).map((p) => ({ ...p, image: p.image ? { id: p.image.id, name: p.image.name } : null, images: [] })),
+            };
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lightStore));
+          } catch {}
+        }
+      }
+    }, 500);
+
+    if (!loadedRemote.current) return;
+
+    // Debounce PUT to server (coalesce rapid mutations)
+    clearTimeout(putTimerRef.current);
     pendingMutation.current = true;
     const useForce = forceNextPut.current;
     forceNextPut.current = false;
-    const handle = setTimeout(async () => {
+    putTimerRef.current = setTimeout(async () => {
+      const payload = JSON.stringify(storeRef.current);
+      if (payload === lastSyncedSerialized.current) {
+        pendingMutation.current = false;
+        return;
+      }
       try {
         const authHeaders = { 'Content-Type': 'application/json' };
         const savedToken = sessionStorage.getItem('frescoop.auth.token');
@@ -8649,8 +8662,8 @@ function useProductionStore() {
         });
         if (res.ok) {
           lastSyncedSerialized.current = payload;
+          try { const d = await res.json(); if (d.v) remoteVersion.current = d.v; } catch {}
         } else if (res.status === 409) {
-          // Le serveur a refusé (anti-régression) : on re-sync pour récupérer l'état réel
           try {
             const freshRes = await fetch(API_BASE + '/api/store');
             if (freshRes.ok) {
@@ -8660,19 +8673,15 @@ function useProductionStore() {
               setStoreRaw(normalized);
             }
           } catch {}
-          try {
-            const body = await res.json();
-            console.warn('[Store] Mutation refusée par le serveur:', body?.error);
-          } catch {}
         }
       } catch {
-        /* ignore */
+        /* offline */
       } finally {
         pendingMutation.current = false;
       }
-    }, 250);
+    }, 800);
     return () => {
-      clearTimeout(handle);
+      clearTimeout(putTimerRef.current);
       pendingMutation.current = false;
     };
   }, [store]);
