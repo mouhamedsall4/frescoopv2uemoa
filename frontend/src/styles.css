@@ -9745,6 +9745,225 @@ label, .field-label {
 }
 
 /* ==========================================================================
+   Garanties & Remboursement Section
+   ========================================================================== */
+
+.garanties-section {
+  background: linear-gradient(180deg, #ffffff 0%, #f8faf9 100%);
+  padding-top: 80px !important;
+  padding-bottom: 80px !important;
+}
+
+.garanties-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.garantie-card {
+  display: flex;
+  gap: 20px;
+  padding: 28px;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.garantie-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.07);
+}
+
+.garantie-card__number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: white;
+}
+
+.garantie-card--1 .garantie-card__number { background: linear-gradient(135deg, #1f835d, #34d399); }
+.garantie-card--2 .garantie-card__number { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+.garantie-card--3 .garantie-card__number { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+.garantie-card--4 .garantie-card__number { background: linear-gradient(135deg, #d97706, #fbbf24); }
+
+.garantie-card__content {
+  flex: 1;
+}
+
+.garantie-card__content h3 {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 0 0 4px;
+}
+
+.garantie-card__subtitle {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 16px;
+  font-weight: 600;
+}
+
+.garantie-card__flow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.garantie-flow-step {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  color: var(--ink);
+}
+
+.garantie-flow-step.highlight {
+  background: rgba(31, 131, 93, 0.1);
+  color: var(--green-700);
+}
+
+.garantie-flow-arrow {
+  color: var(--green-700);
+  opacity: 0.5;
+  display: flex;
+}
+
+.garantie-card__key {
+  font-size: 0.82rem;
+  color: var(--green-700);
+  font-weight: 700;
+  margin: 0;
+  padding: 8px 12px;
+  background: rgba(31, 131, 93, 0.05);
+  border-radius: 8px;
+  border-left: 3px solid var(--green-700);
+}
+
+.garantie-taux-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.garantie-taux-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  background: #f9fafb;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.garantie-taux-range {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.garantie-taux-pct {
+  font-size: 1.3rem;
+  font-weight: 900;
+}
+
+.garantie-taux-pct.pause { color: #16a34a; }
+.garantie-taux-pct.light { color: #2563eb; }
+.garantie-taux-pct.normal { color: #d97706; }
+.garantie-taux-pct.fast { color: #dc2626; }
+
+.garantie-taux-item em {
+  font-style: normal;
+  font-size: 0.68rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.garantie-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.garantie-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--ink);
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.garantie-list li svg {
+  flex-shrink: 0;
+  color: var(--green-700);
+  margin-top: 1px;
+}
+
+.garanties-result {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.garanties-result__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 24px 16px;
+  background: linear-gradient(135deg, #0a3d2a, #1a5c3a);
+  border-radius: 14px;
+  text-align: center;
+}
+
+.garanties-result__item strong {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.garanties-result__item span {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #34d399;
+}
+
+.garanties-result__item em {
+  font-style: normal;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .garanties-grid { grid-template-columns: 1fr; }
+  .garanties-result { grid-template-columns: 1fr; }
+  .garantie-taux-grid { grid-template-columns: repeat(2, 1fr); }
+  .garantie-card__flow { flex-direction: column; align-items: flex-start; }
+  .garantie-flow-arrow { transform: rotate(90deg); }
+}
+
+/* ==========================================================================
    Impact Section
    ========================================================================== */
 
