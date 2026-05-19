@@ -58,6 +58,52 @@ npm run migrate:atlas -- backend/data/store.json
 npm run build
 ```
 
+## Deploiement Render + Vercel
+
+### Backend sur Render
+
+Le fichier `render.yaml` de la racine deploie l'API Node depuis `backend`.
+
+1. Poussez la branche `master` sur GitHub.
+2. Dans Render, creez un nouveau Blueprint depuis le repo GitHub.
+3. Gardez le chemin Blueprint par defaut: `render.yaml`.
+4. Renseignez au minimum:
+
+```bash
+MONGODB_URI=mongodb+srv://...
+TOKEN_SECRET=une-longue-cle-aleatoire-stable
+CORS_ORIGINS=https://votre-projet.vercel.app
+```
+
+Variables optionnelles si les modules correspondants sont utilises: `PAYDUNYA_*`, `CLOUDINARY_*`, `OPENROUTER_*`, `FRESCOOP_*_PASSWORD_HASH`.
+
+L'API expose le healthcheck sur `/api/health`. Avec le nom de service actuel, l'URL attendue est:
+
+```bash
+https://frescoop-api.onrender.com/api/health
+```
+
+### Frontend sur Vercel
+
+Le frontend doit etre importe comme projet Vercel separe avec `frontend` comme Root Directory.
+
+Parametres Vercel:
+
+```bash
+Root Directory: frontend
+Framework Preset: Vite
+Build Command: npm run build
+Output Directory: dist
+```
+
+Ne definissez pas `VITE_API_URL` si vous voulez utiliser le proxy `/api` configure dans `frontend/vercel.json`. Le rewrite envoie les appels API vers:
+
+```bash
+https://frescoop-api.onrender.com
+```
+
+Si Render genere une autre URL de service, mettez a jour la destination `/api/:path*` dans `frontend/vercel.json`, puis redeployez Vercel.
+
 ## Ce que montre la démo UEMOA
 
 - Cockpit exécutif pour pitcher au jury.

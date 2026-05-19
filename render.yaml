@@ -11,11 +11,25 @@ services:
         value: production
       - key: PORT
         value: "10000"
+      - key: MONGODB_DB
+        value: frescoop
+      - key: FRESCOOP_SEED_MODE
+        value: none
       - key: CORS_ORIGINS
         sync: false
       - key: MONGODB_URI
         sync: false
       - key: TOKEN_SECRET
+        sync: false
+      - key: FRESCOOP_ADMIN_EMAILS
+        sync: false
+      - key: FRESCOOP_ADMIN_PASSWORD_HASH
+        sync: false
+      - key: FRESCOOP_DEMO_PASSWORD_HASH
+        sync: false
+      - key: FRESCOOP_MOBILE_DEMO_PASSWORD_HASH
+        sync: false
+      - key: PAYDUNYA_MODE
         sync: false
       - key: PAYDUNYA_MASTER_KEY
         sync: false
@@ -23,10 +37,16 @@ services:
         sync: false
       - key: PAYDUNYA_TOKEN
         sync: false
+      - key: PAYDUNYA_STORE_NAME
+        sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
         sync: false
       - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODELS
         sync: false
     healthCheckPath: /api/health
