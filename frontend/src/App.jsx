@@ -418,6 +418,11 @@ const imageStories = [
 
 const publicSitePaths = [
   '/public',
+  '/probleme',
+  '/solution',
+  '/comment',
+  '/modele',
+  '/impact-page',
   '/contact',
   '/sondage',
   '/questionnaire',
@@ -757,7 +762,7 @@ function VerifyReceiptPage({ navigate, route, store }) {
 }
 
 function ModelSimulator() {
-  const [farmers, setFarmers] = useState(1000);
+  const [farmers, setFarmers] = useState(100);
   const [sfds, setSfds] = useState(3);
   const [avgTransaction, setAvgTransaction] = useState(25000);
 
@@ -859,83 +864,69 @@ function ModelSimulator() {
   );
 }
 
-function PublicSitePage({ navigate, path }) {
-  useEffect(() => {
-    const sectionMap = { '/contact': 'contact' };
-    const sectionId = sectionMap[path];
-    if (sectionId) {
-      setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' }), 120);
-    }
-  }, [path]);
-
+function PublicSiteNav({ navigate, path }) {
   const [publicMenuOpen, setPublicMenuOpen] = useState(false);
-  const revealRef = useScrollReveal();
-
-  function scrollTo(id) {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-    setPublicMenuOpen(false);
-  }
 
   const navItems = [
-    ['accueil', 'Accueil'],
-    ['problème', 'Problème'],
-    ['solution', 'Solution'],
-    ['comment', 'Comment ça marche'],
-    ['modele', 'Modèle économique'],
-    ['impact', 'Impact'],
-    ['contact', 'Contact'],
-  ];
-
-  const solutionBlocs = [
-    { Icon: Activity, title: 'Captation automatique', desc: 'Chaque vente, chaque livraison, chaque paiement génère des données de scoring sans effort supplémentaire.' },
-    { Icon: ShieldCheck, title: 'Scoring intelligent', desc: 'Un score de 0 à 100 calculé en temps réel à partir de votre activité réelle. Pas de déclarations, des preuves.' },
-    { Icon: FileCheck2, title: 'Dossier bancaire portable', desc: 'Un PDF vérifiable par QR code, présentable à toute banque ou SFD. Vous gardez le contrôle.' },
-    { Icon: Landmark, title: 'Accès au crédit', desc: "En 3 mois d'activité, passez d'invisible à finançable. Demande de crédit en 1 clic." },
-    { Icon: UserCheck, title: 'Vérification par agents terrain', desc: 'Des agents spécialisés valident votre identité et accompagnent votre progression.' },
-  ];
-
-  const parcoursSteps = [
-    "Inscription et vérification d'identité (CNI)",
-    'Publication de vos produits sur le marché',
-    "Réception de commandes d'acheteurs",
-    'Paiement confirmé via PayDunya',
-    'Score de bancabilité qui monte',
-    'Dossier de crédit exportable',
-    'Présentation à une banque ou SFD',
-    'Obtention du microcrédit',
+    ['/', 'Accueil'],
+    ['/probleme', 'Problème'],
+    ['/solution', 'Solution'],
+    ['/comment', 'Comment ça marche'],
+    ['/modele', 'Modèle économique'],
+    ['/impact-page', 'Impact'],
+    ['/contact', 'Contact'],
   ];
 
   return (
-    <main className="public-site" ref={revealRef}>
-      <nav className="public-nav">
-        <button className="brand" type="button" onClick={() => scrollTo('accueil')}><span>F</span><strong>FresCoop</strong></button>
-        <div className="public-nav-links">
-          {navItems.map(([id, label]) => <button key={id} type="button" onClick={() => scrollTo(id)}>{label}</button>)}
-        </div>
-        <button className="public-nav-toggle" type="button" onClick={() => setPublicMenuOpen((open) => !open)} aria-expanded={publicMenuOpen} aria-label="Ouvrir la navigation">
-          {publicMenuOpen ? <X size={18} /> : <Menu size={18} />}
-          <span>Menu</span>
-        </button>
-        <div className="public-nav-auth">
-          <Button variant="secondary" onClick={() => navigate('/sondage')}><FileText size={17} /> Questionnaire</Button>
-          <Button variant="secondary" onClick={() => navigate('/login')}><LockKeyhole size={17} /> Se connecter</Button>
-          <Button onClick={() => navigate('/login')}><UserCheck size={17} /> S'inscrire</Button>
-        </div>
-        {publicMenuOpen && (
-          <div className="public-nav-mobile">
-            <div className="public-nav-mobile-links">
-              {navItems.map(([id, label]) => <button key={id} type="button" onClick={() => scrollTo(id)}>{label}</button>)}
-            </div>
-            <div className="public-nav-mobile-auth">
-              <Button variant="secondary" onClick={() => navigate('/sondage')}><FileText size={17} /> Questionnaire</Button>
-              <Button variant="secondary" onClick={() => navigate('/login')}><LockKeyhole size={17} /> Se connecter</Button>
-              <Button onClick={() => navigate('/login')}><UserCheck size={17} /> S'inscrire</Button>
-            </div>
+    <nav className="public-nav">
+      <button className="brand" type="button" onClick={() => navigate('/')}><span>F</span><strong>FresCoop</strong></button>
+      <div className="public-nav-links">
+        {navItems.map(([href, label]) => <button key={href} type="button" className={path === href ? 'active' : ''} onClick={() => navigate(href)}>{label}</button>)}
+      </div>
+      <button className="public-nav-toggle" type="button" onClick={() => setPublicMenuOpen((open) => !open)} aria-expanded={publicMenuOpen} aria-label="Ouvrir la navigation">
+        {publicMenuOpen ? <X size={18} /> : <Menu size={18} />}
+        <span>Menu</span>
+      </button>
+      <div className="public-nav-auth">
+        <Button variant="secondary" onClick={() => navigate('/sondage')}><FileText size={17} /> Questionnaire</Button>
+        <Button variant="secondary" onClick={() => navigate('/login')}><LockKeyhole size={17} /> Se connecter</Button>
+        <Button onClick={() => navigate('/login')}><UserCheck size={17} /> S'inscrire</Button>
+      </div>
+      {publicMenuOpen && (
+        <div className="public-nav-mobile">
+          <div className="public-nav-mobile-links">
+            {navItems.map(([href, label]) => <button key={href} type="button" className={path === href ? 'active' : ''} onClick={() => navigate(href)}>{label}</button>)}
           </div>
-        )}
-      </nav>
+          <div className="public-nav-mobile-auth">
+            <Button variant="secondary" onClick={() => navigate('/sondage')}><FileText size={17} /> Questionnaire</Button>
+            <Button variant="secondary" onClick={() => navigate('/login')}><LockKeyhole size={17} /> Se connecter</Button>
+            <Button onClick={() => navigate('/login')}><UserCheck size={17} /> S'inscrire</Button>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+}
 
-      <section id="accueil" className="public-hero" style={{ backgroundImage: `linear-gradient(90deg, rgba(5,23,18,0.92), rgba(5,23,18,0.28)), url("${publicImages.hero}")` }}>
+function PublicSiteFooter({ navigate }) {
+  return (
+    <footer id="contact" className="public-footer">
+      <div>
+        <div className="brand big"><span>F</span><strong>FresCoop</strong></div>
+        <p>FresCoop rend chaque agriculteur visible, vérifiable et finançable grâce à la preuve économique portable.</p>
+        <p>Contact : <strong>contact@frescoop.sn</strong></p>
+        <p style={{ fontSize: '0.78rem', opacity: 0.7 }}>Hackathon Filières Agricoles GIM-UEMOA 2026 — Point 4 : Accès au financement agricole</p>
+      </div>
+    </footer>
+  );
+}
+
+function PublicPageHero({ navigate }) {
+  const revealRef = useScrollReveal();
+  return (
+    <main className="public-site public-site--page" ref={revealRef}>
+      <PublicSiteNav navigate={navigate} path="/" />
+      <section className="public-hero" style={{ backgroundImage: `linear-gradient(90deg, rgba(5,23,18,0.92), rgba(5,23,18,0.28)), url("${publicImages.hero}")` }}>
         <div>
           <span className="eyebrow">Hackathon Filières Agricoles GIM-UEMOA 2026 — Point 4 : Accès au financement</span>
           <h1>De l'invisible au finançable.<br /><em>En 90 jours.</em></h1>
@@ -947,12 +938,21 @@ function PublicSitePage({ navigate, path }) {
           </div>
           <div className="button-row">
             <Button onClick={() => navigate('/login')}><UserCheck size={18} /> Voir la démo live</Button>
-            <Button variant="secondary" onClick={() => scrollTo('solution')}><ArrowRight size={18} /> Découvrir la solution</Button>
+            <Button variant="secondary" onClick={() => navigate('/solution')}><ArrowRight size={18} /> Découvrir la solution</Button>
           </div>
         </div>
       </section>
+      <PublicSiteFooter navigate={navigate} />
+    </main>
+  );
+}
 
-      <section id="problème" className="public-band probleme-section">
+function PublicPageProbleme({ navigate }) {
+  const revealRef = useScrollReveal();
+  return (
+    <main className="public-site public-site--page" ref={revealRef}>
+      <PublicSiteNav navigate={navigate} path="/probleme" />
+      <section className="public-band probleme-section">
         <div className="reveal probleme-header">
           <span className="eyebrow">Problème</span>
           <h2>Les agriculteurs sont <em>invisibles</em> pour le système financier.</h2>
@@ -985,8 +985,28 @@ function PublicSitePage({ navigate, path }) {
           </article>
         </div>
       </section>
+      <div className="public-page-nav reveal">
+        <Button variant="secondary" onClick={() => navigate('/')}><ChevronLeft size={16} /> Accueil</Button>
+        <Button onClick={() => navigate('/solution')}>Solution <ChevronRight size={16} /></Button>
+      </div>
+      <PublicSiteFooter navigate={navigate} />
+    </main>
+  );
+}
 
-      <section id="solution" className="public-band">
+function PublicPageSolution({ navigate }) {
+  const revealRef = useScrollReveal();
+  const solutionBlocs = [
+    { Icon: Activity, title: 'Captation automatique', desc: 'Chaque vente, chaque livraison, chaque paiement génère des données de scoring sans effort supplémentaire.' },
+    { Icon: ShieldCheck, title: 'Scoring intelligent', desc: 'Un score de 0 à 100 calculé en temps réel à partir de votre activité réelle. Pas de déclarations, des preuves.' },
+    { Icon: FileCheck2, title: 'Dossier bancaire portable', desc: 'Un PDF vérifiable par QR code, présentable à toute banque ou SFD. Vous gardez le contrôle.' },
+    { Icon: Landmark, title: 'Accès au crédit', desc: "En 3 mois d'activité, passez d'invisible à finançable. Demande de crédit en 1 clic." },
+    { Icon: UserCheck, title: 'Vérification par agents terrain', desc: 'Des agents spécialisés valident votre identité et accompagnent votre progression.' },
+  ];
+  return (
+    <main className="public-site public-site--page" ref={revealRef}>
+      <PublicSiteNav navigate={navigate} path="/solution" />
+      <section className="public-band">
         <div className="reveal">
           <span className="eyebrow">La solution FresCoop</span>
           <h2>Chaque transaction devient une preuve. Chaque preuve construit un score.</h2>
@@ -1003,8 +1023,31 @@ function PublicSitePage({ navigate, path }) {
           ))}
         </div>
       </section>
+      <div className="public-page-nav reveal">
+        <Button variant="secondary" onClick={() => navigate('/probleme')}><ChevronLeft size={16} /> Problème</Button>
+        <Button onClick={() => navigate('/comment')}>Comment ça marche <ChevronRight size={16} /></Button>
+      </div>
+      <PublicSiteFooter navigate={navigate} />
+    </main>
+  );
+}
 
-      <section id="comment" className="public-band">
+function PublicPageComment({ navigate }) {
+  const revealRef = useScrollReveal();
+  const parcoursSteps = [
+    "Inscription et vérification d'identité (CNI)",
+    'Publication de vos produits sur le marché',
+    "Réception de commandes d'acheteurs",
+    'Paiement confirmé via PayDunya',
+    'Score de bancabilité qui monte',
+    'Dossier de crédit exportable',
+    'Présentation à une banque ou SFD',
+    'Obtention du microcrédit',
+  ];
+  return (
+    <main className="public-site public-site--page" ref={revealRef}>
+      <PublicSiteNav navigate={navigate} path="/comment" />
+      <section className="public-band">
         <div className="reveal">
           <span className="eyebrow">Comment ça marche</span>
           <h2>De l'inscription au premier crédit : un parcours fluide en 8 étapes.</h2>
@@ -1017,7 +1060,48 @@ function PublicSitePage({ navigate, path }) {
         </div>
       </section>
 
-      <section id="modele" className="public-band modele-section">
+      <section className="public-band">
+        <div className="reveal">
+          <span className="eyebrow">Garanties</span>
+          <h2>4 couches de sécurité. Zéro risque pour la banque.</h2>
+        </div>
+        <div className="garanties-compact reveal">
+          <div className="garantie-compact-item"><span>1</span><strong>Prélèvement à la source</strong><em>25% retenu automatiquement à chaque transaction</em></div>
+          <div className="garantie-compact-item"><span>2</span><strong>Taux progressif</strong><em>0% sous 75K, 15-30% au-dessus — protège le minimum vital</em></div>
+          <div className="garantie-compact-item"><span>3</span><strong>Caution solidaire digitale</strong><em>Groupes de 5 agriculteurs, 98% de remboursement</em></div>
+          <div className="garantie-compact-item"><span>4</span><strong>Fonds de garantie mutualisé</strong><em>2% par transaction → couvre 20% des impayés</em></div>
+        </div>
+        <div className="garantie-kpis reveal">
+          <div className="garantie-kpi">
+            <strong>&lt; 2%</strong>
+            <span>Taux de défaut</span>
+          </div>
+          <div className="garantie-kpi">
+            <strong>6-8 mois</strong>
+            <span>Remboursement moyen</span>
+          </div>
+          <div className="garantie-kpi">
+            <strong>100%</strong>
+            <span>Couverture banque</span>
+          </div>
+        </div>
+      </section>
+
+      <div className="public-page-nav reveal">
+        <Button variant="secondary" onClick={() => navigate('/solution')}><ChevronLeft size={16} /> Solution</Button>
+        <Button onClick={() => navigate('/modele')}>Modèle économique <ChevronRight size={16} /></Button>
+      </div>
+      <PublicSiteFooter navigate={navigate} />
+    </main>
+  );
+}
+
+function PublicPageModele({ navigate }) {
+  const revealRef = useScrollReveal();
+  return (
+    <main className="public-site public-site--page" ref={revealRef}>
+      <PublicSiteNav navigate={navigate} path="/modele" />
+      <section className="public-band modele-section">
         <div className="reveal modele-header">
           <span className="eyebrow">Modèle économique</span>
           <h2>Gratuit pour l'agriculteur. Rentable pour tous.</h2>
@@ -1032,13 +1116,13 @@ function PublicSitePage({ navigate, path }) {
               <strong>Agriculteur</strong>
               <em>GRATUIT</em>
             </div>
-            <div className="modele-flow__arrow">→</div>
+            <div className="modele-flow__arrow">&rarr;</div>
             <div className="modele-flow__actor">
               <ShoppingCart size={26} />
               <strong>Acheteur</strong>
               <em>Paie le produit</em>
             </div>
-            <div className="modele-flow__arrow">→</div>
+            <div className="modele-flow__arrow">&rarr;</div>
             <div className="modele-flow__actor">
               <Landmark size={26} />
               <strong>SFD / Banque</strong>
@@ -1114,8 +1198,21 @@ function PublicSitePage({ navigate, path }) {
 
         <ModelSimulator />
       </section>
+      <div className="public-page-nav reveal">
+        <Button variant="secondary" onClick={() => navigate('/comment')}><ChevronLeft size={16} /> Comment ça marche</Button>
+        <Button onClick={() => navigate('/impact-page')}>Impact <ChevronRight size={16} /></Button>
+      </div>
+      <PublicSiteFooter navigate={navigate} />
+    </main>
+  );
+}
 
-      <section id="impact" className="public-band public-impact-section">
+function PublicPageImpact({ navigate }) {
+  const revealRef = useScrollReveal();
+  return (
+    <main className="public-site public-site--page" ref={revealRef}>
+      <PublicSiteNav navigate={navigate} path="/impact-page" />
+      <section className="public-band public-impact-section">
         <div className="reveal">
           <span className="eyebrow">Impact sur les utilisateurs et le marché</span>
           <h2>Des résultats concrets. Mesurables. Transformateurs.</h2>
@@ -1170,7 +1267,7 @@ function PublicSitePage({ navigate, path }) {
           <h2>Un scoring conçu pour les 8 pays. Un déploiement progressif.</h2>
           <p className="public-subtitle">FresCoop démarre au Sénégal avec un pilote de 100 agriculteurs, puis s'étend à toute la zone UEMOA grâce à une infrastructure 100% cloud et des partenariats GIM-UEMOA.</p>
           <div className="public-uemoa-countries">
-            {['Sénégal 🚀', 'Côte d\'Ivoire', 'Mali', 'Burkina Faso', 'Bénin', 'Niger', 'Togo', 'Guinée-Bissau'].map((country) => <span key={country}>{country}</span>)}
+            {['Sénégal', 'Côte d\'Ivoire', 'Mali', 'Burkina Faso', 'Bénin', 'Niger', 'Togo', 'Guinée-Bissau'].map((country) => <span key={country}>{country}</span>)}
           </div>
         </div>
         <figure className="public-uemoa-map">
@@ -1189,16 +1286,49 @@ function PublicSitePage({ navigate, path }) {
         </div>
       </section>
 
-      <footer id="contact" className="public-footer">
-        <div>
-          <div className="brand big"><span>F</span><strong>FresCoop</strong></div>
-          <p>FresCoop rend chaque agriculteur visible, vérifiable et finançable grâce à la preuve économique portable.</p>
-          <p>Contact : <strong>contact@frescoop.sn</strong></p>
-          <p style={{ fontSize: '0.78rem', opacity: 0.7 }}>Hackathon Filières Agricoles GIM-UEMOA 2026 — Point 4 : Accès au financement agricole</p>
-        </div>
-      </footer>
+      <div className="public-page-nav reveal">
+        <Button variant="secondary" onClick={() => navigate('/modele')}><ChevronLeft size={16} /> Modèle économique</Button>
+        <Button onClick={() => navigate('/contact')}>Contact <ChevronRight size={16} /></Button>
+      </div>
+      <PublicSiteFooter navigate={navigate} />
     </main>
   );
+}
+
+function PublicPageContact({ navigate }) {
+  const revealRef = useScrollReveal();
+  return (
+    <main className="public-site public-site--page" ref={revealRef}>
+      <PublicSiteNav navigate={navigate} path="/contact" />
+      <section className="public-band public-contact-section">
+        <div className="reveal">
+          <span className="eyebrow">Contact</span>
+          <h2>Nous contacter</h2>
+          <p className="public-subtitle">Pour toute question, partenariat ou information sur FresCoop.</p>
+        </div>
+        <div className="public-contact-info reveal">
+          <p><strong>Email :</strong> contact@frescoop.sn</p>
+          <p><strong>Projet :</strong> Hackathon Filières Agricoles GIM-UEMOA 2026</p>
+          <p><strong>Point :</strong> Accès au financement agricole (Point 4)</p>
+        </div>
+      </section>
+      <div className="public-page-nav reveal">
+        <Button variant="secondary" onClick={() => navigate('/impact-page')}><ChevronLeft size={16} /> Impact</Button>
+        <Button onClick={() => navigate('/')}>Accueil <ChevronRight size={16} /></Button>
+      </div>
+      <PublicSiteFooter navigate={navigate} />
+    </main>
+  );
+}
+
+function PublicSitePage({ navigate, path }) {
+  if (path === '/probleme') return <PublicPageProbleme navigate={navigate} />;
+  if (path === '/solution') return <PublicPageSolution navigate={navigate} />;
+  if (path === '/comment') return <PublicPageComment navigate={navigate} />;
+  if (path === '/modele') return <PublicPageModele navigate={navigate} />;
+  if (path === '/impact-page') return <PublicPageImpact navigate={navigate} />;
+  if (path === '/contact') return <PublicPageContact navigate={navigate} />;
+  return <PublicPageHero navigate={navigate} />;
 }
 
 function AuthShell({ children, meta }) {
