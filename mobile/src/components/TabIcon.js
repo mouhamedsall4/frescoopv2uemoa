@@ -1,22 +1,14 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-const icons = {
-  Accueil: '🏠',
-  Marché: '🏪',
-  Produits: '🌾',
-  Commandes: '📦',
-  Profil: '👤',
+const iconMap = {
+  Accueil: 'home',
+  Marché: 'storefront',
+  Produits: 'leaf',
+  Commandes: 'receipt',
+  Profil: 'person',
 };
 
 export default function TabIcon({ name, focused, color }) {
-  return (
-    <View style={styles.container}>
-      <Text style={[styles.icon, { opacity: focused ? 1 : 0.6 }]}>{icons[name] || '•'}</Text>
-    </View>
-  );
+  const iconName = iconMap[name] || 'ellipse';
+  return <Ionicons name={focused ? iconName : `${iconName}-outline`} size={22} color={color} />;
 }
-
-const styles = StyleSheet.create({
-  container: { alignItems: 'center', justifyContent: 'center' },
-  icon: { fontSize: 22 },
-});
