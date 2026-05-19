@@ -6,7 +6,7 @@ import ScoreRing from '../components/ScoreRing';
 
 function buildBancabiliteScore(user, store) {
   if (!user || !store) return { score: 0, criteria: [] };
-  const products = (store.products || []).filter(p => p.sellerId === user.id);
+  const products = (store.products || []).filter(p => (p.sellerId || p.ownerId) === user.id);
   const orders = (store.orders || []).filter(o => o.sellerId === user.id);
   const completedOrders = orders.filter(o => o.status === 'Livree');
   const payments = (store.payments || []).filter(p => p.userId === user.id || orders.some(o => o.id === p.orderId));
@@ -48,7 +48,7 @@ export default function HomeScreen({ user, store, onRefresh }) {
   const scoreColor = score >= 60 ? colors.green600 : score >= 40 ? colors.orange500 : colors.red500;
   const scoreLabel = score >= 60 ? 'Bancable' : score >= 40 ? 'En progression' : 'Débutant';
 
-  const products = (store?.products || []).filter(p => p.sellerId === user.id);
+  const products = (store?.products || []).filter(p => (p.sellerId || p.ownerId) === user.id);
   const orders = (store?.orders || []).filter(o => o.sellerId === user.id);
   const completedOrders = orders.filter(o => o.status === 'Livree');
   const pendingOrders = orders.filter(o => o.status !== 'Livree' && o.status !== 'Annulee');

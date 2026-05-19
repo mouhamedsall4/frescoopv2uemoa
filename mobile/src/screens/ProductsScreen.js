@@ -6,7 +6,7 @@ import ProductImage from '../components/ProductImage';
 
 export default function ProductsScreen({ user, store, onRefresh, navigation }) {
   const [refreshing, setRefreshing] = useState(false);
-  const products = (store?.products || []).filter(p => p.sellerId === user.id);
+  const products = (store?.products || []).filter(p => (p.sellerId || p.ownerId) === user.id);
   const parentNav = navigation?.getParent?.() || navigation;
 
   const handleRefresh = useCallback(async () => {

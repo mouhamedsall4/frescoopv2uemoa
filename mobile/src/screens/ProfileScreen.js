@@ -7,7 +7,7 @@ export default function ProfileScreen({ user, store, onLogout }) {
   const dossiers = (store?.dossiers || []).filter(d => d.userId === user.id);
   const validDossiers = dossiers.filter(d => d.status === 'Valide');
   const proofs = (store?.activityProofs || []).filter(p => p.userId === user.id);
-  const orders = (store?.orders || []).filter(o => o.sellerId === user.id);
+  const orders = (store?.orders || []).filter(o => o.sellerId === user.id || o.ownerId === user.id);
   const totalRevenue = orders.filter(o => o.status === 'Livree').reduce((s, o) => s + Number(o.totalAmount || o.total || 0), 0);
 
   function handleLogout() {

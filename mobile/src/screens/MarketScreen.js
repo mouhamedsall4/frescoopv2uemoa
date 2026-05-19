@@ -13,7 +13,7 @@ export default function MarketScreen({ user, store, onRefresh, navigation }) {
   const [selectedCat, setSelectedCat] = useState('Tous');
 
   const products = (store?.products || [])
-    .filter(p => p.status === 'Publie' && p.sellerId !== user.id)
+    .filter(p => p.status === 'Publie' && (p.sellerId || p.ownerId) !== user.id)
     .filter(p => !search || p.name?.toLowerCase().includes(search.toLowerCase()))
     .filter(p => selectedCat === 'Tous' || p.category === selectedCat);
 
@@ -24,7 +24,7 @@ export default function MarketScreen({ user, store, onRefresh, navigation }) {
   }, [onRefresh]);
 
   function renderProduct({ item }) {
-    const seller = (store?.users || []).find(u => u.id === item.sellerId);
+    const seller = (store?.users || []).find(u => u.id === (item.sellerId || item.ownerId));
     return (
       <TouchableOpacity style={styles.card} onPress={() => parentNav?.navigate?.('ProductDetail', { product: item })} activeOpacity={0.7}>
         <View style={styles.imageWrap}>

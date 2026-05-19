@@ -18,8 +18,8 @@ export default function ProductDetailScreen({ product, store, user, onRefresh })
     );
   }
 
-  const seller = (store?.users || []).find(u => u.id === product.sellerId);
-  const isOwner = product.sellerId === user.id;
+  const seller = (store?.users || []).find(u => u.id === (product.sellerId || product.ownerId));
+  const isOwner = (product.sellerId || product.ownerId) === user.id;
   const qty = Math.max(1, Number(quantity) || 1);
   const total = qty * (product.price || 0);
 
@@ -36,7 +36,7 @@ export default function ProductDetailScreen({ product, store, user, onRefresh })
             try {
               await api.createOrder({
                 productId: product.id,
-                sellerId: product.sellerId,
+                sellerId: product.sellerId || product.ownerId,
                 buyerId: user.id,
                 quantity: qty,
                 totalAmount: total,

@@ -19,6 +19,7 @@ import AddProductScreen from './src/screens/AddProductScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import ProductDetailScreen from './src/screens/ProductDetailScreen';
 import ScoreScreen from './src/screens/ScoreScreen';
+import HeaderMenu from './src/components/HeaderMenu';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -105,9 +106,7 @@ function HomeTabs({ user, store, onRefresh, onLogout, navigation }) {
           </View>
         ),
         headerRight: () => (
-          <View style={{ flexDirection: 'row', gap: 12, marginRight: 16 }}>
-            <Ionicons name="notifications-outline" size={20} color="rgba(255,255,255,0.8)" onPress={() => navigation.navigate('Notifications')} />
-          </View>
+          <HeaderMenu role={user.role} navigation={navigation} />
         ),
       })}
     >

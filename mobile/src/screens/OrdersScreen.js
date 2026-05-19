@@ -36,7 +36,7 @@ export default function OrdersScreen({ user, store, onRefresh }) {
   function renderOrder({ item }) {
     const sc = statusConfig[item.status] || statusConfig['Nouvelle'];
     const isSeller = item.sellerId === user.id;
-    const otherUser = (store?.users || []).find(u => u.id === (isSeller ? item.buyerId : item.sellerId));
+    const otherUser = (store?.users || []).find(u => u.id === (isSeller ? item.buyerId : (item.sellerId || item.ownerId)));
     const total = Number(item.totalAmount || item.total || 0);
 
     return (

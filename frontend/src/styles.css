@@ -10361,4 +10361,61 @@ label, .field-label {
   .hero-kpi > span:first-child {
     font-size: 1.5rem;
   }
+  .modele-simulator {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+  .modele-simulator__header {
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .modele-simulator__header h3 {
+    font-size: 1.1rem;
+  }
+  .modele-simulator__result-card strong {
+    font-size: 1rem;
+  }
+  .modele-simulator__result-card.main strong {
+    font-size: 1.2rem;
+  }
+  .modele-simulator__impact-item {
+    padding: 12px;
+  }
+  .modele-simulator__impact-item strong {
+    font-size: 0.95rem;
+  }
+  .modele-revenue-card {
+    padding: 20px;
+  }
+  .modele-revenue-pricing {
+    font-size: 0.85rem;
+  }
+  .modele-flow {
+    padding: 20px 16px;
+  }
+  .modele-flow__actor {
+    padding: 12px;
+  }
+  .impact-metric {
+    padding: 18px 12px;
+  }
+  .garantie-card {
+    padding: 18px;
+    gap: 14px;
+  }
+  .garanties-section {
+    padding-top: 48px !important;
+    padding-bottom: 48px !important;
+  }
+  .garantie-taux-grid {
+    grid-template-columns: 1fr;
+  }
+  .garanties-result__item span {
+    font-size: 1.4rem;
+  }
+  .public-impact-section {
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
 }

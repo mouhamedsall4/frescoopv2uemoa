@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, shadow } from '../theme';
 
 export default function ScoreScreen({ user, store }) {
-  const products = (store?.products || []).filter(p => p.sellerId === user.id);
+  const products = (store?.products || []).filter(p => (p.sellerId || p.ownerId) === user.id);
   const orders = (store?.orders || []).filter(o => o.sellerId === user.id);
   const completedOrders = orders.filter(o => o.status === 'Livree');
   const payments = (store?.payments || []).filter(p => p.userId === user.id || orders.some(o => o.id === p.orderId));

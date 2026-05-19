@@ -75,6 +75,7 @@ export default function AddProductScreen({ user, onDone }) {
         description: description.trim(),
         imageUrl: imageUri || null,
         sellerId: user.id,
+        ownerId: user.id,
         status: 'Publie',
       });
       Alert.alert('Produit publié', 'Votre produit est maintenant visible sur le marché.', [{ text: 'OK', onPress: onDone }]);
