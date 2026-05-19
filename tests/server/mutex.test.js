@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createMutex } from '../../server/mutex.js';
+import { createMutex } from '../../backend/mutex.js';
 
 describe('Mutex', () => {
   it('executes function and returns result', async () => {

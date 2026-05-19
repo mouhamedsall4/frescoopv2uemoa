@@ -11,7 +11,7 @@ FresCoop positionne la solution sur une chaîne de valeur agricole régionale:
 ## Lancer
 
 ```bash
-npm install
+npm run install:web
 npm run dev
 ```
 
@@ -28,7 +28,7 @@ npm run start
 
 URL application + API: `http://127.0.0.1:4174/`
 
-Les données applicatives sont persistées dans `server/data/store.json` en local et restent exportables depuis la page Données.
+Les données applicatives sont persistées dans `backend/data/store.json` en local et restent exportables depuis la page Données.
 
 ## MongoDB Atlas en production
 
@@ -44,12 +44,12 @@ FRESCOOP_SEED_MODE=none
 TOKEN_SECRET=une-longue-cle-aleatoire-stable
 ```
 
-Avec `MONGODB_URI`, le serveur cree la collection `store` au premier demarrage sans charger `server/seed-data.json`, sauf si `FRESCOOP_SEED_MODE=demo` est force. `FRESCOOP_REQUIRE_MONGODB=true` empeche un fallback discret vers `server/data/store.json` si Atlas est inaccessible.
+Avec `MONGODB_URI`, le serveur cree la collection `store` au premier demarrage sans charger `backend/seed-data.json`, sauf si `FRESCOOP_SEED_MODE=demo` est force. `FRESCOOP_REQUIRE_MONGODB=true` empeche un fallback discret vers `backend/data/store.json` si Atlas est inaccessible.
 
 Pour migrer le fichier local actuel vers Atlas une seule fois:
 
 ```bash
-npm run migrate:atlas -- server/data/store.json
+npm run migrate:atlas -- backend/data/store.json
 ```
 
 ## Verifier

@@ -1,9 +1,9 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm install && npm run build"
+buildCommand = "cd frontend && npm ci && npm run build && cd ../backend && npm ci"
 
 [build.nixpacks]
 nixPackages = ["nodejs_22"]
 
 [deploy]
-startCommand = "npm start"
+startCommand = "node backend/index.js"

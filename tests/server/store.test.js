@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeStore, dedupeOrders, preservePrivateUserFields } from '../../server/lib.js';
+import { normalizeStore, dedupeOrders, preservePrivateUserFields } from '../../backend/lib.js';
 
 const emptyStore = {
   users: [],

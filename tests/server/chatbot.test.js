@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateLocalAnswer } from '../../server/chatbot-fallback.js';
+import { generateLocalAnswer } from '../../backend/chatbot-fallback.js';
 
 describe('Chatbot fallback - French', () => {
   it('responds to greetings', () => {

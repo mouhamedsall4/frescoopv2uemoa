@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createToken, verifyToken, checkRateLimit } from '../../server/lib.js';
+import { createToken, verifyToken, checkRateLimit } from '../../backend/lib.js';
 
 const TEST_SECRET = 'test-secret-for-unit-tests-32chars!';
 
