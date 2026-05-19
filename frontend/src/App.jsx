@@ -756,6 +756,109 @@ function VerifyReceiptPage({ navigate, route, store }) {
   );
 }
 
+function ModelSimulator() {
+  const [farmers, setFarmers] = useState(1000);
+  const [sfds, setSfds] = useState(3);
+  const [avgTransaction, setAvgTransaction] = useState(25000);
+
+  const txPerFarmerPerMonth = 4;
+  const commissionRate = 0.035;
+  const sfdFee = 300000;
+  const svaRate = 0.02;
+
+  const monthlyTx = farmers * txPerFarmerPerMonth;
+  const revenueCommission = monthlyTx * avgTransaction * commissionRate;
+  const revenueSfd = sfds * sfdFee;
+  const revenueSva = farmers * avgTransaction * svaRate;
+  const totalMonthly = revenueCommission + revenueSfd + revenueSva;
+  const totalAnnual = totalMonthly * 12;
+  const fixedCosts = 2500000;
+  const profit = totalMonthly - fixedCosts;
+  const isProfitable = profit > 0;
+
+  const creditPerFarmer = 500000;
+  const totalCreditUnlocked = farmers * 0.65 * creditPerFarmer;
+  const revenuePerFarmer = avgTransaction * txPerFarmerPerMonth * 0.3;
+  const socialImpact = farmers * 5;
+
+  function fmt(n) {
+    if (n >= 1000000000) return (n / 1000000000).toFixed(1) + ' Mds';
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return Math.round(n / 1000) + 'K';
+    return Math.round(n).toString();
+  }
+
+  return (
+    <div className="modele-simulator reveal">
+      <div className="modele-simulator__header">
+        <div>
+          <h3>Simulateur de revenus en temps réel</h3>
+          <p>Déplacez les curseurs pour voir l'impact financier et social de FresCoop</p>
+        </div>
+        <div className={`modele-simulator__status ${isProfitable ? 'profitable' : 'pre-profit'}`}>
+          {isProfitable ? '✓ Rentable' : '○ Pré-rentabilité'}
+        </div>
+      </div>
+
+      <div className="modele-simulator__controls">
+        <div className="modele-simulator__slider">
+          <label>Agriculteurs actifs <strong>{farmers.toLocaleString()}</strong></label>
+          <input type="range" min="100" max="50000" step="100" value={farmers} onChange={e => setFarmers(Number(e.target.value))} />
+          <div className="modele-simulator__range"><span>100</span><span>50 000</span></div>
+        </div>
+        <div className="modele-simulator__slider">
+          <label>SFD / Banques partenaires <strong>{sfds}</strong></label>
+          <input type="range" min="1" max="20" step="1" value={sfds} onChange={e => setSfds(Number(e.target.value))} />
+          <div className="modele-simulator__range"><span>1</span><span>20</span></div>
+        </div>
+        <div className="modele-simulator__slider">
+          <label>Transaction moyenne <strong>{avgTransaction.toLocaleString()} FCFA</strong></label>
+          <input type="range" min="5000" max="100000" step="5000" value={avgTransaction} onChange={e => setAvgTransaction(Number(e.target.value))} />
+          <div className="modele-simulator__range"><span>5 000</span><span>100 000</span></div>
+        </div>
+      </div>
+
+      <div className="modele-simulator__results">
+        <div className="modele-simulator__result-card main">
+          <span>Revenu mensuel</span>
+          <strong>{fmt(totalMonthly)} FCFA</strong>
+          <em>soit {fmt(totalAnnual)} FCFA/an</em>
+        </div>
+        <div className="modele-simulator__result-card">
+          <span>Commission marketplace</span>
+          <strong>{fmt(revenueCommission)} FCFA</strong>
+        </div>
+        <div className="modele-simulator__result-card">
+          <span>Scoring SFD</span>
+          <strong>{fmt(revenueSfd)} FCFA</strong>
+        </div>
+        <div className="modele-simulator__result-card">
+          <span>Services VA</span>
+          <strong>{fmt(revenueSva)} FCFA</strong>
+        </div>
+      </div>
+
+      <div className="modele-simulator__impact">
+        <div className="modele-simulator__impact-item">
+          <span>Crédit total débloqué</span>
+          <strong>{fmt(totalCreditUnlocked)} FCFA</strong>
+          <em>65% des agriculteurs deviennent bancables</em>
+        </div>
+        <div className="modele-simulator__impact-item">
+          <span>Revenus par agriculteur</span>
+          <strong>+{fmt(revenuePerFarmer)} FCFA/mois</strong>
+          <em>Grâce à la vente directe sur le marché</em>
+        </div>
+        <div className="modele-simulator__impact-item">
+          <span>Personnes impactées</span>
+          <strong>{fmt(socialImpact)} personnes</strong>
+          <em>Familles ayant accès au financement</em>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PublicSitePage({ navigate, path }) {
   useEffect(() => {
     const sectionMap = { '/contact': 'contact' };
@@ -1008,6 +1111,8 @@ function PublicSitePage({ navigate, path }) {
             </div>
           </div>
         </div>
+
+        <ModelSimulator />
       </section>
 
       <section id="impact" className="public-band public-impact-section">
