@@ -6,6 +6,13 @@ import { api, saveToken } from '../api';
 
 const { width } = Dimensions.get('window');
 
+const ROLES = [
+  { key: 'agriculteur', label: 'Agriculteur', icon: 'leaf', desc: 'Je produis et vends' },
+  { key: 'acheteurB2B', label: 'Acheteur B2B', icon: 'cart', desc: "J'achete en gros" },
+  { key: 'agentTerrain', label: 'Agent terrain', icon: 'shield-checkmark', desc: 'Je verifie et accompagne' },
+  { key: 'partenaire', label: 'Partenaire financier', icon: 'business', desc: 'Je finance' },
+];
+
 export default function LoginScreen({ onLogin }) {
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
@@ -13,6 +20,7 @@ export default function LoginScreen({ onLogin }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [region, setRegion] = useState('');
+  const [role, setRole] = useState('agriculteur');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,7 +33,7 @@ export default function LoginScreen({ onLogin }) {
     try {
       const res = mode === 'login'
         ? await api.login(email.trim(), password)
-        : await api.register({ name: name.trim(), email: email.trim(), password, phone: phone.trim(), region: region.trim(), role: 'agriculteur' });
+        : await api.register({ name: name.trim(), email: email.trim(), password, phone: phone.trim(), region: region.trim(), role });
       await saveToken(res.token);
       onLogin(res.user);
     } catch (err) {
@@ -69,7 +77,17 @@ export default function LoginScreen({ onLogin }) {
             <>
               <InputField icon="person-outline" value={name} onChangeText={setName} placeholder="Nom complet" autoCapitalize="words" />
               <InputField icon="call-outline" value={phone} onChangeText={setPhone} placeholder="+221 77 000 00 00" keyboardType="phone-pad" />
-              <InputField icon="location-outline" value={region} onChangeText={setRegion} placeholder="Région (ex: Casamance)" />
+              <InputField icon="location-outline" value={region} onChangeText={setRegion} placeholder="Region (ex: Casamance)" />
+              <Text style={styles.roleTitle}>Je suis :</Text>
+              <View style={styles.roleGrid}>
+                {ROLES.map(r => (
+                  <TouchableOpacity key={r.key} style={[styles.roleCard, role === r.key && styles.roleCardActive]} onPress={() => setRole(r.key)}>
+                    <Ionicons name={r.icon + (role === r.key ? '' : '-outline')} size={20} color={role === r.key ? colors.green700 : colors.gray400} />
+                    <Text style={[styles.roleLabel, role === r.key && styles.roleLabelActive]}>{r.label}</Text>
+                    <Text style={styles.roleDesc}>{r.desc}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </>
           )}
 
@@ -138,5 +156,12 @@ const styles = StyleSheet.create({
   errorText: { color: colors.red500, fontSize: 13, fontWeight: '600', flex: 1 },
   btn: { marginTop: spacing.xxl, backgroundColor: colors.green700, paddingVertical: 16, borderRadius: radius.sm, alignItems: 'center' },
   btnText: { color: colors.white, fontSize: 16, fontWeight: '800' },
+  roleTitle: { fontSize: 13, fontWeight: '700', color: colors.gray600, marginTop: spacing.lg, marginBottom: spacing.sm },
+  roleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  roleCard: { width: '47%', padding: 12, borderRadius: radius.sm, borderWidth: 1.5, borderColor: colors.gray200, backgroundColor: colors.gray50, alignItems: 'center', gap: 4 },
+  roleCardActive: { borderColor: colors.green700, backgroundColor: colors.green50 },
+  roleLabel: { fontSize: 12, fontWeight: '700', color: colors.gray500 },
+  roleLabelActive: { color: colors.green700 },
+  roleDesc: { fontSize: 10, color: colors.gray400, textAlign: 'center' },
   footer: { textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: 11, marginTop: spacing.xxl, fontWeight: '600' },
 });

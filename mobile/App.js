@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -8,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api, loadToken } from './src/api';
 import { colors, shadow } from './src/theme';
+import { cacheStore, getCachedStore, cacheUser, getCachedUser, clearCache } from './src/offlineStore';
 
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -164,22 +166,36 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsOffline(!state.isConnected);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const fetchStore = useCallback(async () => {
     try {
       const data = await api.getStore();
       setStore(data);
-    } catch {}
+      cacheStore(data);
+    } catch {
+      const cached = await getCachedStore();
+      if (cached && !store) setStore(cached);
+    }
   }, []);
 
   const handleLogin = useCallback(async (loggedUser) => {
     setUser(loggedUser);
+    cacheUser(loggedUser);
     await fetchStore();
   }, [fetchStore]);
 
   const handleLogout = useCallback(() => {
     setUser(null);
     setStore(null);
+    clearCache();
   }, []);
 
   useEffect(() => {
@@ -188,10 +204,19 @@ export default function App() {
       if (token) {
         try {
           const res = await api.me();
-          setUser(res.user || res);
+          const u = res.user || res;
+          setUser(u);
+          cacheUser(u);
           await fetchStore();
         } catch {
-          setUser(null);
+          const cachedUser = await getCachedUser();
+          if (cachedUser) {
+            setUser(cachedUser);
+            const cachedData = await getCachedStore();
+            if (cachedData) setStore(cachedData);
+          } else {
+            setUser(null);
+          }
         }
       }
       setLoading(false);
@@ -223,6 +248,12 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" backgroundColor={colors.green950} />
+      {isOffline && (
+        <View style={styles.offlineBanner}>
+          <Ionicons name="cloud-offline-outline" size={14} color={colors.white} />
+          <Text style={styles.offlineText}>Mode hors ligne</Text>
+        </View>
+      )}
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Main">
@@ -307,4 +338,6 @@ const styles = StyleSheet.create({
   headerLogo: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1.5, borderColor: colors.green500, justifyContent: 'center', alignItems: 'center' },
   headerLogoText: { fontSize: 14, fontWeight: '900', color: colors.green500 },
   headerBrand: { fontSize: 17, fontWeight: '900', color: colors.white },
+  offlineBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.orange500, paddingVertical: 6 },
+  offlineText: { fontSize: 12, fontWeight: '700', color: colors.white },
 });

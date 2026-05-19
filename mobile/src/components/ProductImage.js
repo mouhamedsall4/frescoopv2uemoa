@@ -17,8 +17,24 @@ const categoryConfig = {
   'Autres': { icon: 'basket', color: '#6b7280', bg: '#f3f4f6' },
 };
 
+function extractImageUrl(imageUrl, images, image) {
+  if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) return imageUrl;
+  if (imageUrl && typeof imageUrl === 'object' && imageUrl.dataUrl) return imageUrl.dataUrl;
+  if (Array.isArray(images) && images.length > 0) {
+    const first = images[0];
+    if (typeof first === 'string') return first;
+    if (first?.url) return first.url;
+    if (first?.dataUrl) return first.dataUrl;
+  }
+  if (image && typeof image === 'string') {
+    if (image.startsWith('http') || image.startsWith('data:')) return image;
+  }
+  if (image && typeof image === 'object' && image.dataUrl) return image.dataUrl;
+  return null;
+}
+
 export default function ProductImage({ imageUrl, images, image, category, name, style, size = 'medium' }) {
-  const url = imageUrl || (Array.isArray(images) && images.length > 0 ? (typeof images[0] === 'string' ? images[0] : images[0]?.url) : null) || image || null;
+  const url = extractImageUrl(imageUrl, images, image);
 
   if (url) {
     return (

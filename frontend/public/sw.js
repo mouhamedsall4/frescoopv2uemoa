@@ -1,7 +1,7 @@
 // FresCoop service worker — mode hors ligne
 // Stratégie : app-shell + cache dynamique des assets + fallback offline.
 
-const CACHE_VERSION = 'frescoop-v5';
+const CACHE_VERSION = 'frescoop-v6';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -37,7 +37,21 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Ne jamais intercepter les appels API (paiement, store) pour laisser l'app gérer le fallback.
+  // Cache API store pour le mode offline (lecture seule)
+  if (url.pathname === '/api/store' && request.method === 'GET') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request).then((cached) => cached || new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } })))
+    );
+    return;
+  }
+
+  // Ne pas intercepter les autres appels API
   if (url.pathname.startsWith('/api/')) return;
 
   // Navigations : toujours essayer le réseau, sinon servir index.html en cache.
