@@ -796,7 +796,7 @@ async function handleActivityProofs(request, response, authData) {
             type: 'proof_review',
             title: "Preuve d'activité à valider",
             body: `${farmerName} a soumis une preuve (${proofType}).`,
-            recipientRole: 'admin',
+            recipientRoles: ['admin', 'agentTerrain'],
             path: '/verification',
             relatedId: proof.id,
             read: false,
