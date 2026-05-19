@@ -422,6 +422,49 @@ const publicSitePaths = [
   '/questionnaire',
 ];
 
+function useScrollReveal() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => { entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('revealed'); observer.unobserve(e.target); } }); },
+      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+    );
+    el.querySelectorAll('.reveal').forEach((child) => observer.observe(child));
+    return () => observer.disconnect();
+  }, []);
+  return ref;
+}
+
+function AnimatedCounter({ end, suffix = '', prefix = '', duration = 2000 }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const started = useRef(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started.current) {
+        started.current = true;
+        const startTime = performance.now();
+        const numEnd = parseFloat(String(end).replace(/[^0-9.-]/g, ''));
+        function tick(now) {
+          const progress = Math.min((now - startTime) / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          setCount(Math.round(numEnd * eased));
+          if (progress < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+        observer.disconnect();
+      }
+    }, { threshold: 0.3 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [end, duration]);
+  return <span ref={ref}>{prefix}{count}{suffix}</span>;
+}
+
 function App() {
   const [route, setRoute] = useState(getCurrentRoute);
   const [store, setStore, forceReplaceStore] = useProductionStore();
@@ -722,6 +765,7 @@ function PublicSitePage({ navigate, path }) {
   }, [path]);
 
   const [publicMenuOpen, setPublicMenuOpen] = useState(false);
+  const revealRef = useScrollReveal();
 
   function scrollTo(id) {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -730,9 +774,10 @@ function PublicSitePage({ navigate, path }) {
 
   const navItems = [
     ['accueil', 'Accueil'],
-    ['problème', 'Le problème'],
-    ['solution', 'La solution'],
+    ['problème', 'Problème'],
+    ['solution', 'Solution'],
     ['comment', 'Comment ça marche'],
+    ['modele', 'Modèle économique'],
     ['impact', 'Impact'],
     ['contact', 'Contact'],
   ];
@@ -757,7 +802,7 @@ function PublicSitePage({ navigate, path }) {
   ];
 
   return (
-    <main className="public-site">
+    <main className="public-site" ref={revealRef}>
       <nav className="public-nav">
         <button className="brand" type="button" onClick={() => scrollTo('accueil')}><span>F</span><strong>FresCoop</strong></button>
         <div className="public-nav-links">
@@ -788,50 +833,55 @@ function PublicSitePage({ navigate, path }) {
 
       <section id="accueil" className="public-hero" style={{ backgroundImage: `linear-gradient(90deg, rgba(5,23,18,0.92), rgba(5,23,18,0.28)), url("${publicImages.hero}")` }}>
         <div>
-          <span className="eyebrow">Hackathon Filières Agricoles GIM-UEMOA 2026</span>
-          <h1>80% des agriculteurs UEMOA sont exclus du crédit. FresCoop change ça.</h1>
-          <p>Nous transformons l'activité agricole informelle en dossier bancaire vérifiable et score de crédit exploitable — sans changer les habitudes de l'agriculteur.</p>
+          <span className="eyebrow">Hackathon Filières Agricoles GIM-UEMOA 2026 — Point 4 : Accès au financement</span>
+          <h1>De l'invisible au finançable.<br /><em>En 90 jours.</em></h1>
+          <p>FresCoop transforme chaque vente, chaque livraison, chaque paiement d'un agriculteur en preuve bancaire vérifiable — construisant automatiquement un score de crédit exploitable par toute institution financière de la zone UEMOA.</p>
+          <div className="hero-kpis">
+            <div className="hero-kpi"><AnimatedCounter end={80} suffix="%" /><span>des agriculteurs exclus du crédit</span></div>
+            <div className="hero-kpi"><AnimatedCounter end={60} suffix="M" /><span>d'agriculteurs dans l'UEMOA</span></div>
+            <div className="hero-kpi"><AnimatedCounter end={3} suffix="%" /><span>du crédit va à l'agriculture</span></div>
+          </div>
           <div className="button-row">
-            <Button onClick={() => navigate('/login')}><UserCheck size={18} /> S'inscrire gratuitement</Button>
-            <Button variant="secondary" onClick={() => scrollTo('comment')}><ArrowRight size={18} /> Comment ça marche</Button>
+            <Button onClick={() => navigate('/login')}><UserCheck size={18} /> Voir la démo live</Button>
+            <Button variant="secondary" onClick={() => scrollTo('solution')}><ArrowRight size={18} /> Découvrir la solution</Button>
           </div>
         </div>
       </section>
 
       <section id="problème" className="public-band">
-        <div>
+        <div className="reveal">
           <span className="eyebrow">Le problème</span>
           <h2>Les agriculteurs sont invisibles pour le système financier.</h2>
-          <p className="public-subtitle">Pas parce qu'ils ne sont pas fiables — parce qu'ils n'ont aucune preuve exploitable de leur activité.</p>
+          <p className="public-subtitle">Pas parce qu'ils ne sont pas fiables — parce qu'ils n'ont <strong>aucune preuve exploitable</strong> de leur activité économique.</p>
         </div>
         <div className="public-probleme-grid">
-          <article>
-            <strong>80%</strong>
+          <article className="reveal">
+            <strong><AnimatedCounter end={80} suffix="%" /></strong>
             <span>sans accès au crédit</span>
-            <p>Les institutions financières ne financent pas ceux qu'elles ne peuvent pas évaluer.</p>
+            <p>Les institutions financières ne financent pas ceux qu'elles ne peuvent pas évaluer. Pas de relevé bancaire = pas de crédit.</p>
           </article>
-          <article>
-            <strong>3%</strong>
+          <article className="reveal">
+            <strong><AnimatedCounter end={3} suffix="%" /></strong>
             <span>du crédit bancaire vers l'agriculture</span>
-            <p>Alors que l'agriculture représente 35% du PIB de la zone UEMOA.</p>
+            <p>Alors que l'agriculture représente <strong>35% du PIB</strong> de la zone UEMOA. Un paradoxe inacceptable.</p>
           </article>
-          <article>
+          <article className="reveal">
             <strong>0</strong>
             <span>historique financier exploitable</span>
-            <p>Les transactions en espèces au marché ne laissent aucune trace pour les banques.</p>
+            <p>Chaque jour, des millions de transactions en espèces au marché ne laissent aucune trace pour les banques.</p>
           </article>
         </div>
       </section>
 
       <section id="solution" className="public-band">
-        <div>
+        <div className="reveal">
           <span className="eyebrow">La solution FresCoop</span>
-          <h2>De l'invisible au finançable. En 3 mois.</h2>
-          <p className="public-subtitle">Chaque action sur FresCoop construit automatiquement votre dossier de crédit.</p>
+          <h2>Chaque transaction devient une preuve. Chaque preuve construit un score.</h2>
+          <p className="public-subtitle">FresCoop capture automatiquement l'activité économique réelle et la transforme en dossier bancaire portable — sans changer les habitudes de l'agriculteur.</p>
         </div>
         <div className="public-mvp-grid">
           {solutionBlocs.map((bloc, i) => (
-            <article key={bloc.title} className="public-mvp-card">
+            <article key={bloc.title} className="public-mvp-card reveal">
               <span className="public-mvp-number">{i + 1}</span>
               <bloc.Icon size={28} />
               <strong>{bloc.title}</strong>
@@ -842,64 +892,128 @@ function PublicSitePage({ navigate, path }) {
       </section>
 
       <section id="comment" className="public-band">
-        <div>
-          <span className="eyebrow">Le parcours</span>
-          <h2>De l'inscription au premier crédit : 8 étapes.</h2>
+        <div className="reveal">
+          <span className="eyebrow">Comment ça marche</span>
+          <h2>De l'inscription au premier crédit : un parcours fluide en 8 étapes.</h2>
+          <p className="public-subtitle">L'agriculteur n'a rien à apprendre de nouveau. Il utilise la plateforme comme il gère déjà son activité — le scoring se construit en arrière-plan.</p>
         </div>
         <div className="public-steps-8">
           {parcoursSteps.map((step, i) => (
-            <article key={step}><span>{i + 1}</span><strong>{step}</strong></article>
+            <article key={step} className="reveal"><span>{i + 1}</span><strong>{step}</strong></article>
           ))}
         </div>
       </section>
 
-      <section id="impact" className="public-band public-diff-section">
-        <div>
-          <span className="eyebrow">Impact mesurable</span>
-          <h2>Des résultats concrets pour chaque acteur.</h2>
+      <section id="modele" className="public-band public-diff-section">
+        <div className="reveal">
+          <span className="eyebrow">Modèle économique</span>
+          <h2>Gratuit pour l'agriculteur. Rentable pour tous.</h2>
+          <p className="public-subtitle">Un modèle à 3 sources de revenus, viable dès 500 utilisateurs actifs, scalable à l'échelle UEMOA.</p>
         </div>
         <div className="public-probleme-grid">
-          <article>
-            <strong>65%</strong>
-            <span>deviennent bancables en 3 mois</span>
-            <p>Les agriculteurs actifs atteignent un score suffisant pour le microcrédit.</p>
+          <article className="reveal modele-card">
+            <div className="modele-icon"><CircleDollarSign size={24} /></div>
+            <strong>Commission marketplace</strong>
+            <span>2-5% par transaction</span>
+            <p>L'agriculteur vend 15-30% plus cher qu'au marché local grâce à l'accès direct aux acheteurs. La commission est invisible dans le gain de marge.</p>
           </article>
-          <article>
-            <strong>-80%</strong>
-            <span>coût d'évaluation pour les SFD</span>
-            <p>Le scoring automatique remplace l'enquête terrain coûteuse.</p>
+          <article className="reveal modele-card">
+            <div className="modele-icon"><Building2 size={24} /></div>
+            <strong>Scoring-as-a-Service</strong>
+            <span>Abonnement SFD/Banques</span>
+            <p>Les institutions financières paient un forfait mensuel pour accéder aux scores vérifiés. Elles économisent 80% vs l'enquête terrain traditionnelle.</p>
           </article>
-          <article>
-            <strong>+45%</strong>
-            <span>revenu additionnel</span>
-            <p>Accès au marché + crédit d'investissement = production augmentée.</p>
+          <article className="reveal modele-card">
+            <div className="modele-icon"><Sprout size={24} /></div>
+            <strong>Services à valeur ajoutée</strong>
+            <span>Assurance, logistique, intrants</span>
+            <p>Partenariats avec assureurs agricoles et fournisseurs. L'agriculteur accède à des services jusque-là inaccessibles, nous touchons une commission d'apport.</p>
           </article>
         </div>
-        <div className="public-diff-list" style={{ marginTop: '2rem' }}>
+        <div className="public-diff-list reveal" style={{ marginTop: '2rem' }}>
           {[
-            'Score de bancabilité calculé à partir de preuves réelles, pas de déclarations.',
-            'Dossier portable : un PDF avec QR code présentable à toute banque ou SFD.',
-            "Consentement explicite : l'agriculteur contrôle qui voit ses données.",
-            'Inclusion totale : USSD *384*FRES# pour les zones sans smartphone.',
+            'Zéro barrière à l\'entrée : inscription et scoring gratuits pour chaque agriculteur.',
+            'Point mort atteint à 500 agriculteurs actifs + 3 SFD partenaires.',
+            'Scalabilité : coût marginal quasi-nul par agriculteur supplémentaire.',
+            'TAM : 60 millions d\'agriculteurs × 8 pays UEMOA = opportunité massive.',
           ].map((point) => (
             <article key={point}><CheckCircle2 size={20} /><p>{point}</p></article>
           ))}
         </div>
       </section>
 
-      <section className="public-band public-uemoa-section">
+      <section id="impact" className="public-band public-impact-section">
+        <div className="reveal">
+          <span className="eyebrow">Impact sur les utilisateurs et le marché</span>
+          <h2>Des résultats concrets. Mesurables. Transformateurs.</h2>
+          <p className="public-subtitle">FresCoop ne digitalise pas un processus existant — nous créons un pont qui n'existait pas entre l'activité agricole informelle et le système financier formel.</p>
+        </div>
+        <div className="impact-metrics-row reveal">
+          <div className="impact-metric impact-metric-green">
+            <strong><AnimatedCounter end={65} suffix="%" /></strong>
+            <span>deviennent bancables en 90 jours</span>
+          </div>
+          <div className="impact-metric impact-metric-blue">
+            <strong><AnimatedCounter prefix="-" end={80} suffix="%" /></strong>
+            <span>coût d'évaluation pour les SFD</span>
+          </div>
+          <div className="impact-metric impact-metric-gold">
+            <strong><AnimatedCounter prefix="+" end={45} suffix="%" /></strong>
+            <span>de revenu additionnel pour l'agriculteur</span>
+          </div>
+          <div className="impact-metric impact-metric-purple">
+            <strong><AnimatedCounter prefix="×" end={5} /></strong>
+            <span>plus d'agriculteurs financés par SFD</span>
+          </div>
+        </div>
+        <div className="impact-social-grid">
+          <article className="reveal impact-social-card">
+            <div className="impact-social-icon"><Users size={22} /></div>
+            <strong>Inclusion des femmes</strong>
+            <p>40% des utilisateurs cibles sont des agricultrices — souvent les plus exclues. Le scoring objectif élimine les biais de genre.</p>
+          </article>
+          <article className="reveal impact-social-card">
+            <div className="impact-social-icon"><ShieldCheck size={22} /></div>
+            <strong>Souveraineté des données</strong>
+            <p>L'agriculteur décide qui voit son dossier. Portabilité totale. Conforme aux principes UEMOA de protection des données.</p>
+          </article>
+          <article className="reveal impact-social-card">
+            <div className="impact-social-icon"><PhoneCall size={22} /></div>
+            <strong>Zones rurales — USSD *384*FRES#</strong>
+            <p>Accès complet via téléphone basique. Pas besoin de smartphone ni de connexion internet stable. Personne n'est exclu.</p>
+          </article>
+          <article className="reveal impact-social-card">
+            <div className="impact-social-icon"><Sprout size={22} /></div>
+            <strong>Sécurité alimentaire</strong>
+            <p>Plus d'agriculteurs financés = plus d'investissement = plus de production. Impact direct sur la souveraineté alimentaire régionale.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="public-band public-uemoa-section reveal">
         <div className="public-uemoa-copy">
           <img src="/gim-uemoa-logo.png" alt="GIM-UEMOA" className="gim-uemoa-logo" />
-          <span className="eyebrow">Espace UEMOA</span>
-          <h2>Un scoring conçu pour les 8 pays de l'UEMOA.</h2>
-          <p className="public-subtitle">FresCoop démarre au Sénégal, puis s'étend à toute la zone franc CFA avec la même infrastructure de scoring et de vérification.</p>
+          <span className="eyebrow">Scalabilité UEMOA</span>
+          <h2>Un scoring conçu pour les 8 pays. Un déploiement progressif.</h2>
+          <p className="public-subtitle">FresCoop démarre au Sénégal avec un pilote de 500 agriculteurs, puis s'étend à toute la zone UEMOA grâce à une infrastructure 100% cloud et des partenariats GIM-UEMOA.</p>
           <div className="public-uemoa-countries">
-            {['Bénin', 'Burkina Faso', "Côte d'Ivoire", 'Guinée-Bissau', 'Mali', 'Niger', 'Sénégal', 'Togo'].map((country) => <span key={country}>{country}</span>)}
+            {['Sénégal 🚀', 'Côte d\'Ivoire', 'Mali', 'Burkina Faso', 'Bénin', 'Niger', 'Togo', 'Guinée-Bissau'].map((country) => <span key={country}>{country}</span>)}
           </div>
         </div>
         <figure className="public-uemoa-map">
           <img src={publicImages.uemoaMap} alt="Carte UEMOA" />
         </figure>
+      </section>
+
+      <section className="public-demo-banner reveal">
+        <div>
+          <span className="eyebrow">Démonstration fonctionnelle</span>
+          <h2>Ce n'est pas un prototype. C'est un produit fonctionnel.</h2>
+          <p>Connectez-vous maintenant et testez le scoring en conditions réelles : publiez un produit, passez une commande, regardez le score monter.</p>
+          <div className="button-row" style={{ justifyContent: 'center' }}>
+            <Button onClick={() => navigate('/login')}><UserCheck size={18} /> Accéder à la démo live</Button>
+          </div>
+        </div>
       </section>
 
       <footer id="contact" className="public-footer">
@@ -1822,11 +1936,7 @@ function AdminHomePage({ navigate, stats, store }) {
 
   const agriculteurs = store.users.filter((u) => u.role === 'agriculteur');
   const scoredFarmers = agriculteurs.map((farmer) => {
-    const prods = store.products.filter((p) => p.ownerId === farmer.id && p.status === 'Publie');
-    const ords = store.orders.filter((o) => o.sellerId === farmer.id);
-    const txns = store.transactions.filter((t) => t.ownerId === farmer.id);
-    const doss = store.dossiers.filter((d) => d.ownerId === farmer.id && d.status === 'Valide');
-    const score = Math.min(100, Math.min(30, prods.length * 10) + Math.min(30, ords.length * 10) + Math.min(25, txns.length * 8) + Math.min(15, doss.length * 15));
+    const score = buildBancabiliteDossier(farmer, store).score;
     return { farmer, score };
   });
   const bancables = scoredFarmers.filter((f) => f.score >= 75).length;
@@ -7759,16 +7869,7 @@ function IconCircle({ icon: Icon }) {
 }
 
 function FinanceScoreCard({ navigate, store, user }) {
-  const products = store.products.filter((item) => item.ownerId === user.id);
-  const orders = store.orders.filter((item) => item.sellerId === user.id);
-  const transactions = store.transactions.filter((item) => item.ownerId === user.id);
-  const dossiers = store.dossiers.filter((item) => item.ownerId === user.id);
-  const score = Math.min(100,
-    Math.min(30, products.filter((item) => item.status === 'Publie').length * 10) +
-    Math.min(30, orders.length * 10) +
-    Math.min(25, transactions.length * 8) +
-    Math.min(15, dossiers.filter((item) => item.status === 'Valide').length * 15)
-  );
+  const score = buildBancabiliteDossier(user, store).score;
   const nextStep = score >= 75
     ? 'Votre profil est credible pour une preuve économique ou une attestation.'
     : 'Ajoutez ventes, justificatifs et dossiers pour augmenter la crédibilité.';
@@ -9415,12 +9516,7 @@ function buildSellerHealth(store) {
     const orders = store.orders.filter((item) => item.sellerId === user.id);
     const messages = store.messages.filter((item) => item.sellerId === user.id);
     const dossiers = store.dossiers.filter((item) => item.ownerId === user.id);
-    const profileScore = (user.phone ? 10 : 0) + (user.region ? 10 : 0) + (user.organization ? 10 : 0);
-    const productScore = Math.min(30, products.filter((item) => item.status === 'Publie').length * 10);
-    const orderScore = Math.min(25, orders.length * 8);
-    const trustScore = Math.min(15, dossiers.filter((item) => item.status === 'Valide').length * 15);
-    const messageScore = messages.some((item) => item.status === 'Nouveau') ? 0 : 10;
-    const score = Math.min(100, profileScore + productScore + orderScore + trustScore + messageScore);
+    const score = buildBancabiliteDossier(user, store).score;
     const recommendation = getSellerRecommendation({ user, products, orders, dossiers, messages });
     return { user, products, orders, score, recommendation };
   }).sort((a, b) => a.score - b.score);

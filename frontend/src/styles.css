@@ -9023,3 +9023,244 @@ label, .field-label {
     box-shadow: 0 8px 24px rgba(7, 27, 20, 0.10);
   }
 }
+
+/* ==========================================================================
+   Scroll Reveal Animations — Public Site
+   ========================================================================== */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.public-probleme-grid .reveal:nth-child(2) { transition-delay: 0.12s; }
+.public-probleme-grid .reveal:nth-child(3) { transition-delay: 0.24s; }
+.public-mvp-grid .reveal:nth-child(2) { transition-delay: 0.08s; }
+.public-mvp-grid .reveal:nth-child(3) { transition-delay: 0.16s; }
+.public-mvp-grid .reveal:nth-child(4) { transition-delay: 0.24s; }
+.public-mvp-grid .reveal:nth-child(5) { transition-delay: 0.32s; }
+.public-steps-8 .reveal:nth-child(2) { transition-delay: 0.06s; }
+.public-steps-8 .reveal:nth-child(3) { transition-delay: 0.12s; }
+.public-steps-8 .reveal:nth-child(4) { transition-delay: 0.18s; }
+.public-steps-8 .reveal:nth-child(5) { transition-delay: 0.24s; }
+.public-steps-8 .reveal:nth-child(6) { transition-delay: 0.30s; }
+.public-steps-8 .reveal:nth-child(7) { transition-delay: 0.36s; }
+.public-steps-8 .reveal:nth-child(8) { transition-delay: 0.42s; }
+.impact-social-grid .reveal:nth-child(2) { transition-delay: 0.1s; }
+.impact-social-grid .reveal:nth-child(3) { transition-delay: 0.2s; }
+.impact-social-grid .reveal:nth-child(4) { transition-delay: 0.3s; }
+
+/* ==========================================================================
+   Hero KPIs
+   ========================================================================== */
+
+.hero-kpis {
+  display: flex;
+  gap: 24px;
+  margin: 24px 0;
+  flex-wrap: wrap;
+}
+
+.hero-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.hero-kpi strong,
+.hero-kpi > span:first-child {
+  font-size: 2rem;
+  font-weight: 950;
+  color: #4ade80;
+  line-height: 1;
+}
+
+.hero-kpi > span:last-child {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 700;
+}
+
+.public-hero h1 em {
+  font-style: normal;
+  color: #4ade80;
+}
+
+/* ==========================================================================
+   Modèle économique cards
+   ========================================================================== */
+
+.modele-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.modele-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--green-700), #4ade80);
+  border-radius: 4px 4px 0 0;
+}
+
+.modele-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(31, 131, 93, 0.1);
+  color: var(--green-700);
+  margin-bottom: 4px;
+}
+
+/* ==========================================================================
+   Impact Section
+   ========================================================================== */
+
+.public-impact-section {
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+  padding-top: 64px;
+  padding-bottom: 64px;
+}
+
+.impact-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.impact-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 16px;
+  border-radius: 16px;
+  text-align: center;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.impact-metric:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+.impact-metric strong {
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
+  line-height: 1;
+  font-weight: 950;
+}
+
+.impact-metric span {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.impact-metric-green strong { color: #16a34a; }
+.impact-metric-blue strong { color: #2563eb; }
+.impact-metric-gold strong { color: #d97706; }
+.impact-metric-purple strong { color: #7c3aed; }
+
+.impact-social-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.impact-social-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #ffffff;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.impact-social-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.impact-social-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(31, 131, 93, 0.1);
+  color: var(--green-700);
+}
+
+.impact-social-card strong {
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.impact-social-card p {
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ==========================================================================
+   Responsive — Impact & Modele
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .impact-metrics-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hero-kpis {
+    gap: 12px;
+  }
+  .hero-kpi {
+    padding: 10px 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .impact-metrics-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .impact-social-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero-kpis {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hero-kpi {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+  .hero-kpi > span:first-child {
+    font-size: 1.5rem;
+  }
+}

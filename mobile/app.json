@@ -4,11 +4,8 @@
     "slug": "frescoop-uemoa",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
       "backgroundColor": "#1B5E20"
     },
     "ios": {
@@ -16,14 +13,12 @@
       "bundleIdentifier": "com.frescoop.uemoa"
     },
     "android": {
+      "package": "com.frescoop.uemoa",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1B5E20"
-      },
-      "package": "com.frescoop.uemoa"
+      }
     },
-    "web": {
-      "bundler": "metro"
-    }
+    "platforms": ["ios", "android"],
+    "plugins": ["expo-asset", "expo-secure-store"]
   }
 }
