@@ -241,144 +241,144 @@ const publicImages = {
 const basePageMeta = {
   '/': {
     image: publicImages.hero,
-    kicker: 'Plateforme production',
-    title: 'FresCoop connecte vendeurs, clients, preuves et opérations avec des données saisies.',
-    body: 'Login, rôles, comptes, produits, commandes, dossiers, attestations et preuves économiques sont séparés par espace.',
+    kicker: 'Plateforme',
+    title: 'FresCoop — vendre, prouver, financer.',
+    body: 'Connectez vendeurs et acheteurs avec des preuves vérifiables.',
   },
   '/login': {
     image: publicImages.auth,
-    kicker: 'Accès sécurisé',
-    title: 'Connectez-vous à votre espace FresCoop.',
-    body: 'Admin, agriculteur, acheteur B2B et client ont chacun des pages et actions distinctes.',
+    kicker: 'Connexion',
+    title: 'Accédez à votre espace.',
+    body: 'Chaque rôle a son espace dédié.',
   },
   '/marche': {
     image: publicImages.market,
-    kicker: 'Espace client',
-    title: 'Commander les articles disponibles et contacter les vendeurs.',
-    body: 'Les clients voient seulement le marché, leurs commandes, leurs messages et leur compte.',
+    kicker: 'Marché',
+    title: 'Trouvez et commandez des produits frais.',
+    body: 'Produits locaux disponibles près de chez vous.',
   },
   '/produits': {
     image: publicImages.products,
-    kicker: 'Produits vendeurs',
-    title: 'Agriculteurs et commerçants publient leurs produits réels.',
-    body: 'Chaque article appartient à un compte vendeur et peut être commande ou contacté par un client.',
+    kicker: 'Produits',
+    title: 'Gérez vos produits en vente.',
+    body: 'Publiez, modifiez et suivez vos articles.',
   },
   '/dossiers': {
     image: publicImages.dossiers,
-    kicker: 'Dossiers et preuves',
-    title: 'Soumettre les dossiers des personnes concernées avec pieces justificatives.',
-    body: 'Les attestations sont possibles si le dossier contient assez de preuves ou apres validation admin.',
+    kicker: 'Dossiers',
+    title: 'Soumettez vos pièces justificatives.',
+    body: 'Construisez votre dossier pour les attestations.',
   },
   '/attestations': {
     image: publicImages.attestations,
-    kicker: 'Attestations serieuses',
-    title: 'Générer des attestations avec code, score de preuve et dossier source.',
-    body: 'Un utilisateur sans ancienne attestation peut obtenir un certificat si ses preuves sont suffisantes.',
+    kicker: 'Attestations',
+    title: 'Certificats vérifiables par QR code.',
+    body: 'Générés à partir de vos preuves validées.',
   },
   '/preuves': {
     image: publicImages.proofs,
-    kicker: 'Preuve économique',
-    title: 'Transformer les ventes et paiements réels en preuve économique portable.',
-    body: 'Les preuves se basent sur transactions, paiements, acheteurs et justificatifs rattaches au compte.',
+    kicker: 'Preuves',
+    title: 'Vos ventes deviennent des preuves.',
+    body: 'Preuve économique portable pour le crédit.',
   },
   '/commandes': {
     image: publicImages.orders,
     kicker: 'Commandes',
-    title: 'Suivre commandes, contacts et reponses vendeurs.',
-    body: 'Clients, acheteurs et agriculteurs voient uniquement les commandes qui les concernent.',
+    title: 'Suivez vos commandes en cours.',
+    body: 'Statut, paiement et échanges vendeur.',
   },
   '/paiement': {
     image: publicImages.proofs,
-    kicker: 'Paiement partenaire',
-    title: 'Payer la commande via partenaire agree et obtenir un recu transparent.',
-    body: 'FresCoop ne detient pas de wallet. Le paiement est orchestre par Orange Money, banque, SFD ou fintech agreee.',
+    kicker: 'Paiement',
+    title: 'Payez via mobile money ou partenaire.',
+    body: 'Wave, Orange Money ou Free Money.',
   },
   '/operations': {
     image: publicImages.operations,
-    kicker: 'Operations terrain',
-    title: 'Administrer hubs, logistique, capacité et froid.',
-    body: 'Admin suit les sites opérationnels avec stock, temperature et responsable.',
+    kicker: 'Opérations',
+    title: 'Hubs, stockage et logistique.',
+    body: 'Gérez les sites, le stock et la chaîne du froid.',
   },
   '/lots': {
     image: publicImages.operations,
-    kicker: 'Lots froids intelligents',
-    title: 'Suivre le jumeau numerique du lot, du depot au paiement partenaire.',
-    body: 'QR, pesee, photos qualité, capteurs, durée de vie commerciale, debouche recommande et preuve économique explicable.',
+    kicker: 'Lots',
+    title: 'Traçabilité des lots agricoles.',
+    body: 'QR code, pesée, température et durée de vie.',
   },
   '/utilisateurs': {
     image: publicImages.admin,
-    kicker: 'Administration',
-    title: 'Gerer les comptes, roles et statuts des utilisateurs.',
-    body: 'L admin conserve une vue complete sur les acteurs, dossiers et preuves.',
+    kicker: 'Utilisateurs',
+    title: 'Gérez les comptes et les rôles.',
+    body: 'Vue complète des acteurs de la plateforme.',
   },
   '/impact': {
     image: publicImages.impact,
-    kicker: 'Impact filières UEMOA',
-    title: 'Pertes évitées, revenu additionnel, genre, CO2: des chiffres mesurables.',
-    body: 'Les KPI du hackathon UEMOA sont calculés à partir des produits, transactions, commandes, dossiers et capteurs saisis.',
+    kicker: 'Impact',
+    title: 'Indicateurs mesurables UEMOA.',
+    body: 'Pertes évitées, revenu, genre et CO2.',
   },
   '/bancabilite': {
     image: publicImages.impact,
-    kicker: 'Inclusion financiere',
-    title: 'Score de credit et dossier bancaire exportable.',
-    body: "Transformer l'activité réelle en dossier vérifiable pour banques, SFD et microfinance — sans wallet propriétaire.",
+    kicker: 'Bancabilité',
+    title: 'Score de crédit et dossier exportable.',
+    body: 'Activité réelle transformée en dossier bancaire.',
   },
   '/ussd': {
     image: publicImages.operations,
-    kicker: 'USSD · inclusion digitale',
-    title: 'Accéder a FresCoop depuis un simple téléphone a touches.',
-    body: '*384*FRES# pour les 70% de producteurs sans smartphone. Cours du jour, stock, ventes et paiements en wolof/pular.',
+    kicker: 'USSD',
+    title: 'FresCoop sur téléphone à touches.',
+    body: '*384*FRES# — accès sans smartphone.',
   },
   '/donnees': {
     image: publicImages.data,
-    kicker: 'Base applicative',
-    title: 'Exporter, importer et synchroniser les données de production.',
-    body: 'Les données sont centralisables via API localé et exportables pour migration vers une base de données.',
+    kicker: 'Données',
+    title: 'Export et synchronisation.',
+    body: 'Exportez vos données en JSON.',
   },
   '/compte': {
     image: publicImages.account,
-    kicker: 'Mon compte',
-    title: 'Gérer son profil, ses coordonnées et son activité.',
-    body: 'Chaque acteur complete son compte avant de vendre, commander ou soumettre des documents.',
+    kicker: 'Compte',
+    title: 'Votre profil et vos coordonnées.',
+    body: 'Complétez votre profil pour commencer.',
   },
 };
 
 const roleHomeMeta = {
   admin: {
     image: publicImages.impact,
-    kicker: 'Accueil admin',
-    title: 'Piloter les revenus, la confiance et les opportunités FresCoop.',
-    body: 'Un centre de décision pour convertir les commandes, activer les vendeurs, suivre la valeur du marché et produire un rapport filières UEMOA défendable.',
+    kicker: 'Admin',
+    title: 'Pilotez la plateforme FresCoop.',
+    body: 'Revenus, agriculteurs, financement et rapport UEMOA.',
   },
   agriculteur: {
     image: publicImages.agriculture,
-    kicker: "Accueil agriculteur",
-    title: 'Vendre plus, prouver ses revenus et devenir finançable.',
-    body: 'Un espace vendeur qui transforme stock, commandes, messages clients et preuves en opportunités commerciales concrètes.',
+    kicker: 'Agriculteur',
+    title: 'Vendez et construisez votre crédit.',
+    body: 'Produits, commandes et preuves économiques.',
   },
   agentTerrain: {
     image: publicImages.operations,
-    kicker: 'Accueil agent terrain',
-    title: "Confirmer les commandes même quand l'agriculteur n'est pas connecté.",
-    body: "Un espace de coordination pour appeler l'agriculteur, vérifier le stock et organiser la livraison.",
+    kicker: 'Agent terrain',
+    title: 'Coordonnez les commandes sur le terrain.',
+    body: 'Appels, vérification stock et livraisons.',
   },
   client: {
     image: publicImages.market,
-    kicker: 'Accueil client',
-    title: 'Acheter localement, suivre ses commandes et parler aux vendeurs.',
-    body: 'Un espace simple pour trouver les produits disponibles, confirmer un panier, suivre les commandes et garder les conversations avec les vendeurs.',
+    kicker: 'Client',
+    title: 'Achetez frais, près de chez vous.',
+    body: 'Marché, panier et suivi de commandes.',
   },
   acheteurB2B: {
     image: publicImages.market,
-    kicker: 'Accueil acheteur B2B',
-    title: 'Réserver des lots fiables et relancer les achats rentables.',
-    body: 'Un catalogue de lots disponibles avec qualité, volume, localisation, fenêtre de consommation et re-achat en un clic.',
+    kicker: 'Acheteur B2B',
+    title: 'Lots fiables en volume.',
+    body: 'Catalogue, réservation et re-achat.',
   },
   partenaire: {
     image: publicImages.proofs,
-    kicker: 'Accueil partenaire',
-    title: 'Consulter uniquement les preuves consenties et explicables.',
-    body: 'Un espace finance ou assurance pour voir activité agrégée, indice économique explicable et recommandations consenties.',
+    kicker: 'Partenaire',
+    title: 'Dossiers vérifiés des agriculteurs.',
+    body: 'Scores, preuves et recommandations.',
   },
 };
 
@@ -1688,16 +1688,16 @@ function FieldAgentHomePage({ currentUser, navigate, store }) {
       <section className="role-home-panel transport-home-panel">
         <div>
           <span className="eyebrow">Agent Terrain</span>
-          <h2>Coordonner les commandes quand l'agriculteur n'est pas connecté.</h2>
-          <p>Votre rôle est d'appeler l'agriculteur, confirmer le stock et garder la commande réactive jusqu'à livraison.</p>
+          <h2>Suivez et coordonnez les commandes.</h2>
+          <p>Appelez les agriculteurs, confirmez les stocks et organisez les livraisons.</p>
           <div className="button-row">
-            <Button onClick={() => navigate('/commandes')}><PhoneCall size={18} /> Voir commandes terrain</Button>
-            <Button variant="secondary" onClick={() => navigate('/operations')}><Truck size={18} /> Hubs et opérations</Button>
+            <Button onClick={() => navigate('/commandes')}><PhoneCall size={18} /> Commandes</Button>
+            <Button variant="secondary" onClick={() => navigate('/operations')}><Truck size={18} /> Opérations</Button>
           </div>
         </div>
         <div className="home-highlight">
           <strong>{formatNumber(toCoordinate.length)}</strong>
-          <span>commandes à suivre</span>
+          <span>à suivre</span>
         </div>
       </section>
       <div className="status-grid">
@@ -1733,8 +1733,8 @@ function FrescoopRoleHomePage({ currentUser, navigate, store }) {
         <section className="role-home-panel bancabilite-hero">
           <div>
             <span className="eyebrow">Partenaire financier</span>
-            <h2>Consultez les dossiers bancaires vérifiés des agriculteurs.</h2>
-            <p>FresCoop génère des scores de bancabilité basés sur des données réelles de production, vente et livraison. Chaque dossier est vérifiable par QR code et portable.</p>
+            <h2>Dossiers vérifiés des agriculteurs.</h2>
+            <p>Scores basés sur les ventes réelles. Chaque dossier est vérifiable par QR code.</p>
             <div className="button-row">
               <Button onClick={() => navigate('/bancabilite')}><Landmark size={18} /> Dossiers bancables</Button>
               <Button variant="secondary" onClick={() => navigate('/impact')}><BarChart3 size={18} /> Indicateurs</Button>
@@ -1838,9 +1838,9 @@ function AdminHomePage({ navigate, stats, store }) {
     <PageFrame>
       <section className="money-hero admin-money-hero bancabilite-hero">
         <div>
-          <span className="eyebrow">Pipeline Financement Agricole</span>
-          <h2>Rendre les agriculteurs bancables : le coeur de FresCoop.</h2>
-          <p>Suivez combien de producteurs atteignent un score suffisant pour accéder au credit. Chaque vente, preuve et livraison les rapproche du financement.</p>
+          <span className="eyebrow">Tableau de bord</span>
+          <h2>Pilotez le financement agricole.</h2>
+          <p>Suivez les agriculteurs vers la bancabilité : ventes, preuves et scores en temps réel.</p>
           <div className="button-row">
             <Button onClick={() => navigate('/bancabilite')}><Landmark size={18} /> Vue bancabilité</Button>
             <Button variant="secondary" onClick={() => navigate('/impact')}><BarChart3 size={18} /> Impact</Button>
@@ -1856,9 +1856,9 @@ function AdminHomePage({ navigate, stats, store }) {
       </section>
 
       <div className="money-kpi-grid">
-        <MoneyKpi icon={Landmark} label="Bancables (75+)" value={bancables} detail="prêts pour une demande de credit" />
-        <MoneyKpi icon={Activity} label="En progression (40-74)" value={enProgression} detail="accumulent ventes et preuves" />
-        <MoneyKpi icon={Users} label="Débutants (0-39)" value={débutants} detail="a accompagner vers le scoring" />
+        <MoneyKpi icon={Landmark} label="Bancables" value={bancables} detail="score 75+" />
+        <MoneyKpi icon={Activity} label="En progression" value={enProgression} detail="score 40-74" />
+        <MoneyKpi icon={Users} label="Débutants" value={débutants} detail="score 0-39" />
         <MoneyKpi icon={CircleDollarSign} label="Valeur marché" value={formatMoney(revenue.catalogValue)} detail={`${stats.products} produit(s)`} />
       </div>
 
@@ -1963,27 +1963,27 @@ function SellerHomePage({ currentUser, navigate, store }) {
     <PageFrame>
       <section className="money-hero seller-money-hero bancabilite-hero">
         <div>
-          <span className="eyebrow">Mon parcours vers le financement</span>
-          <h2>Chaque vente et chaque preuve vous rapprochent du credit.</h2>
-          <p>Vendez, livrez, accumulez des preuves : FresCoop transforme votre activité reelle en score de bancabilité reconnu par les banques et SFD de la zone UEMOA.</p>
+          <span className="eyebrow">Mon espace vendeur</span>
+          <h2>Vendez, prouvez, obtenez un crédit.</h2>
+          <p>Vos ventes et livraisons construisent votre dossier bancaire automatiquement.</p>
           <div className="button-row">
-            <Button onClick={() => navigate('/bancabilite')}><Landmark size={18} /> Mon score et dossier</Button>
-            <Button variant="secondary" onClick={() => navigate('/produits')}><Plus size={18} /> Ajouter produit</Button>
+            <Button onClick={() => navigate('/bancabilite')}><Landmark size={18} /> Mon score</Button>
+            <Button variant="secondary" onClick={() => navigate('/produits')}><Plus size={18} /> Produits</Button>
             <Button variant="secondary" onClick={() => navigate('/commandes')}><ShoppingCart size={18} /> Commandes</Button>
           </div>
         </div>
         <div className="money-hero-score bancabilite-ring">
-          <span>Score de bancabilité</span>
+          <span>Bancabilité</span>
           <strong className={`score-${scoreTone}`}>{bancabiliteScore}</strong>
           <small>{scoreLevel}</small>
         </div>
       </section>
 
       <div className="money-kpi-grid">
-        <MoneyKpi icon={Landmark} label="Bancabilité" value={`${bancabiliteScore}/100`} detail={scoreLevel} />
-        <MoneyKpi icon={CircleDollarSign} label="Ventes prouvees" value={formatMoney(orderValue)} detail={`${orders.length} commande(s) tracees`} />
-        <MoneyKpi icon={Store} label="Produits actifs" value={`${publishedProducts.length}/${products.length}`} detail="visibles sur le marché" />
-        <MoneyKpi icon={FileCheck2} label="Preuves au dossier" value={transactions.length + dossiers.length} detail="justificatifs exploitables" />
+        <MoneyKpi icon={Landmark} label="Score" value={`${bancabiliteScore}/100`} detail={scoreLevel} />
+        <MoneyKpi icon={CircleDollarSign} label="Ventes" value={formatMoney(orderValue)} detail={`${orders.length} commande(s)`} />
+        <MoneyKpi icon={Store} label="Produits" value={`${publishedProducts.length}/${products.length}`} detail="en ligne" />
+        <MoneyKpi icon={FileCheck2} label="Preuves" value={transactions.length + dossiers.length} detail="au dossier" />
       </div>
 
       <div className="split-layout">
@@ -2045,15 +2045,15 @@ function SellerHomePage({ currentUser, navigate, store }) {
         </section>
 
         <section className="panel">
-          <PanelTitle icon={Landmark} title="Progression vers le crédit" />
+          <PanelTitle icon={Landmark} title="Mon crédit" />
           <div className="finance-score-card">
             <div className="score-ring" style={{ background: `conic-gradient(${bancabiliteScore >= 75 ? '#1f835d' : bancabiliteScore >= 40 ? '#4fb07e' : bancabiliteScore >= 20 ? '#d99912' : '#e54d35'} 0deg ${Math.round(bancabiliteScore * 3.6)}deg, var(--line, #e5e7eb) ${Math.round(bancabiliteScore * 3.6)}deg)` }}><strong>{bancabiliteScore}</strong><span>/100</span></div>
             <div>
-              <strong>Dossier bancaire FresCoop</strong>
-              <p>{bancabiliteScore >= 75 ? "Votre profil est éligible. Exportez votre dossier." : "Continuez à vendre pour devenir bancable."}</p>
+              <strong>{bancabiliteScore >= 75 ? "Éligible au crédit" : "Dossier en construction"}</strong>
+              <p>{bancabiliteScore >= 75 ? "Exportez votre dossier." : "Vendez pour augmenter votre score."}</p>
               <div className="button-row">
-                <Button variant="secondary" onClick={() => navigate('/bancabilite')}><FileCheck2 size={16} /> Voir mon dossier</Button>
-                {bancabiliteScore >= 60 && <Button onClick={() => navigate('/bancabilite')}><Landmark size={16} /> Demander un crédit</Button>}
+                <Button variant="secondary" onClick={() => navigate('/bancabilite')}><FileCheck2 size={16} /> Dossier</Button>
+                {bancabiliteScore >= 60 && <Button onClick={() => navigate('/bancabilite')}><Landmark size={16} /> Crédit</Button>}
               </div>
             </div>
           </div>
@@ -2061,13 +2061,13 @@ function SellerHomePage({ currentUser, navigate, store }) {
       </div>
 
       <section className="panel">
-        <PanelTitle icon={ShieldCheck} title="Permissions selon votre score" />
+        <PanelTitle icon={ShieldCheck} title="Niveaux débloqués" />
         <div className="permissions-progress-grid">
-          <div className={`perm-item ${bancabiliteScore >= 0 ? 'unlocked' : 'locked'}`}><CheckCircle2 size={16} /><div><strong>Publier des produits</strong><small>Score 0+</small></div></div>
-          <div className={`perm-item ${bancabiliteScore >= 20 ? 'unlocked' : 'locked'}`}>{bancabiliteScore >= 20 ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}<div><strong>Soumettre des preuves</strong><small>Score 20+</small></div></div>
-          <div className={`perm-item ${bancabiliteScore >= 40 ? 'unlocked' : 'locked'}`}>{bancabiliteScore >= 40 ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}<div><strong>Demander un micro-crédit</strong><small>Score 40+</small></div></div>
-          <div className={`perm-item ${bancabiliteScore >= 60 ? 'unlocked' : 'locked'}`}>{bancabiliteScore >= 60 ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}<div><strong>Exporter dossier PDF</strong><small>Score 60+</small></div></div>
-          <div className={`perm-item ${bancabiliteScore >= 75 ? 'unlocked' : 'locked'}`}>{bancabiliteScore >= 75 ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}<div><strong>Accès partenaires finance</strong><small>Score 75+</small></div></div>
+          <div className={`perm-item ${bancabiliteScore >= 0 ? 'unlocked' : 'locked'}`}><CheckCircle2 size={16} /><div><strong>Publier</strong><small>0+</small></div></div>
+          <div className={`perm-item ${bancabiliteScore >= 20 ? 'unlocked' : 'locked'}`}>{bancabiliteScore >= 20 ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}<div><strong>Preuves</strong><small>20+</small></div></div>
+          <div className={`perm-item ${bancabiliteScore >= 40 ? 'unlocked' : 'locked'}`}>{bancabiliteScore >= 40 ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}<div><strong>Micro-crédit</strong><small>40+</small></div></div>
+          <div className={`perm-item ${bancabiliteScore >= 60 ? 'unlocked' : 'locked'}`}>{bancabiliteScore >= 60 ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}<div><strong>Export PDF</strong><small>60+</small></div></div>
+          <div className={`perm-item ${bancabiliteScore >= 75 ? 'unlocked' : 'locked'}`}>{bancabiliteScore >= 75 ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}<div><strong>Partenaires</strong><small>75+</small></div></div>
         </div>
       </section>
     </PageFrame>
@@ -2087,17 +2087,17 @@ function ClientHomePage({ currentUser, navigate, store }) {
       <section className="role-home-panel client-home-panel">
         <div>
           <span className="eyebrow">Bonjour {currentUser.name}</span>
-          <h2>Votre espace client FresCoop</h2>
-          <p>Découvrez les produits publiés, preparez un panier, confirmez vos commandes et gardez les échanges avec les vendeurs au même endroit.</p>
+          <h2>Achetez frais, suivez vos commandes.</h2>
+          <p>Trouvez des produits locaux, commandez et échangez avec les vendeurs.</p>
           <div className="button-row">
-            <Button onClick={() => navigate('/marche')}><ShoppingCart size={18} /> Aller au marché</Button>
-            <Button variant="secondary" onClick={() => navigate('/commandes')}><ReceiptText size={18} /> Mes commandes</Button>
+            <Button onClick={() => navigate('/marche')}><ShoppingCart size={18} /> Marché</Button>
+            <Button variant="secondary" onClick={() => navigate('/commandes')}><ReceiptText size={18} /> Commandes</Button>
           </div>
         </div>
         <div className="home-highlight">
           <ShoppingCart size={28} />
           <strong>{cartCount || 0}</strong>
-          <span>{cartCount === 0 ? 'panier vide' : `article${cartCount > 1 ? 's' : ''} dans le panier`}</span>
+          <span>{cartCount === 0 ? 'panier vide' : `article${cartCount > 1 ? 's' : ''}`}</span>
         </div>
       </section>
 
@@ -2109,10 +2109,10 @@ function ClientHomePage({ currentUser, navigate, store }) {
       </div>
 
       <div className="quick-grid">
-        <QuickAction icon={Search} title="Trouver un produit" body="Filtrer les offres par nom, zone ou catégorie." onClick={() => navigate('/marche')} />
-        <QuickAction icon={CheckCircle2} title="Confirmer le panier" body="Vérifier quantites, total et vendeur avant envoi." onClick={() => navigate('/commandes')} />
-        <QuickAction icon={MessageSquare} title="Discuter avec vendeur" body="Demander prix, disponibilité ou details produit." onClick={() => navigate('/commandes')} />
-        <QuickAction icon={Settings} title="Completer mon compte" body="Ajouter téléphone, region et organisation." onClick={() => navigate('/compte')} />
+        <QuickAction icon={Search} title="Trouver un produit" body="Rechercher par nom, zone ou catégorie." onClick={() => navigate('/marche')} />
+        <QuickAction icon={CheckCircle2} title="Mon panier" body="Voir et confirmer mes articles." onClick={() => navigate('/commandes')} />
+        <QuickAction icon={MessageSquare} title="Messages" body="Parler aux vendeurs." onClick={() => navigate('/commandes')} />
+        <QuickAction icon={Settings} title="Mon compte" body="Profil et coordonnées." onClick={() => navigate('/compte')} />
       </div>
 
       <div className="split-layout">
@@ -8328,7 +8328,25 @@ function AppFooter({ currentUser, navigate }) {
 }
 
 function PageFrame({ children }) {
-  return <section className="page-frame">{children}</section>;
+  const [showScroll, setShowScroll] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowScroll(window.scrollY > 300);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  return (
+    <section className="page-frame">
+      {children}
+      <button
+        type="button"
+        className={`scroll-top-btn ${showScroll ? 'visible' : ''}`}
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        aria-label="Retour en haut"
+      >
+        <ChevronUp size={20} />
+      </button>
+    </section>
+  );
 }
 
 function PanelTitle({ icon: Icon, title }) {
