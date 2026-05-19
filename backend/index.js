@@ -8,6 +8,7 @@ import { MongoClient } from 'mongodb';
 import { createMutex } from './mutex.js';
 import { buildSeededAdmins, buildSeededDemoUser, getAdminPasswordHash, getDemoPasswordHash, getMobileDemoPasswordHash } from './seed-config.js';
 import { generateLocalAnswer } from './chatbot-fallback.js';
+import { processPayment, createLoan, applyDeduction, addToGuaranteeFund, getLoanSummary, getCreditSystemStats, createSolidarityGroup } from './credit-system.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -287,6 +288,11 @@ createServer(async (request, response) => {
 
     if (request.url?.startsWith('/api/yaay/chat')) {
       await handleYaayChat(request, response);
+      return;
+    }
+
+    if (request.url?.startsWith('/api/credit')) {
+      await handleCredit(request, response);
       return;
     }
 
@@ -1507,6 +1513,117 @@ function callOpenRouter(apiKey, model, messages, options = {}) {
 
 const backupsDir = path.join(dataDir, 'backups');
 await mkdir(backupsDir, { recursive: true });
+
+// ============================================================================
+// CREDIT SYSTEM API
+// ============================================================================
+async function handleCredit(request, response) {
+  const authData = requireAuth(request);
+  if (!authData) {
+    sendJson(response, 401, { error: 'Non autorisé' });
+    return;
+  }
+
+  const url = new URL(request.url || '/', `http://${request.headers.host}`);
+  const endpoint = url.pathname.replace('/api/credit/', '').replace('/api/credit', '');
+
+  // GET /api/credit/summary — loan summary for current user
+  if (request.method === 'GET' && (endpoint === 'summary' || endpoint === '')) {
+    const store = await readStore();
+    const summary = getLoanSummary(authData.uid, store);
+    sendJson(response, 200, { ok: true, loan: summary });
+    return;
+  }
+
+  // GET /api/credit/stats — admin only: system-wide credit stats
+  if (request.method === 'GET' && endpoint === 'stats') {
+    if (authData.role !== 'admin') {
+      sendJson(response, 403, { error: 'Accès réservé aux administrateurs' });
+      return;
+    }
+    const store = await readStore();
+    const stats = getCreditSystemStats(store);
+    sendJson(response, 200, { ok: true, stats });
+    return;
+  }
+
+  // POST /api/credit/request — farmer requests a loan
+  if (request.method === 'POST' && endpoint === 'request') {
+    const body = await readBody(request);
+    const { amount } = JSON.parse(body || '{}');
+    if (!amount || amount < 50000 || amount > 5000000) {
+      sendJson(response, 400, { error: 'Montant invalide (50 000 - 5 000 000 FCFA)' });
+      return;
+    }
+
+    const result = await storeMutex.withLock(async () => {
+      const store = await readStore();
+      const existingLoan = (store.loans || []).find(l => l.userId === authData.uid && l.status === 'active');
+      if (existingLoan) {
+        return { status: 400, body: { error: 'Vous avez déjà un prêt actif en cours de remboursement.' } };
+      }
+      const loan = createLoan(authData.uid, amount, store);
+      await writeStore(store);
+      return { status: 201, body: { ok: true, loan } };
+    });
+
+    sendJson(response, result.status, result.body);
+    return;
+  }
+
+  // POST /api/credit/simulate-payment — simulate a payment with auto-deduction
+  if (request.method === 'POST' && endpoint === 'simulate-payment') {
+    const body = await readBody(request);
+    const { amount, sellerId } = JSON.parse(body || '{}');
+    if (!amount || !sellerId) {
+      sendJson(response, 400, { error: 'amount et sellerId requis' });
+      return;
+    }
+
+    const result = await storeMutex.withLock(async () => {
+      const store = await readStore();
+      const seller = (store.users || []).find(u => u.id === sellerId);
+      if (!seller) return { status: 404, body: { error: 'Vendeur introuvable' } };
+
+      const payment = processPayment(amount, seller, store);
+
+      if (payment.loanId && payment.deducted > 0) {
+        applyDeduction(payment.loanId, payment.deducted, `pay_${Date.now()}`, store);
+      }
+      if (payment.guaranteeFund > 0) {
+        addToGuaranteeFund(payment.guaranteeFund, `pay_${Date.now()}`, store);
+      }
+
+      await writeStore(store);
+      return { status: 200, body: { ok: true, payment } };
+    });
+
+    sendJson(response, result.status, result.body);
+    return;
+  }
+
+  // POST /api/credit/solidarity-group — create a solidarity group
+  if (request.method === 'POST' && endpoint === 'solidarity-group') {
+    const body = await readBody(request);
+    const { memberIds } = JSON.parse(body || '{}');
+    if (!memberIds || !Array.isArray(memberIds) || memberIds.length !== 5) {
+      sendJson(response, 400, { error: 'Exactement 5 membres requis pour un groupe solidaire' });
+      return;
+    }
+
+    const result = await storeMutex.withLock(async () => {
+      const store = await readStore();
+      const group = createSolidarityGroup(memberIds, store);
+      await writeStore(store);
+      return { status: 201, body: { ok: true, group } };
+    });
+
+    sendJson(response, result.status, result.body);
+    return;
+  }
+
+  sendJson(response, 404, { error: 'Endpoint crédit inconnu' });
+}
 
 async function handleStore(request, response) {
   if (request.method === 'GET') {

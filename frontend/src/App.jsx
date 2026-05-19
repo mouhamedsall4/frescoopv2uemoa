@@ -1126,7 +1126,7 @@ function PublicSitePage({ navigate, path }) {
         <div className="reveal modele-header">
           <span className="eyebrow">Modèle économique</span>
           <h2>Gratuit pour l'agriculteur. Rentable pour tous.</h2>
-          <p className="public-subtitle">Un modèle tripartite où chaque acteur gagne — conçu pour être viable dès 500 utilisateurs et scalable à 60 millions.</p>
+          <p className="public-subtitle">Un modèle tripartite où chaque acteur gagne — conçu pour être viable dès 100 utilisateurs et scalable à 60 millions.</p>
         </div>
 
         <div className="modele-flow reveal">
@@ -1196,7 +1196,7 @@ function PublicSitePage({ navigate, path }) {
           <div className="modele-viability-grid">
             <div className="modele-viability-item">
               <strong>Point mort</strong>
-              <span>500 agriculteurs + 3 SFD</span>
+              <span>100 agriculteurs + 3 SFD</span>
               <em>Atteignable en 6 mois</em>
             </div>
             <div className="modele-viability-item">
@@ -1273,7 +1273,7 @@ function PublicSitePage({ navigate, path }) {
           <img src="/gim-uemoa-logo.png" alt="GIM-UEMOA" className="gim-uemoa-logo" />
           <span className="eyebrow">Scalabilité UEMOA</span>
           <h2>Un scoring conçu pour les 8 pays. Un déploiement progressif.</h2>
-          <p className="public-subtitle">FresCoop démarre au Sénégal avec un pilote de 500 agriculteurs, puis s'étend à toute la zone UEMOA grâce à une infrastructure 100% cloud et des partenariats GIM-UEMOA.</p>
+          <p className="public-subtitle">FresCoop démarre au Sénégal avec un pilote de 100 agriculteurs, puis s'étend à toute la zone UEMOA grâce à une infrastructure 100% cloud et des partenariats GIM-UEMOA.</p>
           <div className="public-uemoa-countries">
             {['Sénégal 🚀', 'Côte d\'Ivoire', 'Mali', 'Burkina Faso', 'Bénin', 'Niger', 'Togo', 'Guinée-Bissau'].map((country) => <span key={country}>{country}</span>)}
           </div>

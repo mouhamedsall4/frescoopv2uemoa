@@ -278,7 +278,7 @@ for i, (title, pct, pricing, desc) in enumerate(revenues):
 
 # Viability metrics at bottom
 viability = [
-    ('Point mort', '500 agri + 3 SFD', '6 mois'),
+    ('Point mort', '100 agri + 3 SFD', '6 mois'),
     ('Cout marginal', '~0 FCFA/agri', '100% cloud'),
     ('TAM', '60M x 8 pays', 'Zone UEMOA'),
     ('Projection An 1', '5 000 utilisateurs', 'CA: 45M FCFA'),
