@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
-const apiEntry = path.join(rootDir, 'server', 'index.js');
+const apiEntry = path.join(rootDir, 'backend', 'index.js');
 const preferredApiPort = Number(process.env.FRESCOOP_API_PORT || '4174');
 const apiPort = await findAvailablePort(preferredApiPort);
 const devEnv = { ...process.env, FRESCOOP_API_PORT: String(apiPort) };
@@ -20,17 +20,18 @@ const api = spawn(process.execPath, [apiEntry, '--api-only'], {
   env: devEnv,
 });
 
+const frontendDir = path.join(rootDir, 'frontend');
 let vite;
 if (process.platform === 'win32') {
   vite = spawn('cmd.exe', ['/c', 'npx vite --host 0.0.0.0'], {
     stdio: 'inherit',
-    cwd: rootDir,
+    cwd: frontendDir,
     env: devEnv,
   });
 } else {
   vite = spawn('npx', ['vite', '--host', '0.0.0.0'], {
     stdio: 'inherit',
-    cwd: rootDir,
+    cwd: frontendDir,
     env: devEnv,
   });
 }

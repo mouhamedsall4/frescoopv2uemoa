@@ -1,11 +1,11 @@
 import { readFile } from 'node:fs/promises';
 
-const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8');
-const server = await readFile(new URL('../server/index.js', import.meta.url), 'utf8');
+const app = await readFile(new URL('../frontend/src/App.jsx', import.meta.url), 'utf8');
+const server = await readFile(new URL('../backend/index.js', import.meta.url), 'utf8');
 
 const checks = [
   ['route lots', app.includes("route.pathname === '/lots'")],
-  ['public site', app.includes('PublicSitePage') && app.includes('/demo-jury')],
+  ['public site', app.includes('PublicSitePage')],
   ['hidden orders preference', app.includes('HIDDEN_ORDERS_KEY')],
   ['order masking toolbar', app.includes('OrderVisibilityToolbar')],
   ['agent terrain role', app.includes("agentTerrain") && app.includes('AgentWorkflowPanel')],

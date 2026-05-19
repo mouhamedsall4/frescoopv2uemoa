@@ -5,13 +5,13 @@ import { MongoClient } from 'mongodb';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
-const defaultStorePath = path.join(rootDir, 'server', 'data', 'store.json');
+const defaultStorePath = path.join(rootDir, 'backend', 'data', 'store.json');
 
 await loadEnvFile(path.join(rootDir, '.env'));
 
 if (process.argv.includes('--help') || process.argv.includes('-h')) {
   console.log('Usage: npm run migrate:atlas -- [path/to/store.json]');
-  console.log('Requires MONGODB_URI, optional MONGODB_DB. Defaults to server/data/store.json.');
+  console.log('Requires MONGODB_URI, optional MONGODB_DB. Defaults to backend/data/store.json.');
   process.exit(0);
 }
 

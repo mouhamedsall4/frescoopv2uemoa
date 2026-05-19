@@ -146,6 +146,6 @@ const data = {
   })),
 };
 
-const outPath = join(__dirname, '..', 'server', 'seed-data.json');
+const outPath = join(__dirname, '..', 'backend', 'seed-data.json');
 writeFileSync(outPath, JSON.stringify(data, null, 2));
 console.log(`seed-data.json: ${data.users.length} users, ${data.products.length} products, ${data.lots.length} lots, ${data.hubs.length} hubs, ${data.orders.length} orders, ${data.paymentRecords.length} paiements PayDunya`);

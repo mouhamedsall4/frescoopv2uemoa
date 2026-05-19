@@ -13,7 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const dataDir = process.env.FRESCOOP_DATA_DIR || path.join(__dirname, 'data');
 const dbPath = path.join(dataDir, 'store.json');
-const distDir = path.join(rootDir, 'dist');
+const distDir = path.join(rootDir, 'frontend', 'dist');
 const envPath = path.join(rootDir, '.env');
 
 await loadEnvFile(envPath);
