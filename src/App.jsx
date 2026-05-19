@@ -4825,8 +4825,8 @@ function LotIntelligencePage({ actions, currentUser, notify, store }) {
   function submitLot(e) {
     e.preventDefault();
     if (!lotForm.productName.trim()) { notify('Nom du produit requis', 'error'); return; }
-    if (!lotForm.ownerId) { notify('Sélectionnéz le producteur', 'error'); return; }
-    if (!lotForm.hubId) { notify('Sélectionnéz le hub de depot', 'error'); return; }
+    if (!lotForm.ownerId) { notify('Sélectionnez le producteur', 'error'); return; }
+    if (!lotForm.hubId) { notify('Sélectionnez le hub de depot', 'error'); return; }
     if (!lotForm.weightKg || Number(lotForm.weightKg) <= 0) { notify('Quantite invalide', 'error'); return; }
 
     const hub = hubs.find((h) => h.id === lotForm.hubId);
@@ -4893,7 +4893,7 @@ function LotIntelligencePage({ actions, currentUser, notify, store }) {
   function recordMovement(e) {
     e.preventDefault();
     if (!selectedLot) return;
-    if (!movementForm.status) { notify('Sélectionnéz le nouveau statut', 'error'); return; }
+    if (!movementForm.status) { notify('Sélectionnez le nouveau statut', 'error'); return; }
 
     const now = new Date().toISOString();
     const movement = {
@@ -5100,7 +5100,7 @@ function LotIntelligencePage({ actions, currentUser, notify, store }) {
               onShareConsent={() => shareConsent(selectedLot)}
             />
           ) : (
-            <EmptyState icon={ClipboardCheck} title="Sélectionnéz un lot" body="Choisissez un lot pour voir son jumeau numerique." />
+            <EmptyState icon={ClipboardCheck} title="Sélectionnez un lot" body="Choisissez un lot pour voir son jumeau numerique." />
           )}
         </div>
       </section>
@@ -5146,7 +5146,7 @@ function LotIntelligencePage({ actions, currentUser, notify, store }) {
       <div className="split-layout">
         <section className="panel">
           <PanelTitle icon={Activity} title="Timeline de vie du lot" />
-          {selectedLot ? <LotTimeline lot={selectedLot} /> : <EmptyState icon={Activity} title="Aucun lot sélectionné" body="Sélectionnéz un lot pour voir son parcours." />}
+          {selectedLot ? <LotTimeline lot={selectedLot} /> : <EmptyState icon={Activity} title="Aucun lot sélectionné" body="Sélectionnez un lot pour voir son parcours." />}
         </section>
         <section className="panel">
           <PanelTitle icon={ShieldCheck} title="Consentements et audit" />
@@ -7501,7 +7501,7 @@ function OrderVisibilityToolbar({
       </select>
       <Button variant="secondary" onClick={onToggleList}>{showList ? <ChevronUp size={16} /> : <ChevronDown size={16} />}{showList ? 'Réduire' : 'Développer'}</Button>
       <Button variant="secondary" onClick={onToggleHidden}>{showHidden ? <Eye size={16} /> : <EyeOff size={16} />}{showHidden ? 'Voir actives' : 'Voir masquees'}</Button>
-      <Button variant="secondary" disabled={!totalFiltered} onClick={onTogglePageSelection}><CheckCircle2 size={16} /> {allPageSelected ? 'Desélectionnér' : 'Sélectionnér page'}</Button>
+      <Button variant="secondary" disabled={!totalFiltered} onClick={onTogglePageSelection}><CheckCircle2 size={16} /> {allPageSelected ? 'Désélectionner' : 'Sélectionner page'}</Button>
       {showHidden ? (
         <Button variant="secondary" disabled={!selectedCount} onClick={onRestoreSelected}><RefreshCcw size={16} /> Restaurer ({selectedCount})</Button>
       ) : (
@@ -7520,7 +7520,7 @@ function ClientOrderList({ onCancel, onPay, onSelect, orders, selectedIds, store
         const cancellable = order.status !== 'Annulee' && order.status !== 'Livree';
         return (
           <article id={`order-${order.id}`} key={order.id} className="compact-order-row">
-            <label className="order-row-check" title="Sélectionnér cette commande">
+            <label className="order-row-check" title="Sélectionner cette commande">
               <input type="checkbox" checked={selectedIds.has(order.id)} onChange={() => onSelect(order.id)} />
             </label>
             <div className="order-row-main">
@@ -7555,7 +7555,7 @@ function DeliveryMissionList({ onSelect, onStatusChange, orders, selectedIds, st
         const client = store.users.find((item) => item.id === order.clientId);
         return (
           <article id={`order-${order.id}`} key={order.id} className="delivery-row">
-            <label className="order-row-check" title="Sélectionnér cette livraison">
+            <label className="order-row-check" title="Sélectionner cette livraison">
               <input type="checkbox" checked={selectedIds.has(order.id)} onChange={() => onSelect(order.id)} />
             </label>
             <div className="delivery-main">
@@ -7592,7 +7592,7 @@ function OrderCardGrid({ currentUser, onAgentStep = () => {}, onCancel, onSelect
         const unit = order.unit || product?.unit || 'unite';
         return (
           <article id={`order-${order.id}`} className={`order-activity-row ${agentMode ? 'agent-order-card' : ''}`} key={order.id}>
-            <label className="order-card-check order-activity-check" title="Sélectionnér cette commande">
+            <label className="order-card-check order-activity-check" title="Sélectionner cette commande">
               <input type="checkbox" checked={selectedIds.has(order.id)} onChange={() => onSelect(order.id)} />
             </label>
             <OrderProgress status={order.status} compact />
@@ -8510,7 +8510,7 @@ function getImageId(image, index = 0) {
 }
 
 function FileInput({ accept, file, label, multiple, onChange }) {
-  const text = Array.isArray(file) ? `${file.length} fichier(s)` : file?.name || 'Sélectionnér';
+  const text = Array.isArray(file) ? `${file.length} fichier(s)` : file?.name || 'Sélectionner';
   return (
     <label className="file-input">
       <input accept={accept} multiple={multiple} type="file" onChange={(event) => onChange(multiple ? Array.from(event.target.files || []) : event.target.files?.[0] || null)} />
