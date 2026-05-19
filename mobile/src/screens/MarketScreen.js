@@ -28,7 +28,7 @@ export default function MarketScreen({ user, store, onRefresh, navigation }) {
     return (
       <TouchableOpacity style={styles.card} onPress={() => parentNav?.navigate?.('ProductDetail', { product: item })} activeOpacity={0.7}>
         <View style={styles.imageWrap}>
-          <ProductImage imageUrl={item.imageUrl} category={item.category} name={item.name} size="medium" />
+          <ProductImage imageUrl={item.imageUrl} images={item.images} image={item.image} category={item.category} name={item.name} size="medium" />
         </View>
         <View style={styles.cardBody}>
           <Text style={styles.name} numberOfLines={1}>{item.name}</Text>

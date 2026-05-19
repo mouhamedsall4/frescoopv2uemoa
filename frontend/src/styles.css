@@ -9763,6 +9763,38 @@ label, .field-label {
   .modele-simulator__impact { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 640px) {
+  .public-page-nav {
+    padding: 1.5rem 4vw;
+  }
+  .public-page-nav .btn {
+    font-size: 0.82rem;
+    padding: 10px 14px;
+  }
+  .garanties-compact {
+    grid-template-columns: 1fr;
+  }
+  .garantie-compact-item {
+    padding: 1rem;
+  }
+  .garantie-kpis {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+  .garantie-kpi {
+    padding: 1rem;
+  }
+  .garantie-kpi strong {
+    font-size: 1.5rem;
+  }
+  .public-contact-section {
+    padding: 2rem 4vw;
+  }
+  .public-site--page .public-band {
+    padding: 2rem 4vw;
+  }
+}
+
 /* ==========================================================================
    Modèle Simulateur Interactif
    ========================================================================== */

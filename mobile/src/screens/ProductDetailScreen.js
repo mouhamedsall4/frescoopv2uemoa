@@ -57,7 +57,7 @@ export default function ProductDetailScreen({ product, store, user, onRefresh })
   return (
     <ScrollView style={styles.container}>
       <View style={styles.imageWrap}>
-        <ProductImage imageUrl={product.imageUrl} category={product.category} name={product.name} size="large" />
+        <ProductImage imageUrl={product.imageUrl} images={product.images} image={product.image} category={product.category} name={product.name} size="large" />
       </View>
 
       <View style={styles.body}>
