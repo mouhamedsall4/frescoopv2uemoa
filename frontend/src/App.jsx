@@ -848,27 +848,36 @@ function PublicSitePage({ navigate, path }) {
         </div>
       </section>
 
-      <section id="problème" className="public-band">
-        <div className="reveal">
-          <span className="eyebrow">Le problème</span>
-          <h2>Les agriculteurs sont invisibles pour le système financier.</h2>
+      <section id="problème" className="public-band probleme-section">
+        <div className="reveal probleme-header">
+          <span className="eyebrow">Problème</span>
+          <h2>Les agriculteurs sont <em>invisibles</em> pour le système financier.</h2>
           <p className="public-subtitle">Pas parce qu'ils ne sont pas fiables — parce qu'ils n'ont <strong>aucune preuve exploitable</strong> de leur activité économique.</p>
         </div>
-        <div className="public-probleme-grid">
-          <article className="reveal">
-            <strong><AnimatedCounter end={80} suffix="%" /></strong>
-            <span>sans accès au crédit</span>
-            <p>Les institutions financières ne financent pas ceux qu'elles ne peuvent pas évaluer. Pas de relevé bancaire = pas de crédit.</p>
+        <div className="probleme-cards">
+          <article className="reveal probleme-card probleme-card--danger">
+            <div className="probleme-card__icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+            </div>
+            <div className="probleme-card__stat"><AnimatedCounter end={80} suffix="%" /></div>
+            <h3 className="probleme-card__title">Sans accès au crédit</h3>
+            <p className="probleme-card__desc">Les institutions financières ne financent pas ceux qu'elles ne peuvent pas évaluer. Pas de relevé bancaire = pas de crédit.</p>
           </article>
-          <article className="reveal">
-            <strong><AnimatedCounter end={3} suffix="%" /></strong>
-            <span>du crédit bancaire vers l'agriculture</span>
-            <p>Alors que l'agriculture représente <strong>35% du PIB</strong> de la zone UEMOA. Un paradoxe inacceptable.</p>
+          <article className="reveal probleme-card probleme-card--warning">
+            <div className="probleme-card__icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div className="probleme-card__stat"><AnimatedCounter end={3} suffix="%" /></div>
+            <h3 className="probleme-card__title">Du crédit vers l'agriculture</h3>
+            <p className="probleme-card__desc">Alors que l'agriculture représente <strong>35% du PIB</strong> de la zone UEMOA. Un paradoxe inacceptable.</p>
           </article>
-          <article className="reveal">
-            <strong>0</strong>
-            <span>historique financier exploitable</span>
-            <p>Chaque jour, des millions de transactions en espèces au marché ne laissent aucune trace pour les banques.</p>
+          <article className="reveal probleme-card probleme-card--dark">
+            <div className="probleme-card__icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+            </div>
+            <div className="probleme-card__stat">0</div>
+            <h3 className="probleme-card__title">Historique financier</h3>
+            <p className="probleme-card__desc">Chaque jour, des millions de transactions en espèces au marché ne laissent aucune trace pour les banques.</p>
           </article>
         </div>
       </section>
