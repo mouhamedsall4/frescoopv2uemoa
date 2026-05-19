@@ -51,6 +51,7 @@ import {
   Store,
   Tractor,
   Trash2,
+  TrendingUp,
   Truck,
   Upload,
   UserCheck,
@@ -913,41 +914,99 @@ function PublicSitePage({ navigate, path }) {
         </div>
       </section>
 
-      <section id="modele" className="public-band public-diff-section">
-        <div className="reveal">
+      <section id="modele" className="public-band modele-section">
+        <div className="reveal modele-header">
           <span className="eyebrow">Modèle économique</span>
           <h2>Gratuit pour l'agriculteur. Rentable pour tous.</h2>
-          <p className="public-subtitle">Un modèle à 3 sources de revenus, viable dès 500 utilisateurs actifs, scalable à l'échelle UEMOA.</p>
+          <p className="public-subtitle">Un modèle tripartite où chaque acteur gagne — conçu pour être viable dès 500 utilisateurs et scalable à 60 millions.</p>
         </div>
-        <div className="public-probleme-grid">
-          <article className="reveal modele-card">
-            <div className="modele-icon"><CircleDollarSign size={24} /></div>
-            <strong>Commission marketplace</strong>
-            <span>2-5% par transaction</span>
-            <p>L'agriculteur vend 15-30% plus cher qu'au marché local grâce à l'accès direct aux acheteurs. La commission est invisible dans le gain de marge.</p>
+
+        <div className="modele-flow reveal">
+          <div className="modele-flow__label">Qui paie ?</div>
+          <div className="modele-flow__arrows">
+            <div className="modele-flow__actor">
+              <span className="modele-flow__emoji">👨‍🌾</span>
+              <strong>Agriculteur</strong>
+              <em>GRATUIT</em>
+            </div>
+            <div className="modele-flow__arrow">→</div>
+            <div className="modele-flow__actor">
+              <span className="modele-flow__emoji">🏪</span>
+              <strong>Acheteur</strong>
+              <em>Paie le produit</em>
+            </div>
+            <div className="modele-flow__arrow">→</div>
+            <div className="modele-flow__actor">
+              <span className="modele-flow__emoji">🏦</span>
+              <strong>SFD / Banque</strong>
+              <em>Paie l'accès au score</em>
+            </div>
+          </div>
+        </div>
+
+        <div className="modele-revenue-grid">
+          <article className="reveal modele-revenue-card">
+            <div className="modele-revenue-header">
+              <div className="modele-revenue-icon"><CircleDollarSign size={22} /></div>
+              <div className="modele-revenue-badge">60% du CA</div>
+            </div>
+            <h3>Commission marketplace</h3>
+            <div className="modele-revenue-pricing">2 à 5% par transaction</div>
+            <div className="modele-revenue-explain">
+              <div className="modele-revenue-who"><Users size={14} /> <span>Qui paie :</span> L'acheteur (inclus dans le prix)</div>
+              <div className="modele-revenue-why"><TrendingUp size={14} /> <span>Pourquoi ça marche :</span> L'agriculteur vend 15-30% plus cher que sur le marché local. La commission est invisible dans le gain de marge.</div>
+            </div>
           </article>
-          <article className="reveal modele-card">
-            <div className="modele-icon"><Building2 size={24} /></div>
-            <strong>Scoring-as-a-Service</strong>
-            <span>Abonnement SFD/Banques</span>
-            <p>Les institutions financières paient un forfait mensuel pour accéder aux scores vérifiés. Elles économisent 80% vs l'enquête terrain traditionnelle.</p>
+          <article className="reveal modele-revenue-card">
+            <div className="modele-revenue-header">
+              <div className="modele-revenue-icon"><Building2 size={22} /></div>
+              <div className="modele-revenue-badge">30% du CA</div>
+            </div>
+            <h3>Scoring-as-a-Service</h3>
+            <div className="modele-revenue-pricing">150 000 – 500 000 FCFA/mois par SFD</div>
+            <div className="modele-revenue-explain">
+              <div className="modele-revenue-who"><Landmark size={14} /> <span>Qui paie :</span> Les banques et SFD partenaires</div>
+              <div className="modele-revenue-why"><TrendingUp size={14} /> <span>Pourquoi ça marche :</span> Elles économisent 80% vs l'enquête terrain et financent 5× plus d'agriculteurs avec le même budget.</div>
+            </div>
           </article>
-          <article className="reveal modele-card">
-            <div className="modele-icon"><Sprout size={24} /></div>
-            <strong>Services à valeur ajoutée</strong>
-            <span>Assurance, logistique, intrants</span>
-            <p>Partenariats avec assureurs agricoles et fournisseurs. L'agriculteur accède à des services jusque-là inaccessibles, nous touchons une commission d'apport.</p>
+          <article className="reveal modele-revenue-card">
+            <div className="modele-revenue-header">
+              <div className="modele-revenue-icon"><Sprout size={22} /></div>
+              <div className="modele-revenue-badge">10% du CA</div>
+            </div>
+            <h3>Services à valeur ajoutée</h3>
+            <div className="modele-revenue-pricing">Commission d'apport 5-15%</div>
+            <div className="modele-revenue-explain">
+              <div className="modele-revenue-who"><ShieldCheck size={14} /> <span>Qui paie :</span> Assureurs, fournisseurs d'intrants, logisticiens</div>
+              <div className="modele-revenue-why"><TrendingUp size={14} /> <span>Pourquoi ça marche :</span> L'agriculteur bancable accède à l'assurance récolte et aux intrants à crédit — marchés inaccessibles avant FresCoop.</div>
+            </div>
           </article>
         </div>
-        <div className="public-diff-list reveal" style={{ marginTop: '2rem' }}>
-          {[
-            'Zéro barrière à l\'entrée : inscription et scoring gratuits pour chaque agriculteur.',
-            'Point mort atteint à 500 agriculteurs actifs + 3 SFD partenaires.',
-            'Scalabilité : coût marginal quasi-nul par agriculteur supplémentaire.',
-            'TAM : 60 millions d\'agriculteurs × 8 pays UEMOA = opportunité massive.',
-          ].map((point) => (
-            <article key={point}><CheckCircle2 size={20} /><p>{point}</p></article>
-          ))}
+
+        <div className="modele-viability reveal">
+          <h3>Viabilité et scalabilité</h3>
+          <div className="modele-viability-grid">
+            <div className="modele-viability-item">
+              <strong>Point mort</strong>
+              <span>500 agriculteurs + 3 SFD</span>
+              <em>Atteignable en 6 mois</em>
+            </div>
+            <div className="modele-viability-item">
+              <strong>Coût par agriculteur</strong>
+              <span>~0 FCFA marginal</span>
+              <em>Infrastructure 100% cloud</em>
+            </div>
+            <div className="modele-viability-item">
+              <strong>Marché total (TAM)</strong>
+              <span>60M agriculteurs × 8 pays</span>
+              <em>Zone UEMOA entière</em>
+            </div>
+            <div className="modele-viability-item">
+              <strong>Projection an 1</strong>
+              <span>5 000 utilisateurs</span>
+              <em>CA estimé : 45M FCFA</em>
+            </div>
+          </div>
         </div>
       </section>
 
