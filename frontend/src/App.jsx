@@ -6633,12 +6633,7 @@ function buildBancabiliteDossier(user, store) {
     { label: 'Tontine / épargne informelle', value: hasTontine ? 'Oui' : 'Non', points: hasTontine ? 4 : 0 },
     { label: 'Historique remboursement', value: repaid > 0 ? `${repaid} remboursé(s)${defaults > 0 ? `, ${defaults} défaut(s)` : ''}` : '—', points: Math.max(0, repaymentBonus) },
   ];
-  const computedScore = Math.min(100, criteria.reduce((sum, c) => sum + c.points, 0));
-  const highScoreKey = `frescoop.bancabilite.high.${user.id}`;
-  let storedHigh = 0;
-  try { storedHigh = Number(window.localStorage.getItem(highScoreKey)) || 0; } catch {}
-  const score = Math.max(computedScore, storedHigh);
-  if (score > storedHigh) { try { window.localStorage.setItem(highScoreKey, String(score)); } catch {} }
+  const score = Math.min(100, criteria.reduce((sum, c) => sum + c.points, 0));
   const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : 'D';
   const verdict = grade === 'A' ? 'Dossier solide, eligible credit bancaire' :
                   grade === 'B' ? 'Bonne assise, eligible SFD / microfinance' :
