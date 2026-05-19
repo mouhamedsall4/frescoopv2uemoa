@@ -967,8 +967,8 @@ function PublicSitePage({ navigate, path }) {
             <span>coût d'évaluation pour les SFD</span>
           </div>
           <div className="impact-metric impact-metric-gold">
-            <strong><AnimatedCounter prefix="+" end={45} suffix="%" /></strong>
-            <span>de revenu additionnel pour l'agriculteur</span>
+            <strong><AnimatedCounter end={90} suffix="j" /></strong>
+            <span>pour obtenir son premier crédit via FresCoop</span>
           </div>
           <div className="impact-metric impact-metric-purple">
             <strong><AnimatedCounter prefix="×" end={5} /></strong>
@@ -988,8 +988,8 @@ function PublicSitePage({ navigate, path }) {
           </article>
           <article className="reveal impact-social-card">
             <div className="impact-social-icon"><PhoneCall size={22} /></div>
-            <strong>Zones rurales — USSD *384*FRES#</strong>
-            <p>Accès complet via téléphone basique. Pas besoin de smartphone ni de connexion internet stable. Personne n'est exclu.</p>
+            <strong>Crédit sans garantie foncière</strong>
+            <p>Le scoring remplace l'exigence de titre foncier — la preuve d'activité économique suffit pour accéder au financement.</p>
           </article>
           <article className="reveal impact-social-card">
             <div className="impact-social-icon"><Sprout size={22} /></div>

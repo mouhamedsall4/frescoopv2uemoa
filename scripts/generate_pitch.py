@@ -292,7 +292,7 @@ add_text_box(slide5, Inches(0.8), Inches(0.9), Inches(10), Inches(0.8),
 eco_metrics = [
     ('65%', 'deviennent bancables\nen 90 jours', GREEN_700),
     ('-80%', 'coût d\'évaluation\npour les SFD', BLUE_600),
-    ('+45%', 'revenu additionnel\npour l\'agriculteur', GOLD_600),
+    ('90j', 'du premier crédit\nobtenu via FresCoop', GOLD_600),
     ('×5', 'plus d\'agriculteurs\nfinancés par SFD', PURPLE_600),
 ]
 
@@ -305,14 +305,14 @@ for i, (val, label, color) in enumerate(eco_metrics):
     add_text_box(slide5, x + Inches(0.3), y + Inches(0.95), Inches(2.4), Inches(0.6), label, font_size=11, color=GRAY_600)
 
 # Social impact
-add_text_box(slide5, Inches(0.8), Inches(4.2), Inches(4), Inches(0.4),
-             'IMPACT SOCIAL', font_size=11, bold=True, color=GREEN_700)
+add_text_box(slide5, Inches(0.8), Inches(4.2), Inches(6), Inches(0.4),
+             'IMPACT SUR L\'ACCÈS AU FINANCEMENT', font_size=11, bold=True, color=GREEN_700)
 
 social_items = [
-    ('Inclusion des femmes', '40% des utilisateurs cibles sont des agricultrices — le scoring objectif élimine les biais de genre.'),
-    ('Souveraineté des données', 'L\'agriculteur décide qui voit son dossier. Portabilité totale. Conforme aux principes UEMOA.'),
-    ('Zones rurales — USSD', 'Accès complet via téléphone basique. Pas besoin de smartphone. Personne n\'est exclu.'),
-    ('Sécurité alimentaire', 'Plus d\'agriculteurs financés = plus de production = impact direct sur la souveraineté alimentaire.'),
+    ('Inclusion des femmes', '40% des agricultrices exclues accèdent enfin au crédit grâce à un scoring objectif sans biais de genre.'),
+    ('Dossier bancaire portable', 'L\'agriculteur présente son score vérifié à n\'importe quelle banque ou SFD de la zone UEMOA.'),
+    ('Crédit sans garantie foncière', 'Le scoring remplace l\'exigence de titre foncier — la preuve d\'activité suffit pour le financement.'),
+    ('Réduction du risque SFD', 'Les SFD financent en connaissance de cause : données vérifiées, historique complet, défaut prévisible.'),
 ]
 
 for i, (title, desc) in enumerate(social_items):
