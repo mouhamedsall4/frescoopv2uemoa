@@ -9260,14 +9260,6 @@ function buildSellerOpportunities(store, user) {
       value: 'Preuve',
       path: '/preuves',
     },
-    !dossiers.length && {
-      id: 'dossier',
-      icon: FolderPlus,
-      title: 'Créer un dossier vendeur',
-      body: 'Un dossier complet rassure acheteurs, partenaires et financeurs.',
-      value: 'Confiance',
-      path: '/dossiers',
-    },
   ].filter(Boolean);
 }
 

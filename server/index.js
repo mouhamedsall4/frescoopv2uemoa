@@ -1589,6 +1589,17 @@ async function handleStore(request, response) {
           if (serverOnly.length > 0) {
             incoming[key] = [...serverOnly, ...(incoming[key] || [])];
           }
+          // Preserve read/readAt state: if server has read=true but client sends read=false, keep server version
+          if (key === 'notifications') {
+            const serverMap = new Map(currentStoreForMerge[key].map((item) => [item.id, item]));
+            incoming[key] = (incoming[key] || []).map((item) => {
+              const serverItem = serverMap.get(item.id);
+              if (serverItem && (serverItem.read || serverItem.readAt) && !item.read && !item.readAt) {
+                return { ...item, read: serverItem.read, readAt: serverItem.readAt };
+              }
+              return item;
+            });
+          }
         }
       }
     }
