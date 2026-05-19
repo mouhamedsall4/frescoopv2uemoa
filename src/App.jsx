@@ -5832,15 +5832,24 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
       notify('Montant et objet obligatoires', 'error');
       return;
     }
-    // Bloquer si une demande est déjà en cours de traitement
     const pendingExisting = (store.loans || []).some((item) => item.farmerId === currentUser.id && item.status === 'En attente');
     if (pendingExisting) {
-      notify('Vous avez déjà une demande en attente. Attendez la décision des partenaires.', 'info');
+      notify('Vous avez déjà une demande en attente.', 'info');
       return;
     }
     const dossier = buildBancabiliteDossier(currentUser, store);
     if (dossier.score < 40) {
-      notify('Score insuffisant (< 40). Complétez votre activité FresCoop avant de demander un prêt.', 'error');
+      notify('Score insuffisant (< 40). Complétez votre activité avant de demander un prêt.', 'error');
+      return;
+    }
+    const hasCni = (store.activityProofs || []).some((p) => p.userId === currentUser.id && /cni/i.test(p.proofType) && (p.status === 'valide' || p.status === 'auto_valide'));
+    if (!hasCni) {
+      notify('CNI obligatoire. Soumettez votre carte nationale d\'identité dans Vérification avant de demander un prêt.', 'error');
+      return;
+    }
+    const paidOrders = (store.orders || []).filter((o) => o.sellerId === currentUser.id && (o.paymentStatus === 'Paye' || o.status === 'Livree'));
+    if (paidOrders.length < 2) {
+      notify('Au moins 2 ventes confirmées requises avant de demander un prêt.', 'error');
       return;
     }
     const loan = {
@@ -5856,6 +5865,14 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
       score: dossier.score,
       grade: dossier.grade,
       verificationCode: dossier.verificationCode,
+      tranches: [
+        { id: 1, pct: 40, status: 'pending', label: 'Achat intrants', proofStatus: '', proofSubmittedAt: '' },
+        { id: 2, pct: 30, status: 'locked', label: 'Exploitation', proofStatus: '', proofSubmittedAt: '' },
+        { id: 3, pct: 30, status: 'locked', label: 'Récolte et livraison', proofStatus: '', proofSubmittedAt: '' },
+      ],
+      disbursedPct: 0,
+      repaymentPct: 30,
+      contractCode: '',
     };
     actions.setLoans((items) => [loan, ...items]);
     const partners = store.users.filter((user) => user.role === 'partenaire');
@@ -5875,26 +5892,36 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
   }
 
   function decideLoan(loan, decision) {
-    // Early return si la demande est déjà traitée (anti-double-approbation)
     const currentLoan = (store.loans || []).find((item) => item.id === loan.id);
     if (!currentLoan || currentLoan.status !== 'En attente') {
       notify('Cette demande a déjà été traitée.', 'info');
       return;
     }
-    actions.setLoans((items) => items.map((item) => item.id === loan.id ? { ...item, status: decision, partnerId: currentUser.id, decidedAt: new Date().toISOString() } : item));
+    const now = new Date().toISOString();
+    const contractCode = `PRET-${Date.now().toString(36).slice(-4).toUpperCase()}-${currentUser.name.split(' ')[0]?.slice(0, 4).toUpperCase() || 'FIN'}`;
+    const updatedTranches = decision === 'Approuvé'
+      ? (currentLoan.tranches || []).map((t, i) => i === 0 ? { ...t, status: 'disbursed', disbursedAt: now } : t)
+      : currentLoan.tranches || [];
+    actions.setLoans((items) => items.map((item) => item.id === loan.id ? {
+      ...item,
+      status: decision,
+      partnerId: currentUser.id,
+      decidedAt: now,
+      tranches: updatedTranches,
+      disbursedPct: decision === 'Approuvé' ? 40 : 0,
+      contractCode: decision === 'Approuvé' ? contractCode : '',
+    } : item));
     const farmer = store.users.find((user) => user.id === loan.farmerId);
     if (farmer) {
-      const notif = createAppNotification({
-        actor: currentUser,
-        body: `Votre demande de ${formatMoney(loan.amount)} a été ${decision.toLowerCase()}.`,
-        path: '/bancabilite',
-        recipientId: farmer.id,
-        title: `Demande ${decision}`,
-        type: 'loan-decision',
-      });
-      actions.setNotifications((items) => [notif, ...items]);
+      const body = decision === 'Approuvé'
+        ? `Votre prêt de ${formatMoney(loan.amount)} a été approuvé. Tranche 1 (${formatMoney(Math.round(loan.amount * 0.4))}) débloquée. Contrat: ${contractCode}`
+        : `Votre demande de ${formatMoney(loan.amount)} a été refusée.`;
+      actions.setNotifications((items) => [
+        createAppNotification({ actor: currentUser, body, path: '/bancabilite', recipientId: farmer.id, title: `Prêt ${decision}`, type: 'loan-decision' }),
+        ...items,
+      ]);
     }
-    actions.setAuditLogs((items) => [createAuditLog(currentUser, 'loan_decision', `${decision} prêt ${formatMoney(loan.amount)} pour ${loan.farmerName}`, loan.id), ...items]);
+    actions.setAuditLogs((items) => [createAuditLog(currentUser, 'loan_decision', `${decision} prêt ${formatMoney(loan.amount)} pour ${loan.farmerName}${decision === 'Approuvé' ? ` [${contractCode}]` : ''}`, loan.id), ...items]);
     notify(`Demande ${decision.toLowerCase()}`);
   }
 
@@ -5927,6 +5954,55 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
     }
     actions.setAuditLogs((items) => [createAuditLog(currentUser, 'loan_status_update', `Prêt ${loan.farmerName} → ${newStatus}`, loan.id), ...items]);
     notify(`Statut mis à jour : ${newStatus}`);
+  }
+
+  function submitTrancheProof(loan, file) {
+    const now = new Date().toISOString();
+    const currentTranche = (loan.tranches || []).find((t) => t.status === 'disbursed' && t.proofStatus !== 'valide');
+    if (!currentTranche) { notify('Aucune tranche en attente de preuve.'); return; }
+    const updatedTranches = (loan.tranches || []).map((t) => t.id === currentTranche.id ? { ...t, proofStatus: 'en_attente', proofSubmittedAt: now, proofFile: file?.name || '' } : t);
+    actions.setLoans((items) => items.map((item) => item.id === loan.id ? { ...item, tranches: updatedTranches } : item));
+    const partners = store.users.filter((u) => u.role === 'partenaire' || u.id === loan.partnerId);
+    const notifs = partners.map((p) => createAppNotification({
+      actor: currentUser,
+      body: `${currentUser.name} a soumis une preuve pour la tranche ${currentTranche.id} (${currentTranche.label}).`,
+      path: '/bancabilite',
+      recipientId: p.id,
+      title: 'Preuve tranche soumise',
+      type: 'loan-tranche-proof',
+    }));
+    actions.setNotifications((items) => [...notifs, ...items]);
+    notify(`Preuve soumise pour tranche ${currentTranche.id} (${currentTranche.label})`);
+  }
+
+  function validateTrancheProof(loan, trancheId, decision) {
+    const now = new Date().toISOString();
+    const trancheIdx = (loan.tranches || []).findIndex((t) => t.id === trancheId);
+    if (trancheIdx === -1) return;
+    const updatedTranches = [...(loan.tranches || [])];
+    updatedTranches[trancheIdx] = { ...updatedTranches[trancheIdx], proofStatus: decision === 'valide' ? 'valide' : 'rejete', proofValidatedAt: now, validatedBy: currentUser.id };
+    let newDisbursedPct = loan.disbursedPct || 0;
+    if (decision === 'valide') {
+      updatedTranches[trancheIdx] = { ...updatedTranches[trancheIdx], status: 'completed' };
+      const nextIdx = trancheIdx + 1;
+      if (nextIdx < updatedTranches.length) {
+        updatedTranches[nextIdx] = { ...updatedTranches[nextIdx], status: 'disbursed', disbursedAt: now };
+        newDisbursedPct += updatedTranches[nextIdx].pct;
+      }
+    }
+    actions.setLoans((items) => items.map((item) => item.id === loan.id ? { ...item, tranches: updatedTranches, disbursedPct: newDisbursedPct } : item));
+    const farmer = store.users.find((u) => u.id === loan.farmerId);
+    if (farmer && decision === 'valide') {
+      const nextTranche = updatedTranches[trancheIdx + 1];
+      const body = nextTranche
+        ? `Preuve validée. Tranche ${nextTranche.id} (${formatMoney(Math.round(loan.amount * nextTranche.pct / 100))}) débloquée.`
+        : `Toutes les tranches ont été débloquées. Montant total décaissé.`;
+      actions.setNotifications((items) => [
+        createAppNotification({ actor: currentUser, body, path: '/bancabilite', recipientId: farmer.id, title: 'Tranche débloquée', type: 'loan-tranche-unlocked' }),
+        ...items,
+      ]);
+    }
+    notify(decision === 'valide' ? 'Preuve validée, tranche suivante débloquée' : 'Preuve rejetée');
   }
 
   const summary = {
@@ -6070,27 +6146,61 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                   <header>
                     <div>
                       <strong>{loan.farmerName}</strong>
-                      <small>Score {loan.score}/100 · Grade {loan.grade} · {formatDate(loan.createdAt)}</small>
+                      <small>Score {loan.score}/100 · Grade {loan.grade} · {formatDate(loan.createdAt)}{loan.contractCode && ` · ${loan.contractCode}`}</small>
                     </div>
                     <span className={`loan-status loan-${loan.status.toLowerCase().replace(/\s/g, '-')}`}>{loan.status}</span>
                   </header>
                   <div className="loan-body">
-                    <div><em>Montant demandé</em><b>{formatMoney(loan.amount)}</b></div>
+                    <div><em>Montant total</em><b>{formatMoney(loan.amount)}</b></div>
                     <div><em>Durée</em><b>{loan.months} mois</b></div>
                     <div><em>Objet</em><b>{loan.purpose}</b></div>
+                    <div><em>Décaissé</em><b>{loan.disbursedPct || 0}%</b></div>
                     {isFinancePartner && farmerDossier && (
                       <>
-                        <div><em>Revenu mensuel moyen</em><b>{formatMoney(farmerDossier.monthlyAverage)}</b></div>
-                        <div><em>Transactions vérifiées</em><b>{farmerDossier.transactionsCount}</b></div>
-                        <div><em>Paiements PayDunya</em><b>{farmerDossier.paydunyaCount}</b></div>
+                        <div><em>Revenu mensuel</em><b>{formatMoney(farmerDossier.monthlyAverage)}</b></div>
+                        <div><em>Transactions</em><b>{farmerDossier.transactionsCount}</b></div>
                       </>
                     )}
                   </div>
+                  {(loan.status === 'Approuvé' || loan.status === 'En cours') && Array.isArray(loan.tranches) && (
+                    <div className="loan-tranches">
+                      <small style={{ fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>Plan de décaissement</small>
+                      {loan.tranches.map((tranche) => (
+                        <div key={tranche.id} className={`loan-tranche loan-tranche-${tranche.status}`}>
+                          <div className="loan-tranche-header">
+                            <span>T{tranche.id} — {tranche.label}</span>
+                            <b>{formatMoney(Math.round(loan.amount * tranche.pct / 100))} ({tranche.pct}%)</b>
+                          </div>
+                          <div className="loan-tranche-status">
+                            {tranche.status === 'locked' && <small style={{ color: '#6b7280' }}>Verrouillée</small>}
+                            {tranche.status === 'disbursed' && !tranche.proofStatus && <small style={{ color: '#2563eb' }}>Débloquée — en attente de preuve</small>}
+                            {tranche.status === 'disbursed' && tranche.proofStatus === 'en_attente' && <small style={{ color: '#d97706' }}>Preuve soumise — en attente validation</small>}
+                            {tranche.status === 'disbursed' && tranche.proofStatus === 'rejete' && <small style={{ color: '#dc2626' }}>Preuve rejetée — resoumettez</small>}
+                            {tranche.status === 'completed' && <small style={{ color: '#16a34a' }}>Complétée</small>}
+                          </div>
+                          {isAgriculteur && tranche.status === 'disbursed' && (!tranche.proofStatus || tranche.proofStatus === 'rejete') && (
+                            <div className="button-row" style={{ marginTop: '0.3rem' }}>
+                              <label className="file-input compact">
+                                <input type="file" accept="image/*,.pdf" onChange={(e) => { if (e.target.files?.[0]) submitTrancheProof(loan, e.target.files[0]); }} />
+                                <Button variant="secondary" type="button"><ImagePlus size={14} /> Soumettre preuve</Button>
+                              </label>
+                            </div>
+                          )}
+                          {isFinancePartner && tranche.proofStatus === 'en_attente' && (
+                            <div className="button-row" style={{ marginTop: '0.3rem' }}>
+                              <Button onClick={() => validateTrancheProof(loan, tranche.id, 'valide')}><CheckCircle2 size={14} /> Valider</Button>
+                              <Button variant="secondary" onClick={() => validateTrancheProof(loan, tranche.id, 'rejete')}><X size={14} /> Rejeter</Button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {isFinancePartner && loan.status === 'En attente' && (
                     <div className="button-row">
-                      <Button onClick={() => decideLoan(loan, 'Approuvé')}><CheckCircle2 size={16} /> Approuver le crédit</Button>
+                      <Button onClick={() => decideLoan(loan, 'Approuvé')}><CheckCircle2 size={16} /> Approuver</Button>
                       <Button variant="secondary" onClick={() => decideLoan(loan, 'Refusé')}><X size={16} /> Refuser</Button>
-                      <Button variant="secondary" onClick={() => farmer && exportDossier(farmer)}><Download size={16} /> Voir dossier complet</Button>
+                      <Button variant="secondary" onClick={() => farmer && exportDossier(farmer)}><Download size={16} /> Dossier</Button>
                     </div>
                   )}
                   {isFinancePartner && (loan.status === 'Approuvé' || loan.status === 'En cours') && (
@@ -6106,7 +6216,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                   )}
                   {(loan.status === 'Remboursé' || loan.status === 'Retard' || loan.status === 'Défaut' || loan.status === 'En cours') && (
                     <div style={{ marginTop: '0.5rem', padding: '0.4rem 0.6rem', borderRadius: '0.375rem', fontSize: '0.8rem', background: loan.status === 'Remboursé' ? '#dcfce7' : loan.status === 'Retard' ? '#fef3c7' : loan.status === 'Défaut' ? '#fee2e2' : '#dbeafe' }}>
-                      Statut actuel : <strong>{loan.status}</strong>{loan.statusUpdatedAt && <span> · mis à jour le {formatDate(loan.statusUpdatedAt)}</span>}
+                      Statut : <strong>{loan.status}</strong>{loan.statusUpdatedAt && <span> · {formatDate(loan.statusUpdatedAt)}</span>}
                     </div>
                   )}
                 </article>
