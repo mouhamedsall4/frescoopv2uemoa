@@ -12,17 +12,27 @@ function getMenuItems(role) {
     case 'agriculteur':
       return [
         { key: 'add', icon: 'add-circle-outline', label: 'Ajouter un produit', nav: 'AddProduct' },
-        { key: 'score', icon: 'analytics-outline', label: 'Score détaillé', nav: 'Score' },
+        { key: 'score', icon: 'analytics-outline', label: 'Mon score', nav: 'Score' },
+        ...base,
+      ];
+    case 'acheteurB2B':
+      return [
+        { key: 'market', icon: 'storefront-outline', label: 'Marketplace', nav: null },
         ...base,
       ];
     case 'agentTerrain':
       return [
-        { key: 'verify', icon: 'shield-checkmark-outline', label: 'Vérifications', nav: null },
+        { key: 'add', icon: 'add-circle-outline', label: 'Collecte AgriScore', nav: null },
+        ...base,
+      ];
+    case 'partenaire':
+      return [
+        { key: 'dossiers', icon: 'document-text-outline', label: 'Dossiers bancables', nav: null },
         ...base,
       ];
     case 'admin':
       return [
-        { key: 'users', icon: 'people-outline', label: 'Gestion utilisateurs', nav: null },
+        { key: 'users', icon: 'people-outline', label: 'Utilisateurs', nav: null },
         { key: 'stats', icon: 'bar-chart-outline', label: 'Statistiques', nav: null },
         ...base,
       ];
