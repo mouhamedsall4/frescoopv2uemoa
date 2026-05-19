@@ -220,60 +220,76 @@ for i, (num, title, desc) in enumerate(solutions):
 # SLIDE 4: MODÈLE ÉCONOMIQUE
 # ============================================================================
 slide4 = prs.slides.add_slide(prs.slide_layouts[6])
-set_slide_bg(slide4, RGBColor(0xF8, 0xFC, 0xFA))
+set_slide_bg(slide4, WHITE)
 
-add_text_box(slide4, Inches(0.8), Inches(0.5), Inches(4), Inches(0.4),
-             'MODÈLE ÉCONOMIQUE', font_size=11, bold=True, color=GREEN_700)
+add_text_box(slide4, Inches(0.8), Inches(0.4), Inches(4), Inches(0.4),
+             'MODELE ECONOMIQUE', font_size=11, bold=True, color=GREEN_700)
 
-add_text_box(slide4, Inches(0.8), Inches(0.9), Inches(10), Inches(0.8),
+add_text_box(slide4, Inches(0.8), Inches(0.8), Inches(10), Inches(0.7),
              'Gratuit pour l\'agriculteur. Rentable pour tous.',
-             font_size=32, bold=True, color=SLATE_800)
+             font_size=30, bold=True, color=SLATE_800)
 
-add_text_box(slide4, Inches(0.8), Inches(1.7), Inches(9), Inches(0.6),
-             'Un modèle à 3 sources de revenus, viable dès 500 utilisateurs actifs, scalable à l\'échelle UEMOA.',
-             font_size=14, color=SLATE_500)
+# Flow diagram: Qui paie ?
+flow_bg = add_rounded_rect(slide4, Inches(0.8), Inches(1.6), Inches(11.7), Inches(1.5), RGBColor(0xF0, 0xFD, 0xF4))
+add_text_box(slide4, Inches(1.2), Inches(1.7), Inches(2), Inches(0.3),
+             'QUI PAIE ?', font_size=9, bold=True, color=GREEN_700)
 
-# Revenue cards
+flow_actors = [
+    ('Agriculteur', 'GRATUIT'),
+    ('Acheteur', 'Paie le produit'),
+    ('SFD / Banque', 'Paie l\'acces au score'),
+]
+for i, (actor, role) in enumerate(flow_actors):
+    x = Inches(1.5 + i * 4.0)
+    actor_bg = add_rounded_rect(slide4, x, Inches(2.05), Inches(2.8), Inches(0.85), WHITE)
+    add_text_box(slide4, x + Inches(0.3), Inches(2.1), Inches(2.2), Inches(0.4), actor, font_size=13, bold=True, color=SLATE_800)
+    add_text_box(slide4, x + Inches(0.3), Inches(2.5), Inches(2.2), Inches(0.3), role, font_size=10, bold=True, color=GREEN_700)
+    if i < 2:
+        add_text_box(slide4, Inches(4.5 + i * 4.0), Inches(2.25), Inches(0.5), Inches(0.4), '→', font_size=20, color=GREEN_700, alignment=PP_ALIGN.CENTER)
+
+# Revenue cards (compact)
 revenues = [
-    ('Commission\nmarketplace', '2-5% par transaction', 'L\'agriculteur vend 15-30% plus cher qu\'au marché local. La commission est invisible dans le gain de marge.', '$'),
-    ('Scoring-as-a-\nService', 'Abonnement SFD/Banques', 'Les institutions financières paient un forfait mensuel. Elles économisent 80% vs l\'enquête terrain.', 'S'),
-    ('Services à\nvaleur ajoutée', 'Assurance, logistique, intrants', 'Partenariats avec assureurs et fournisseurs. Commission d\'apport sur chaque service vendu.', '+'),
+    ('Commission marketplace', '60% du CA', '2-5% par transaction', 'L\'agriculteur vend plus cher, la commission est invisible dans le gain.'),
+    ('Scoring-as-a-Service', '30% du CA', '150K-500K FCFA/mois par SFD', 'Les SFD economisent 80% vs l\'enquete terrain traditionnelle.'),
+    ('Services a valeur ajoutee', '10% du CA', 'Commission 5-15%', 'Assurance recolte, intrants a credit, logistique — marches inaccessibles avant.'),
 ]
 
-for i, (title, subtitle, desc, icon) in enumerate(revenues):
-    x = Inches(0.8 + i * 4.1)
-    y = Inches(2.6)
+for i, (title, pct, pricing, desc) in enumerate(revenues):
+    x = Inches(0.8 + i * 4.0)
+    y = Inches(3.4)
 
-    card = add_rounded_rect(slide4, x, y, Inches(3.7), Inches(3.5), WHITE)
-
-    # Green top bar
-    bar = slide4.shapes.add_shape(MSO_SHAPE.RECTANGLE, x, y, Inches(3.7), Inches(0.07))
+    card = add_rounded_rect(slide4, x, y, Inches(3.7), Inches(2.6), RGBColor(0xF9, 0xFA, 0xFB))
+    bar = slide4.shapes.add_shape(MSO_SHAPE.RECTANGLE, x, y, Inches(3.7), Inches(0.05))
     bar.fill.solid()
     bar.fill.fore_color.rgb = GREEN_700
     bar.line.fill.background()
 
-    # Icon
-    icon_shape = add_rounded_rect(slide4, x + Inches(0.4), y + Inches(0.5), Inches(0.6), Inches(0.6), GREEN_100)
-    add_text_box(slide4, x + Inches(0.42), y + Inches(0.5), Inches(0.56), Inches(0.56), icon, font_size=18, bold=True, color=GREEN_700, alignment=PP_ALIGN.CENTER)
+    # % badge
+    add_text_box(slide4, x + Inches(0.3), y + Inches(0.25), Inches(1.2), Inches(0.35), pct, font_size=10, bold=True, color=GREEN_700)
 
     # Title
-    add_text_box(slide4, x + Inches(0.4), y + Inches(1.3), Inches(3), Inches(0.8), title, font_size=17, bold=True, color=GREEN_DARK)
+    add_text_box(slide4, x + Inches(0.3), y + Inches(0.6), Inches(3.2), Inches(0.5), title, font_size=14, bold=True, color=SLATE_800)
 
-    # Subtitle
-    add_text_box(slide4, x + Inches(0.4), y + Inches(2.1), Inches(3), Inches(0.4), subtitle, font_size=11, bold=True, color=SLATE_500)
+    # Pricing
+    add_text_box(slide4, x + Inches(0.3), y + Inches(1.1), Inches(3.2), Inches(0.35), pricing, font_size=10, bold=True, color=GREEN_700)
 
     # Description
-    add_text_box(slide4, x + Inches(0.4), y + Inches(2.5), Inches(3), Inches(1), desc, font_size=11, color=GRAY_600)
+    add_text_box(slide4, x + Inches(0.3), y + Inches(1.5), Inches(3.2), Inches(1.0), desc, font_size=10, color=GRAY_600)
 
-# Key metrics row at bottom
-metrics = [
-    'Zéro barrière à l\'entrée pour l\'agriculteur',
-    'Point mort : 500 agriculteurs + 3 SFD',
-    'TAM : 60M agriculteurs × 8 pays',
+# Viability metrics at bottom
+viability = [
+    ('Point mort', '500 agri + 3 SFD', '6 mois'),
+    ('Cout marginal', '~0 FCFA/agri', '100% cloud'),
+    ('TAM', '60M x 8 pays', 'Zone UEMOA'),
+    ('Projection An 1', '5 000 utilisateurs', 'CA: 45M FCFA'),
 ]
-for i, m in enumerate(metrics):
-    x = Inches(0.8 + i * 4.1)
-    add_text_box(slide4, x, Inches(6.5), Inches(3.7), Inches(0.5), f'✓  {m}', font_size=12, bold=True, color=GREEN_700)
+for i, (label, val, sub) in enumerate(viability):
+    x = Inches(0.8 + i * 3.1)
+    y = Inches(6.2)
+    rect = add_rounded_rect(slide4, x, y, Inches(2.8), Inches(0.95), RGBColor(0xF0, 0xFD, 0xF4))
+    add_text_box(slide4, x + Inches(0.2), y + Inches(0.08), Inches(2.4), Inches(0.3), label, font_size=9, bold=True, color=SLATE_500)
+    add_text_box(slide4, x + Inches(0.2), y + Inches(0.35), Inches(2.4), Inches(0.35), val, font_size=13, bold=True, color=GREEN_700)
+    add_text_box(slide4, x + Inches(0.2), y + Inches(0.68), Inches(2.4), Inches(0.25), sub, font_size=9, color=SLATE_500)
 
 # ============================================================================
 # SLIDE 5: IMPACT
@@ -370,6 +386,6 @@ logo2.line.fill.background()
 add_text_box(slide6, Inches(11.56), Inches(6.28), Inches(0.68), Inches(0.68), 'F', font_size=28, bold=True, color=WHITE, alignment=PP_ALIGN.CENTER)
 
 # Save
-output_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'FRESCOOP_PITCH_DECK.pptx')
+output_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'FRESCOOP_PITCH_v2.pptx')
 prs.save(output_path)
 print(f'Pitch deck saved: {output_path}')

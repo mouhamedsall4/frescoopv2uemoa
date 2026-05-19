@@ -1028,19 +1028,19 @@ function PublicSitePage({ navigate, path }) {
           <div className="modele-flow__label">Qui paie ?</div>
           <div className="modele-flow__arrows">
             <div className="modele-flow__actor">
-              <span className="modele-flow__emoji">👨‍🌾</span>
+              <Sprout size={26} />
               <strong>Agriculteur</strong>
               <em>GRATUIT</em>
             </div>
             <div className="modele-flow__arrow">→</div>
             <div className="modele-flow__actor">
-              <span className="modele-flow__emoji">🏪</span>
+              <ShoppingCart size={26} />
               <strong>Acheteur</strong>
               <em>Paie le produit</em>
             </div>
             <div className="modele-flow__arrow">→</div>
             <div className="modele-flow__actor">
-              <span className="modele-flow__emoji">🏦</span>
+              <Landmark size={26} />
               <strong>SFD / Banque</strong>
               <em>Paie l'accès au score</em>
             </div>

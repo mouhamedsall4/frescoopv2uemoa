@@ -9329,8 +9329,8 @@ label, .field-label {
   min-width: 140px;
 }
 
-.modele-flow__emoji {
-  font-size: 2rem;
+.modele-flow__actor svg {
+  color: var(--green-700);
 }
 
 .modele-flow__actor strong {
