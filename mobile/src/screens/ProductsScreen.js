@@ -5,6 +5,7 @@ import { colors, spacing, radius } from '../theme';
 export default function ProductsScreen({ user, store, onRefresh, navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const products = (store?.products || []).filter(p => p.sellerId === user.id);
+  const parentNav = navigation?.getParent?.() || navigation;
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -48,10 +49,13 @@ export default function ProductsScreen({ user, store, onRefresh, navigation }) {
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>🌾</Text>
             <Text style={styles.emptyTitle}>Aucun produit</Text>
-            <Text style={styles.emptyText}>Publiez votre premier produit depuis l'application web pour augmenter votre score.</Text>
+            <Text style={styles.emptyText}>Publiez votre premier produit pour augmenter votre score.</Text>
           </View>
         }
       />
+      <TouchableOpacity style={styles.fab} onPress={() => parentNav?.navigate?.('AddProduct')}>
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -78,4 +82,6 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 48, marginBottom: spacing.md },
   emptyTitle: { fontSize: 18, fontWeight: '800', color: colors.gray800 },
   emptyText: { fontSize: 13, color: colors.gray500, textAlign: 'center', marginTop: spacing.sm, paddingHorizontal: spacing.xxxl, lineHeight: 20 },
+  fab: { position: 'absolute', bottom: 20, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.green700, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6 },
+  fabText: { fontSize: 28, fontWeight: '700', color: colors.white, marginTop: -2 },
 });

@@ -47,4 +47,6 @@ export const api = {
   me: () => request('/api/auth/me'),
   getStore: () => request('/api/store'),
   updateStore: (patch) => request('/api/store', { method: 'PUT', body: JSON.stringify(patch) }),
+  addProduct: (product) => request('/api/products', { method: 'POST', body: JSON.stringify(product) }),
+  createOrder: (order) => request('/api/orders', { method: 'POST', body: JSON.stringify(order) }),
 };

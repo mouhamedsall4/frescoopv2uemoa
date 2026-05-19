@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, Image, TouchableOpacity, TextInput } from 'react-native';
 import { colors, spacing, radius } from '../theme';
 
-export default function MarketScreen({ user, store, onRefresh }) {
+export default function MarketScreen({ user, store, onRefresh, navigation }) {
+  const parentNav = navigation?.getParent?.() || navigation;
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const products = (store?.products || [])
@@ -18,7 +19,7 @@ export default function MarketScreen({ user, store, onRefresh }) {
   function renderProduct({ item }) {
     const seller = (store?.users || []).find(u => u.id === item.sellerId);
     return (
-      <View style={styles.card}>
+      <TouchableOpacity style={styles.card} onPress={() => parentNav?.navigate?.('ProductDetail', { product: item })} activeOpacity={0.8}>
         {item.imageUrl ? (
           <Image source={{ uri: item.imageUrl }} style={styles.image} />
         ) : (
@@ -37,7 +38,7 @@ export default function MarketScreen({ user, store, onRefresh }) {
             <Text style={styles.stock}>{item.quantityAvailable} {item.unit || 'kg'} disponibles</Text>
           )}
         </View>
-      </View>
+      </TouchableOpacity>
     );
   }
 
