@@ -140,7 +140,7 @@ export const roles = [
   { id: 'admin', label: 'Admin', locked: true },
   { id: 'agriculteur', label: 'Agriculteur' },
   { id: 'agentTerrain', label: 'Agent Terrain' },
-  { id: 'transporteur', label: 'Transporteur' },
+
   { id: 'client', label: 'Client' },
   { id: 'acheteurB2B', label: 'Acheteur B2B' },
   { id: 'partenaire', label: 'Partenaire finance' },
@@ -182,7 +182,7 @@ export const basePageMeta = {
     image: publicImages.auth,
     kicker: 'Accès sécurisé',
     title: 'Connectez-vous à votre espace FresCoop.',
-    body: 'Admin, agriculteur, acheteur B2B, transporteur et client ont chacun des pages et actions distinctes.',
+    body: 'Admin, agriculteur, acheteur B2B et client ont chacun des pages et actions distinctes.',
   },
   '/marche': {
     image: publicImages.market,
@@ -230,7 +230,7 @@ export const basePageMeta = {
     image: publicImages.operations,
     kicker: 'Operations terrain',
     title: 'Administrer hubs, logistique, capacité et froid.',
-    body: 'Admin et transporteurs suivent les sites opérationnels avec stock, temperature et responsable.',
+    body: 'Admin suit les sites opérationnels avec stock, temperature et responsable.',
   },
   '/lots': {
     image: publicImages.operations,
@@ -293,7 +293,7 @@ export const roleHomeMeta = {
     image: publicImages.operations,
     kicker: 'Accueil agent terrain',
     title: "Confirmer les commandes même quand l'agriculteur n'est pas connecté.",
-    body: "Un espace de coordination pour appeler l'agriculteur, vérifier le stock, contacter le transporteur et organiser la livraison.",
+    body: "Un espace de coordination pour appeler l'agriculteur, vérifier le stock et organiser la livraison.",
   },
   client: {
     image: publicImages.market,
@@ -376,18 +376,7 @@ export const PROOF_TYPE_CONFIG = [
   { id: 'visite_agent', label: 'Visite agent terrain FresCoop', points: 40, level: 2, requiresUpload: false, requiresAgent: true, description: "Choisissez l'agent qui vous a visité. Il recevra une demande de confirmation." },
 ];
 
-// ─── Proof Type Config (Transporteur) ───────────────────────────────────────
-export const PROOF_TYPE_CONFIG_TRANSPORTEUR = [
-  { id: 'cni_transporteur', label: "Carte nationale d'identité (CNI)", points: 25, level: 1, requiresUpload: true, description: "Photo recto-verso de votre CNI ou carte d'identité CEDEAO en cours de validité" },
-  { id: 'permis_conduire', label: 'Permis de conduire', points: 30, level: 1, requiresUpload: true, description: "Photo recto-verso de votre permis de conduire (catégorie B minimum)" },
-  { id: 'carte_grise', label: 'Carte grise du véhicule', points: 25, level: 1, requiresUpload: true, description: "Photo de la carte grise ou attestation du propriétaire du véhicule" },
-  { id: 'assurance_vehicule', label: 'Assurance véhicule', points: 20, level: 2, requiresUpload: true, description: "Attestation d'assurance du véhicule en cours de validité" },
-  { id: 'photo_vehicule', label: 'Photo du véhicule', points: 15, level: 2, requiresUpload: true, description: "Photo de votre véhicule de transport (plaque visible)" },
-  { id: 'visite_agent_transporteur', label: 'Visite agent terrain FresCoop', points: 40, level: 2, requiresUpload: false, requiresAgent: true, description: "Choisissez l'agent qui vous a visité. Il recevra une demande de confirmation." },
-];
-
 // ─── Helper ─────────────────────────────────────────────────────────────────
-export function getProofConfigForRole(role) {
-  if (role === 'transporteur') return PROOF_TYPE_CONFIG_TRANSPORTEUR;
+export function getProofConfigForRole() {
   return PROOF_TYPE_CONFIG;
 }

@@ -249,7 +249,7 @@ const basePageMeta = {
     image: publicImages.auth,
     kicker: 'Accès sécurisé',
     title: 'Connectez-vous à votre espace FresCoop.',
-    body: 'Admin, agriculteur, acheteur B2B, transporteur et client ont chacun des pages et actions distinctes.',
+    body: 'Admin, agriculteur, acheteur B2B et client ont chacun des pages et actions distinctes.',
   },
   '/marche': {
     image: publicImages.market,
@@ -297,7 +297,7 @@ const basePageMeta = {
     image: publicImages.operations,
     kicker: 'Operations terrain',
     title: 'Administrer hubs, logistique, capacité et froid.',
-    body: 'Admin et transporteurs suivent les sites opérationnels avec stock, temperature et responsable.',
+    body: 'Admin suit les sites opérationnels avec stock, temperature et responsable.',
   },
   '/lots': {
     image: publicImages.operations,
@@ -360,7 +360,7 @@ const roleHomeMeta = {
     image: publicImages.operations,
     kicker: 'Accueil agent terrain',
     title: "Confirmer les commandes même quand l'agriculteur n'est pas connecté.",
-    body: "Un espace de coordination pour appeler l'agriculteur, vérifier le stock, contacter le transporteur et organiser la livraison.",
+    body: "Un espace de coordination pour appeler l'agriculteur, vérifier le stock et organiser la livraison.",
   },
   client: {
     image: publicImages.market,
@@ -463,7 +463,7 @@ function App() {
     if (store.users.length && !currentUser && route.pathname !== '/login') navigate('/login');
   }, [currentUser, route.pathname, store.users.length]);
 
-  // Redirect client and transporteur from dashboard to their home pages
+  // Redirect client from dashboard to their home pages
   useEffect(() => {
     if (currentUser && route.pathname === '/') {
       const homePath = getRoleHomePath(currentUser.role);
@@ -1099,7 +1099,7 @@ function PublicSurveyPage({ actions, navigate, notify, store }) {
         <div>
           <span className="eyebrow">Hackathon Filières Agricoles UEMOA 2026 — questionnaire pilote</span>
           <h1>Rejoindre le pilote FresCoop</h1>
-          <p>Identifiez-vous pour que l'équipe FresCoop vous intègre au programme pilote. Producteurs, acheteurs, transporteurs et partenaires finance sont les bienvenus.</p>
+          <p>Identifiez-vous pour que l'équipe FresCoop vous intègre au programme pilote. Producteurs, acheteurs et partenaires finance sont les bienvenus.</p>
         </div>
         <aside>
           <strong>{formatNumber(respondentCount)}</strong>
@@ -1169,7 +1169,7 @@ function PublicSurveyPage({ actions, navigate, notify, store }) {
                         <option value="">-- Choisir votre spécialité --</option>
                         <option value="agriculteurs">Accompagnement agriculteurs</option>
                         <option value="hub">Gestion hub / stock</option>
-                        <option value="logistique">Logistique / transporteurs</option>
+                        <option value="logistique">Logistique / livraisons</option>
                         <option value="b2b">Acheteurs B2B</option>
                       </select>
                     </Field>
@@ -1401,7 +1401,7 @@ function LoginPage({ actions, notify, onLogin, store }) {
       {mode === 'register' && (
         <div className="auth-card-context">
           <strong>Connectez-vous à votre espace FresCoop.</strong>
-          <span>Admin, agriculteur, acheteur B2B, transporteur et client ont chacun des pages et actions distinctes.</span>
+          <span>Admin, agriculteur, acheteur B2B et client ont chacun des pages et actions distinctes.</span>
         </div>
       )}
       <div className="segmented">
@@ -1689,10 +1689,10 @@ function FieldAgentHomePage({ currentUser, navigate, store }) {
         <div>
           <span className="eyebrow">Agent Terrain</span>
           <h2>Coordonner les commandes quand l'agriculteur n'est pas connecté.</h2>
-          <p>Votre rôle est d'appeler l'agriculteur, confirmer le stock, contacter le transporteur et garder la commande réactive jusqu'à livraison.</p>
+          <p>Votre rôle est d'appeler l'agriculteur, confirmer le stock et garder la commande réactive jusqu'à livraison.</p>
           <div className="button-row">
             <Button onClick={() => navigate('/commandes')}><PhoneCall size={18} /> Voir commandes terrain</Button>
-            <Button variant="secondary" onClick={() => navigate('/operations')}><Truck size={18} /> Transporteurs et hubs</Button>
+            <Button variant="secondary" onClick={() => navigate('/operations')}><Truck size={18} /> Hubs et opérations</Button>
           </div>
         </div>
         <div className="home-highlight">
@@ -1707,9 +1707,9 @@ function FieldAgentHomePage({ currentUser, navigate, store }) {
         <StatCard icon={CircleAlert} label="En attente paiement" value={orders.filter((order) => order.status === 'Paiement en attente').length} tone="coral" />
       </div>
       <div className="quick-grid">
-        <QuickAction icon={Users} title="Former les acteurs" body="Accompagner agriculteurs et transporteurs sur les parcours FresCoop et USSD." onClick={() => navigate('/ussd')} />
+        <QuickAction icon={Users} title="Former les acteurs" body="Accompagner agriculteurs sur les parcours FresCoop et USSD." onClick={() => navigate('/ussd')} />
         <QuickAction icon={ShieldCheck} title="Vérifier les produits" body="Confirmer la disponibilité, la zone, la qualité annoncée et la coherence terrain." onClick={() => navigate('/produits')} />
-        <QuickAction icon={PhoneCall} title="Coordonner commandes" body="Appeler l'agriculteur, contacter le transporteur et confirmer la preparation." onClick={() => navigate('/commandes')} />
+        <QuickAction icon={PhoneCall} title="Coordonner commandes" body="Appeler l'agriculteur et confirmer la preparation." onClick={() => navigate('/commandes')} />
         <QuickAction icon={ClipboardCheck} title="Collecte AgriScore" body="Collecter les données terrain d'un agriculteur pour son dossier de crédit." onClick={() => navigate('/collecte-agriscore')} />
       </div>
     </PageFrame>
@@ -2141,76 +2141,6 @@ function ClientHomePage({ currentUser, navigate, store }) {
   );
 }
 
-function TransporterHomePage({ currentUser, navigate, store }) {
-  const orders = getVisibleOrders(store.orders, currentUser);
-  const activeOrders = orders.filter((item) => item.status !== 'Livree' && item.status !== 'Annulee');
-  const hubs = store.hubs.filter((hub) => currentUser.role === 'admin' || hub.ownerId === currentUser.id);
-  const alerts = buildTransportAlerts(store, currentUser);
-  const availableCapacity = hubs.reduce((sum, hub) => sum + Math.max(0, Number(hub.capacityKg || 0) - Number(hub.currentStockKg || 0)), 0);
-
-  return (
-    <PageFrame>
-      <section className="role-home-panel transport-home-panel">
-        <div>
-          <span className="eyebrow">Bonjour {currentUser.name}</span>
-          <h2>Votre espace transporteur</h2>
-          <p>Suivez les commandes à acheminer, gardez vos hubs à jour et surveillez les points sensibles: froid, batterie, capacité et contact terrain.</p>
-          <div className="button-row">
-            <Button onClick={() => navigate('/operations')}><Warehouse size={18} /> Sites operations</Button>
-            <Button variant="secondary" onClick={() => navigate('/commandes')}><Truck size={18} /> Livraisons</Button>
-          </div>
-        </div>
-        <div className="home-highlight">
-          <Truck size={28} />
-          <strong>{activeOrders.length}</strong>
-          <span>mission(s) à suivre</span>
-        </div>
-      </section>
-
-      <div className="status-grid">
-        <StatCard icon={Truck} label="Livraisons ouvertes" value={activeOrders.length} tone="green" />
-        <StatCard icon={Warehouse} label="Mes hubs" value={hubs.length} tone="blue" />
-        <StatCard icon={PackageCheck} label="Capacite libre" value={`${formatCompact(availableCapacity)} kg`} tone="gold" />
-        <StatCard icon={BellRing} label="Alertes terrain" value={alerts.length} tone="coral" />
-      </div>
-
-      <div className="quick-grid">
-        <QuickAction icon={Warehouse} title="Enregistrer un hub" body="Ajouter capacité, stock, temperature et responsable." onClick={() => navigate('/operations')} />
-        <QuickAction icon={ClipboardCheck} title="Voir les livraisons" body="Suivre les commandes pretes ou en preparation." onClick={() => navigate('/commandes')} />
-        <QuickAction icon={FolderPlus} title="Documents" body="Garder les pieces et demandes logistiques." onClick={() => navigate('/dossiers')} />
-        <QuickAction icon={Settings} title="Profil transport" body="Mettre à jour téléphone, region et structure." onClick={() => navigate('/compte')} />
-      </div>
-
-      <div className="split-layout">
-        <section className="panel">
-          <PanelTitle icon={BellRing} title="Alertes terrain" />
-          {alerts.length ? (
-            <div className="compact-list">
-              {alerts.map((alert) => (
-                <article key={alert.id}>
-                  <strong>{alert.title}</strong>
-                  <span>{alert.body}</span>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <EmptyState icon={ShieldCheck} title="Aucune alerte" body="Vos hubs ne signalent pas de risque capacité ou froid." />
-          )}
-        </section>
-        <section className="panel">
-          <PanelTitle icon={Truck} title="Livraisons à suivre" />
-          {activeOrders.length ? (
-            <div className="compact-list">
-              {activeOrders.slice(0, 5).map((order) => <OrderLine key={order.id} order={order} store={store} withProgress />)}
-            </div>
-          ) : (
-            <EmptyState icon={Truck} title="Aucune livraison ouverte" body="Les commandes non livrees apparaitront ici pour coordination terrain." />
-          )}
-        </section>
-      </div>
-    </PageFrame>
-  );
-}
 
 function MarketplacePage({ actions, currentUser, navigate, notify, store }) {
   const [search, setSearch] = useState('');
@@ -2644,7 +2574,7 @@ function ProductsPage({ actions, currentUser, notify, store }) {
 
   return (
     <PageFrame>
-      {!allowed && !canVerifyProducts && <NoticeCard icon={CircleAlert} title="Accès lecture" body="Les clients commandent depuis le marché. Les transporteurs gèrent surtout opérations et documents." />}
+      {!allowed && !canVerifyProducts && <NoticeCard icon={CircleAlert} title="Accès lecture" body="Les clients commandent depuis le marché." />}
       {canVerifyProducts && <NoticeCard icon={ShieldCheck} title="Verification terrain" body="Contrôlez les produits ajoutes par les agriculteurs: disponibilité, qualité annoncée, zone et coherence du prix." />}
       {allowed && (
         <form className="panel form-panel" onSubmit={submit}>
@@ -3476,7 +3406,7 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
   async function markAgentStep(orderId, step) {
     const stepLabels = {
       farmerCalledAt: 'Agriculteur appelé et stock confirmé',
-      transporterContactedAt: 'Transporteur contacté',
+      transporterContactedAt: 'Logistique confirmée',
       deliveryOrganizedAt: 'Livraison organisée',
     };
     const ok = await askConfirm({
@@ -3702,7 +3632,7 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
 
       {(activeOrderTab === 'orders' || activeOrderTab === 'tracking') && (
         <section id="orders-list" className="panel order-list-panel">
-          <PanelTitle icon={activeOrderTab === 'tracking' ? ClipboardCheck : currentUser.role === 'transporteur' ? Truck : ShoppingCart} title={activeOrderTab === 'tracking' ? 'Suivi des commandes' : getOrdersTitle(currentUser.role)} />
+          <PanelTitle icon={activeOrderTab === 'tracking' ? ClipboardCheck : ShoppingCart} title={activeOrderTab === 'tracking' ? 'Suivi des commandes' : getOrdersTitle(currentUser.role)} />
           {orders.length ? (
             <>
               <OrderListControls
@@ -3736,9 +3666,7 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
               {filteredOrders.length ? (
                 showOrderList ? (
                   <>
-                    {currentUser.role === 'transporteur' ? (
-                      <DeliveryMissionList onSelect={toggleOrderSelection} onStatusChange={updateOrder} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
-                    ) : isBuyerRole(currentUser.role) ? (
+                    {isBuyerRole(currentUser.role) ? (
                       <ClientOrderList onCancel={cancelOrder} onPay={(orderId) => navigate(`/paiement?orders=${orderId}`)} onSelect={toggleOrderSelection} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
                     ) : (
                       <OrderCardGrid currentUser={currentUser} onAgentStep={markAgentStep} onCancel={cancelOrder} onSelect={toggleOrderSelection} onStatusChange={updateOrder} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
@@ -3901,7 +3829,7 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
       if (agent) {
         notifications.push(createAppNotification({
           actor: currentUser,
-          body: `Appeler ${farmer?.name || "l'agriculteur"}, confirmer le stock et contacter le transporteur.`,
+          body: `Appeler ${farmer?.name || "l'agriculteur"} et confirmer le stock.`,
           path: `/commandes?tab=tracking&order=${encodeURIComponent(order.id)}`,
           relatedId: order.id,
           recipientId: agent.id,
@@ -4170,17 +4098,7 @@ const PROOF_TYPE_CONFIG = [
   { id: 'visite_agent', label: 'Visite agent terrain FresCoop', points: 40, level: 2, requiresUpload: false, requiresAgent: true, description: "Choisissez l'agent qui vous a visité. Il recevra une demande de confirmation." },
 ];
 
-const PROOF_TYPE_CONFIG_TRANSPORTEUR = [
-  { id: 'cni_transporteur', label: "Carte nationale d'identité (CNI)", points: 25, level: 1, requiresUpload: true, description: "Photo recto-verso de votre CNI ou carte d'identité CEDEAO en cours de validité" },
-  { id: 'permis_conduire', label: 'Permis de conduire', points: 30, level: 1, requiresUpload: true, description: "Photo recto-verso de votre permis de conduire (catégorie B minimum)" },
-  { id: 'carte_grise', label: 'Carte grise du véhicule', points: 25, level: 1, requiresUpload: true, description: "Photo de la carte grise ou attestation du propriétaire du véhicule" },
-  { id: 'assurance_véhicule', label: 'Assurance véhicule', points: 20, level: 2, requiresUpload: true, description: "Attestation d'assurance du véhicule en cours de validité" },
-  { id: 'photo_véhicule', label: 'Photo du véhicule', points: 15, level: 2, requiresUpload: true, description: "Photo de votre véhicule de transport (plaque visible)" },
-  { id: 'visite_agent_transporteur', label: 'Visite agent terrain FresCoop', points: 40, level: 2, requiresUpload: false, requiresAgent: true, description: "Choisissez l'agent qui vous a visité. Il recevra une demande de confirmation." },
-];
-
-function getProofConfigForRole(role) {
-  if (role === 'transporteur') return PROOF_TYPE_CONFIG_TRANSPORTEUR;
+function getProofConfigForRole() {
   return PROOF_TYPE_CONFIG;
 }
 
@@ -4367,7 +4285,7 @@ function ActivityProofPage({ actions, currentUser, navigate, notify, store }) {
         </section>
       ) : (
         <section className="panel verification-hero">
-          <PanelToolbar icon={ShieldCheck} title={currentUser.role === 'transporteur' ? 'Vérification transporteur' : 'Vérification agriculteur'} />
+          <PanelToolbar icon={ShieldCheck} title="Vérification agriculteur" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1.5rem', alignItems: 'center', padding: '1rem' }}>
             <div>
               <h3 style={{ margin: '0 0 0.5rem' }}>{level === 0 ? 'Vérification en cours' : level === 1 ? 'Niveau Basique' : 'Niveau Standard'}</h3>
@@ -4619,11 +4537,11 @@ function ActivityProofPage({ actions, currentUser, navigate, notify, store }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
           <div style={{ padding: '1rem', background: 'var(--surface-alt, #f8faf9)', borderRadius: '0.5rem' }}>
             <strong>Niveau 1 — Basique</strong>
-            <p style={{ fontSize: '0.85rem', margin: '0.5rem 0 0' }}>{currentUser.role === 'transporteur' ? "Accès limité. CNI, permis de conduire et carte grise du véhicule." : "Accès limité. Au choix : attestation chef de village, carte coopérative, parrainage par 2 agriculteurs, mobile money ou historique livraisons."}</p>
+            <p style={{ fontSize: '0.85rem', margin: '0.5rem 0 0' }}>Accès limité. Au choix : attestation chef de village, carte coopérative, parrainage par 2 agriculteurs, mobile money ou historique livraisons.</p>
           </div>
           <div style={{ padding: '1rem', background: 'var(--surface-alt, #f8faf9)', borderRadius: '0.5rem' }}>
             <strong>Niveau 2 — Standard</strong>
-            <p style={{ fontSize: '0.85rem', margin: '0.5rem 0 0' }}>{currentUser.role === 'transporteur' ? "Accès complet. Niveau 1 + assurance véhicule, photo du véhicule ou visite agent." : "Accès complet. Niveau 1 + CNI, reçu intrants, contrat vente, carte exploitant ou visite agent."}</p>
+            <p style={{ fontSize: '0.85rem', margin: '0.5rem 0 0' }}>Accès complet. Niveau 1 + CNI, reçu intrants, contrat vente, carte exploitant ou visite agent.</p>
           </div>
         </div>
       </section>
@@ -4633,7 +4551,7 @@ function ActivityProofPage({ actions, currentUser, navigate, notify, store }) {
 
 function OperationsPage({ actions, currentUser, notify, store }) {
   const [form, setForm] = useState(emptyHubForm());
-  const canManage = currentUser.role === 'admin' || currentUser.role === 'transporteur';
+  const canManage = currentUser.role === 'admin' || currentUser.role === 'agentTerrain';
 
   const hubs = store.hubs || [];
   const farmers = store.users.filter((u) => u.role === 'agriculteur' && u.status === 'Actif');
@@ -4648,7 +4566,7 @@ function OperationsPage({ actions, currentUser, notify, store }) {
   async function submit(event) {
     event.preventDefault();
     if (!canManage) {
-      notify('Accès opérations réservé admin/transporteur');
+      notify('Accès opérations réservé admin/agent terrain');
       return;
     }
     if (!form.name || !form.region || !form.capacityKg) {
@@ -4820,7 +4738,7 @@ function LotIntelligencePage({ actions, currentUser, notify, store }) {
 
   const hubs = store.hubs || [];
   const agriculteurs = store.users.filter((u) => u.role === 'agriculteur' && u.status === 'Actif');
-  const canCreateLot = currentUser.role === 'admin' || currentUser.role === 'agent' || currentUser.role === 'agentTerrain' || currentUser.role === 'transporteur';
+  const canCreateLot = currentUser.role === 'admin' || currentUser.role === 'agent' || currentUser.role === 'agentTerrain';
 
   function submitLot(e) {
     e.preventDefault();
@@ -5713,10 +5631,6 @@ function AntiWastePage({ actions, currentUser, navigate, notify, store }) {
       title: 'Lots à risque à superviser',
       body: 'Contactez les producteurs concernés, organisez une vente groupée ou proposez un transfert vers un hub froid avant péremption.',
     },
-    transporteur: {
-      title: 'Priorités logistiques anti-gaspi',
-      body: 'Ces lots doivent arriver chez un acheteur en 1 à 3 jours. Priorisez-les dans vos tournées et allouez un véhicule réfrigéré si disponible.',
-    },
     client: {
       title: 'Produits à sauver · prix réduits',
       body: 'Achetez ces produits à prix cassé et aidez à réduire le gaspillage. Chaque achat évite des pertes et soutient un producteur.',
@@ -5777,7 +5691,7 @@ function AntiWastePage({ actions, currentUser, navigate, notify, store }) {
                 <div className="button-row">
                   {canPublish && <Button variant="secondary" onClick={() => applyFlashDiscount(alert)}><RefreshCcw size={16} /> Appliquer -{alert.suggestedDiscountPct}%</Button>}
                   {canBuy && <Button onClick={() => buyFlash(alert)}><ShoppingCart size={16} /> Acheter maintenant</Button>}
-                  {currentUser.role === 'transporteur' && <Button variant="secondary" onClick={() => navigate('/commandes')}><Truck size={16} /> Planifier livraison</Button>}
+
                   {currentUser.role === 'agentTerrain' && <Button variant="secondary" onClick={() => navigate('/commandes')}><PhoneCall size={16} /> Contacter producteur</Button>}
                 </div>
               </article>
@@ -6845,7 +6759,7 @@ function SectorPage({ currentUser, kind, navigate, store }) {
       icon: Truck,
       image: publicImages.logistics,
       title: 'Logistique',
-      lead: 'Transporteurs, hubs, stockage, froid, capacité et suivi opérationnel.',
+      lead: 'Hubs, stockage, froid, capacité et suivi opérationnel.',
       actions: ['Ajouter hub', 'Suivre capacités', 'Documenter operations'],
     },
   }[kind];
@@ -7610,7 +7524,7 @@ function OrderCardGrid({ currentUser, onAgentStep = () => {}, onCancel, onSelect
                 <Button aria-label="Annuler la commande" className="order-icon-action" title="Annuler" variant="danger" onClick={() => onCancel(order.id)}><X size={16} /></Button>
               </div>
             )}
-            {(currentUser.role === 'admin' || currentUser.role === 'agentTerrain' || currentUser.role === 'transporteur' || currentUser.id === order.sellerId) && (
+            {(currentUser.role === 'admin' || currentUser.role === 'agentTerrain' || currentUser.id === order.sellerId) && (
               <select className="order-activity-status" aria-label="Statut de la commande" title={orderStatusLabel(order.status)} value={order.status} onChange={(event) => onStatusChange(order.id, event.target.value)}>{orderStatuses.map((item) => <option key={item} value={item}>{orderStatusLabel(item)}</option>)}</select>
             )}
             {agentMode && <AgentWorkflowPanel onStep={(step) => onAgentStep(order.id, step)} order={order} />}
@@ -7625,7 +7539,7 @@ function AgentWorkflowPanel({ onStep, order }) {
   const workflow = order.agentWorkflow || {};
   const steps = [
     { key: 'farmerCalledAt', label: 'Agriculteur confirme', body: 'Valider disponibilité et demander preparation du stock.' },
-    { key: 'transporterContactedAt', label: 'Transporteur confirme', body: 'Confirmer capacité, heure de passage et conditions de livraison.' },
+    { key: 'transporterContactedAt', label: 'Logistique confirmée', body: 'Confirmer capacité, heure de passage et conditions de livraison.' },
     { key: 'deliveryOrganizedAt', label: 'Livraison planifiée', body: 'Le transport est calé et la commande peut être exécutée.' },
   ];
 
@@ -9126,7 +9040,7 @@ function getPageMeta(path, user) {
 function getOrdersTitle(role) {
   if (isBuyerRole(role)) return 'Commandes envoyées';
   if (role === 'agentTerrain') return 'Commandes terrain à coordonner';
-  if (role === 'transporteur') return 'Livraisons à suivre';
+
   return 'Commandes reçues';
 }
 
@@ -9219,17 +9133,6 @@ function getHeroMetrics(user, stats, store) {
       { icon: ReceiptText, label: 'Commandes', value: orders.length, tone: 'blue' },
       { icon: Store, label: 'Produits dispo', value: store.products.filter((item) => item.status === 'Publie').length, tone: 'gold' },
       { icon: MessageSquare, label: 'Conversations', value: buildConversations(getVisibleMessages(store.messages, user)).length, tone: 'coral' },
-    ];
-  }
-
-  if (user.role === 'transporteur') {
-    const orders = getVisibleOrders(store.orders, user).filter((item) => item.status !== 'Livree');
-    const alerts = buildTransportAlerts(store, user);
-    return [
-      { icon: Truck, label: 'Livraisons', value: orders.length, tone: 'green' },
-      { icon: Warehouse, label: 'Hubs', value: store.hubs.filter((hub) => hub.ownerId === user.id).length, tone: 'blue' },
-      { icon: BellRing, label: 'Alertes', value: alerts.length, tone: 'gold' },
-      { icon: ShieldCheck, label: 'Role actif', value: roleLabel(user.role), tone: 'coral' },
     ];
   }
 
@@ -9589,21 +9492,7 @@ function buildRichUemoaDemo(current) {
     });
   });
 
-  const transporters = ['Mamadou Transport', 'SN Cold Chain', 'Sunu Car'].map((name, i) => ({
-    id: `usr-demo-trans-${i}`,
-    createdAt: new Date(now - 45 * 86400000).toISOString(),
-    name,
-    email: `transport.${i}@frescoop.demo`,
-    phone: `+221 77 ${String(700 + i).padStart(3, '0')} 0000`,
-    role: 'transporteur',
-    status: 'Actif',
-    organization: name,
-    region: pick(REGIONS, i),
-    bio: '',
-    passwordHash: demoHash,
-  }));
-
-  const users = [...producers, ...b2b, ...transporters];
+  const users = [...producers, ...b2b];
 
   const products = [];
   for (let i = 0; i < 200; i++) {
@@ -10014,7 +9903,6 @@ function isFieldAgentRole(role) {
 
 function getAvailableFieldAgent(store) {
   return store.users.find((user) => user.role === 'agentTerrain' && user.status === 'Actif')
-    || store.users.find((user) => user.role === 'transporteur' && user.status === 'Actif')
     || null;
 }
 
@@ -10308,7 +10196,6 @@ function getVisibleOrders(items, user) {
   if (user.role === 'admin') return [];
   if (isBuyerRole(user.role)) return items.filter((item) => item.clientId === user.id);
   if (isFieldAgentRole(user.role)) return items.filter((item) => item.status !== 'Annulee' && (!item.assignedAgentId || item.assignedAgentId === user.id));
-  if (user.role === 'transporteur') return items.filter((item) => item.status !== 'Annulee');
   return items.filter((item) => item.sellerId === user.id);
 }
 
@@ -10382,14 +10269,14 @@ function sectorMatch(product, kind, store) {
   const owner = store.users.find((user) => user.id === product.ownerId);
   if (kind === 'agriculture') return owner?.role === 'agriculteur';
   if (kind === 'commerce') return owner?.role === 'acheteurB2B' || owner?.role === 'client';
-  return owner?.role === 'transporteur';
+  return false;
 }
 
 function sectorDossierMatch(dossier, kind, store) {
   const owner = store.users.find((user) => user.id === dossier.ownerId);
   if (kind === 'agriculture') return owner?.role === 'agriculteur';
   if (kind === 'commerce') return owner?.role === 'acheteurB2B';
-  return owner?.role === 'transporteur';
+  return false;
 }
 
 function getFallbackProductImage(product, seller) {

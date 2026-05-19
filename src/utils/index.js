@@ -63,7 +63,7 @@ const ROLES = [
   { id: 'admin', label: 'Admin' },
   { id: 'agriculteur', label: 'Agriculteur' },
   { id: 'agentTerrain', label: 'Agent Terrain' },
-  { id: 'transporteur', label: 'Transporteur' },
+
   { id: 'client', label: 'Client' },
   { id: 'acheteurB2B', label: 'Acheteur B2B' },
   { id: 'partenaire', label: 'Partenaire finance' },

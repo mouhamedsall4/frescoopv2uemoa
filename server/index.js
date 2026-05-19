@@ -403,7 +403,7 @@ async function handleAuth(request, response) {
       sendJson(response, 400, { error: 'Le mot de passe doit faire au moins 6 caractères' });
       return;
     }
-    const allowedRoles = ['agriculteur', 'acheteur', 'acheteurB2B', 'transporteur', 'agent', 'agentTerrain', 'client', 'partenaire'];
+    const allowedRoles = ['agriculteur', 'acheteur', 'acheteurB2B', 'agent', 'agentTerrain', 'client', 'partenaire'];
     if (role && !allowedRoles.includes(role)) {
       sendJson(response, 400, { error: 'Rôle invalide' });
       return;
@@ -1317,7 +1317,7 @@ function generateSerereAnswer(message, context) {
 
   // Vendre / publier produit
   if (has(['felax', 'fandu', 'vendre', 'publier', 'poster', 'njeeygol', 'mettre en vente'])) {
-    return `💡 Le mbaane felax kirim ma (comment vendre tes produits) :\n\n1. Inscription : crée un compte "Agriculteur"\n2. Onglet Produits → bouton + (plus) → photos, prix, quantité, zone\n3. Da Marché ole acheteurs (B2B + clients) a ŋ see ma kirim (les acheteurs verront ton produit)\n4. Order → pay PayDunya (Wave, Orange Money, Free Money, carte)\n5. Agent terrain walla transporteur livre le kirim\n\nChaque vente renforce ma score de bancabilité (0-100) pour demander un crédit.`;
+    return `💡 Le mbaane felax kirim ma (comment vendre tes produits) :\n\n1. Inscription : crée un compte "Agriculteur"\n2. Onglet Produits → bouton + (plus) → photos, prix, quantité, zone\n3. Da Marché ole acheteurs (B2B + clients) a ŋ see ma kirim (les acheteurs verront ton produit)\n4. Order → pay PayDunya (Wave, Orange Money, Free Money, carte)\n5. Agent terrain organise la livraison\n\nChaque vente renforce ma score de bancabilité (0-100) pour demander un crédit.`;
   }
 
   // Crédit / bancabilité
@@ -1419,7 +1419,7 @@ ${languageDirective}
 
 
 TON RÔLE PRINCIPAL :
-Tu es un expert AGRI-FIN-TECH qui aide productrices, producteurs, commerçantes, commerçants, acheteurs B2B, transporteurs, agents terrain, partenaires finance et administrateurs.
+Tu es un expert AGRI-FIN-TECH qui aide productrices, producteurs, commerçantes, commerçants, acheteurs B2B, agents terrain, partenaires finance et administrateurs.
 
 TES DOMAINES D'EXPERTISE (tu réponds en DÉTAIL et avec SUBSTANCE) :
 - **Agriculture sénégalaise et ouest-africaine** : calendrier cultural, variétés locales, techniques, irrigation, rendements par hectare, marchés régionaux, filières (maraîchage, céréales, fruits, élevage, transformation, bissap, arachide, mil, niébé, riz de la vallée, etc.)

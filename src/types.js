@@ -5,7 +5,7 @@
  * @property {string} name
  * @property {string} email
  * @property {string} phone
- * @property {'admin'|'agriculteur'|'agentTerrain'|'transporteur'|'client'|'acheteurB2B'|'partenaire'} role
+ * @property {'admin'|'agriculteur'|'agentTerrain'|'client'|'acheteurB2B'|'partenaire'} role
  * @property {'Actif'|'En attente'|'Suspendu'|'Inactif'} status
  * @property {string} organization
  * @property {string} region
