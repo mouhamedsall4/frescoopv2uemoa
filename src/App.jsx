@@ -6489,9 +6489,8 @@ function buildBancabiliteDossier(user, store) {
   const paidOrders = orders.filter((order) => order.paymentStatus === 'Paye' || order.status === 'Confirmee' || order.status === 'Livree');
   const paymentRecords = (store.paymentRecords || []).filter((record) => record.sellerId === user.id);
   const paydunyaTx = paymentRecords.filter((r) => r.paydunyaToken || /paydunya/i.test(r.partner || ''));
-  const lots = (store.lots || []).filter((lot) => lot.ownerId === user.id);
-  const attestations = (store.attestations || []).filter((item) => item.ownerId === user.id);
   const proofs = (store.proofs || []).filter((item) => item.ownerId === user.id);
+  const activityProofs = (store.activityProofs || []).filter((item) => item.userId === user.id && (item.status === 'valide' || item.status === 'auto_valide'));
   const totalRevenue = paidOrders.reduce((sum, order) => sum + getOrderTotal(order, store), 0)
     + transactions.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const monthsActive = Math.max(1, Math.round((Date.now() - new Date(user.createdAt || Date.now()).getTime()) / (86400000 * 30)));
@@ -6514,9 +6513,8 @@ function buildBancabiliteDossier(user, store) {
     { label: 'Anciennete compte', value: `${monthsActive} mois`, points: Math.min(15, monthsActive * 2) },
     { label: 'Transactions vérifiées', value: transactions.length + paidOrders.length, points: Math.min(15, (transactions.length + paidOrders.length) * 2) },
     { label: 'Paiements PayDunya', value: paydunyaTx.length, points: Math.min(10, paydunyaTx.length * 3) },
-    { label: 'Lots traces avec capteurs', value: lots.length, points: Math.min(8, lots.length * 2) },
-    { label: 'Attestations qualifiees', value: attestations.length, points: Math.min(7, attestations.length * 3) },
-    { label: 'Preuves économiques', value: proofs.length + paidOrders.length, points: Math.min(7, (proofs.length + paidOrders.length) * 2) },
+    { label: 'Preuves vérification validées', value: activityProofs.length, points: Math.min(15, activityProofs.length * 4) },
+    { label: 'Preuves économiques', value: proofs.length + paidOrders.length, points: Math.min(10, (proofs.length + paidOrders.length) * 2) },
     { label: 'Revenu mensuel moyen', value: `${formatCompact(monthlyAverage)} FCFA`, points: Math.min(10, Math.floor(monthlyAverage / 50000) * 2) },
     { label: 'Groupement / GIE / Coop', value: hasGroupement ? latestCollection.groupement : '—', points: hasGroupement ? 5 : 0 },
     { label: 'Foncier (formel ou coutumier)', value: hasFoncier ? latestCollection.foncier : '—', points: hasFoncier ? 5 : 0 },
@@ -6525,7 +6523,12 @@ function buildBancabiliteDossier(user, store) {
     { label: 'Tontine / épargne informelle', value: hasTontine ? 'Oui' : 'Non', points: hasTontine ? 4 : 0 },
     { label: 'Historique remboursement', value: repaid > 0 ? `${repaid} remboursé(s)${defaults > 0 ? `, ${defaults} défaut(s)` : ''}` : '—', points: Math.max(0, repaymentBonus) },
   ];
-  const score = Math.min(100, criteria.reduce((sum, c) => sum + c.points, 0));
+  const computedScore = Math.min(100, criteria.reduce((sum, c) => sum + c.points, 0));
+  const highScoreKey = `frescoop.bancabilite.high.${user.id}`;
+  let storedHigh = 0;
+  try { storedHigh = Number(window.localStorage.getItem(highScoreKey)) || 0; } catch {}
+  const score = Math.max(computedScore, storedHigh);
+  if (score > storedHigh) { try { window.localStorage.setItem(highScoreKey, String(score)); } catch {} }
   const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : 'D';
   const verdict = grade === 'A' ? 'Dossier solide, eligible credit bancaire' :
                   grade === 'B' ? 'Bonne assise, eligible SFD / microfinance' :
@@ -6541,8 +6544,7 @@ function buildBancabiliteDossier(user, store) {
     monthlyAverage,
     transactionsCount: transactions.length + paidOrders.length,
     paydunyaCount: paydunyaTx.length,
-    lotsCount: lots.length,
-    attestationsCount: attestations.length,
+    activityProofsCount: activityProofs.length,
     agriCollectionCount: agriCollections.length,
     repaymentHistory: { repaid, defaults },
     verificationCode: `BANC-${user.id.slice(-6).toUpperCase()}-${grade}${score}`,
@@ -6570,7 +6572,7 @@ function renderBancabiliteHtml(dossier) {
       <p>Revenu total vérifié: <strong>${escapeHtml(formatMoney(dossier.totalRevenue))}</strong></p>
       <p>Revenu mensuel moyen: <strong>${escapeHtml(formatMoney(dossier.monthlyAverage))}</strong></p>
       <p>Transactions vérifiées: ${dossier.transactionsCount} | Paiements PayDunya: ${dossier.paydunyaCount}</p>
-      <p>Lots traces: ${dossier.lotsCount} | Attestations: ${dossier.attestationsCount}</p>
+      <p>Preuves vérification validées: ${dossier.activityProofsCount}</p>
     </section>
     <section>
       <h2>Note aux partenaires finance</h2>
@@ -10031,7 +10033,6 @@ function getMenuLinks(role) {
       '/produits',
       '/marche',
       '/commandes',
-      '/lots',
       '/bancabilite',
       '/ussd',
       '/compte',
@@ -10083,7 +10084,7 @@ function getMenuGroups(role, menuLinks) {
       { title: 'Financement & inclusion', paths: ['/bancabilite', '/impact', '/ussd', '/donnees'] },
     ],
     agriculteur: [
-      { title: 'Mon activité', paths: ['/', '/produits', '/marche', '/commandes', '/lots', '/compte'] },
+      { title: 'Mon activité', paths: ['/', '/produits', '/marche', '/commandes', '/compte'] },
       { title: 'Mon financement', paths: ['/verification', '/bancabilite', '/ussd'] },
     ],
     agentTerrain: [
