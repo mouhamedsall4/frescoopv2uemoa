@@ -50,3 +50,24 @@ services:
       - key: OPENROUTER_MODELS
         sync: false
     healthCheckPath: /api/health
+
+  - type: web
+    name: frescoop-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://frescoop-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /manifest.webmanifest
+        name: Content-Type
+        value: application/manifest+json
+      - path: /manifest.webmanifest
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
