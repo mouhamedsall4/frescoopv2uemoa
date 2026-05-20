@@ -7069,7 +7069,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                             <div className="button-row" style={{ marginTop: '0.3rem' }}>
                               <label className="file-input compact">
                                 <input type="file" accept="image/*,.pdf" onChange={(e) => { if (e.target.files?.[0]) submitTrancheProof(loan, e.target.files[0]); }} />
-                                <Button variant="secondary" type="button"><ImagePlus size={14} /> Soumettre preuve</Button>
+                                <span className="btn btn-secondary"><ImagePlus size={14} /> Soumettre preuve</span>
                               </label>
                             </div>
                           )}
