@@ -8939,9 +8939,9 @@ function OrderCardGrid({ currentUser, onAgentStep = () => {}, onCancel, onRate, 
               <span>{formatNumber(quantity)} {unit}</span>
             </div>
             <time className="order-activity-date" dateTime={order.createdAt}>{formatDate(order.createdAt)}</time>
-            {order.status === 'Livree' && (isBuyerRole(currentUser.role) || currentUser.role === 'client') && !(store.ratings || []).some((r) => r.orderId === order.id && r.userId === currentUser.id) && (
+            {order.status === 'Livree' && !(store.ratings || []).some((r) => r.orderId === order.id && r.userId === currentUser.id) && (currentUser.id === order.clientId || currentUser.id === order.buyerId || currentUser.role === 'admin' || isBuyerRole(currentUser.role)) && (
               <div className="order-actions">
-                <Button className="order-icon-action" title="Noter cette commande" onClick={() => onRate && onRate(order.id)}><Star size={16} /> Noter</Button>
+                <Button title="Noter cette commande" onClick={() => onRate && onRate(order.id)} style={{ fontSize: '0.75rem', padding: '4px 10px', gap: '4px', background: '#fef3c7', color: '#92400e', border: '1px solid #f59e0b', borderRadius: '6px', fontWeight: 700 }}><Star size={14} /> Noter</Button>
               </div>
             )}
             {order.status === 'Livree' && (store.ratings || []).some((r) => r.orderId === order.id) && (
