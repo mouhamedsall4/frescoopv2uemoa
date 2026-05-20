@@ -6651,7 +6651,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
 
   const loans = store.loans || [];
   const myLoans = isFinancePartner
-    ? loans.filter((loan) => loan.partnerId === currentUser.id || loan.status === 'En attente')
+    ? loans.filter((loan) => loan.partnerId === currentUser.id || loan.status === 'En attente' || loan.status === 'Approuvé' || loan.status === 'En cours')
     : loans.filter((loan) => loan.farmerId === currentUser.id);
 
   const enriched = scope.map((user) => ({ user, dossier: buildBancabiliteDossier(user, store) }));
