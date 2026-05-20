@@ -1751,6 +1751,11 @@ function LoginPage({ actions, notify, onLogin, store }) {
     role: 'agriculteur',
     organization: '',
     region: '',
+    gender: '',
+    experienceYears: '',
+    gie: '',
+    gieName: '',
+    foncier: '',
   });
 
   async function login(event) {
@@ -1801,6 +1806,11 @@ function LoginPage({ actions, notify, onLogin, store }) {
           phone: registerForm.phone || '',
           organization: registerForm.organization || '',
           region: registerForm.region || '',
+          gender: registerForm.gender || '',
+          experienceYears: Number(registerForm.experienceYears) || 0,
+          gie: registerForm.gie || '',
+          gieName: registerForm.gie === 'Oui' ? (registerForm.gieName || '') : '',
+          foncier: registerForm.foncier || '',
           agentProfile: registerForm.role === 'agentTerrain' ? (registerForm.agentProfile || '') : '',
         }),
       });
@@ -1856,8 +1866,41 @@ function LoginPage({ actions, notify, onLogin, store }) {
             <Field label="Nom complet / structure" required><input value={registerForm.name} onChange={(event) => updateForm(setRegisterForm, 'name', event.target.value)} /></Field>
             <Field label="Email" required><input type="email" value={registerForm.email} onChange={(event) => updateForm(setRegisterForm, 'email', event.target.value)} /></Field>
             <Field label="Téléphone"><input value={registerForm.phone} onChange={(event) => updateForm(setRegisterForm, 'phone', event.target.value)} /></Field>
+            <Field label="Genre" required>
+              <select value={registerForm.gender} onChange={(event) => updateForm(setRegisterForm, 'gender', event.target.value)}>
+                <option value="">— Sélectionner —</option>
+                <option value="Homme">Homme</option>
+                <option value="Femme">Femme</option>
+                <option value="Autre">Autre</option>
+              </select>
+            </Field>
             <Field label="Organisation"><input value={registerForm.organization} onChange={(event) => updateForm(setRegisterForm, 'organization', event.target.value)} /></Field>
             <Field label="Région"><input value={registerForm.region} onChange={(event) => updateForm(setRegisterForm, 'region', event.target.value)} /></Field>
+            {(registerForm.role === 'agriculteur') && (
+              <>
+                <Field label="Années d'expérience agricole">
+                  <input type="number" min="0" max="60" value={registerForm.experienceYears} onChange={(event) => updateForm(setRegisterForm, 'experienceYears', event.target.value)} placeholder="Ex: 5" />
+                </Field>
+                <Field label="GIE / Coopérative">
+                  <select value={registerForm.gie} onChange={(event) => updateForm(setRegisterForm, 'gie', event.target.value)}>
+                    <option value="">— Sélectionner —</option>
+                    <option value="Oui">Oui</option>
+                    <option value="Non">Non</option>
+                  </select>
+                </Field>
+                {registerForm.gie === 'Oui' && (
+                  <Field label="Nom du GIE / Coopérative"><input value={registerForm.gieName} onChange={(event) => updateForm(setRegisterForm, 'gieName', event.target.value)} placeholder="Nom de votre coopérative" /></Field>
+                )}
+                <Field label="Foncier">
+                  <select value={registerForm.foncier} onChange={(event) => updateForm(setRegisterForm, 'foncier', event.target.value)}>
+                    <option value="">— Sélectionner —</option>
+                    <option value="Aucun">Aucun</option>
+                    <option value="Coutumier">Coutumier</option>
+                    <option value="Titre formel">Titre formel</option>
+                  </select>
+                </Field>
+              </>
+            )}
             <Field label="Mot de passe" required><PasswordInput value={registerForm.password} onChange={(event) => updateForm(setRegisterForm, 'password', event.target.value)} /></Field>
           </div>
           <Button type="submit"><UserCheck size={18} /> Créer mon espace</Button>
@@ -6103,7 +6146,7 @@ function computeUemoaImpact(store) {
   const lossesAvertedPercent = lots.length || paidOrders.length ? Math.min(32, 12 + Math.round((lots.length + paidOrders.length) * 0.8)) : 0;
   const co2SavedKg = Math.round(tracedKg * 0.22);
   const producers = users.filter((user) => user.role === 'agriculteur');
-  const womenProducers = producers.filter((user) => user.gender === 'F' || /(^|\s)(fatou|aissatou|aïssatou|aminata|awa|khady|marieme|mariéme|mariame|mame|ndeye|fama|ndèye|fatoumata|diarra|binta|astou|bintou|soda|coumba|rokhaya|rokhia|aida|aïda|yacine|khadija|khadidja|penda|dior|oumy|mareme|marème)/i.test(String(user.name || ''))).length;
+  const womenProducers = producers.filter((user) => user.gender === 'Femme' || user.gender === 'F' || /(^|\s)(fatou|aissatou|aïssatou|aminata|awa|khady|marieme|mariéme|mariame|mame|ndeye|fama|ndèye|fatoumata|diarra|binta|astou|bintou|soda|coumba|rokhaya|rokhia|aida|aïda|yacine|khadija|khadidja|penda|dior|oumy|mareme|marème)/i.test(String(user.name || ''))).length;
   const coopérativeCount = (store.coopératives || []).length;
   const paydunyaTxCount = paymentRecords.filter((record) => record.paydunyaToken || /paydunya/i.test(record.partner || '')).length;
 
@@ -7446,10 +7489,12 @@ function buildBancabiliteDossier(user, store) {
 
   const agriCollections = (store.agriScoreCollections || []).filter((c) => c.farmerId === user.id);
   const latestCollection = agriCollections[0] || null;
-  const hasGroupement = latestCollection && latestCollection.groupement && latestCollection.groupement !== 'Aucun';
-  const hasFoncier = latestCollection && latestCollection.foncier && latestCollection.foncier !== 'Aucun';
+  const groupementValue = (latestCollection && latestCollection.groupement) || (user.gie === 'Oui' ? (user.gieName || 'Oui') : user.gie) || '';
+  const foncierValue = (latestCollection && latestCollection.foncier) || user.foncier || '';
+  const hasGroupement = groupementValue && groupementValue !== 'Aucun' && groupementValue !== 'Non';
+  const hasFoncier = foncierValue && foncierValue !== 'Aucun';
   const hasMobileMoney = latestCollection && latestCollection.mobileMoneyCompte;
-  const experienceYears = latestCollection ? latestCollection.experienceAnnees : 0;
+  const experienceYears = (latestCollection ? latestCollection.experienceAnnees : null) ?? (user.experienceYears || 0);
   const hasTontine = latestCollection && latestCollection.tontineMontant > 0;
 
   const repayments = (store.loanRepayments || []).filter((r) => r.farmerId === user.id);
@@ -7464,8 +7509,8 @@ function buildBancabiliteDossier(user, store) {
     { label: 'Vérifications terrain par agent', value: activityProofs.length, points: Math.min(15, activityProofs.length * 4) },
     { label: 'Justificatifs de revenus vérifiés', value: proofs.length + paidOrders.length, points: Math.min(10, (proofs.length + paidOrders.length) * 2) },
     { label: 'Revenu mensuel moyen', value: `${formatCompact(monthlyAverage)} FCFA`, points: Math.min(10, Math.floor(monthlyAverage / 50000) * 2) },
-    { label: 'Groupement / GIE / Coop', value: hasGroupement ? latestCollection.groupement : 'Non renseigné', points: hasGroupement ? 5 : 0 },
-    { label: 'Foncier (formel ou coutumier)', value: hasFoncier ? latestCollection.foncier : 'Non renseigné', points: hasFoncier ? 5 : 0 },
+    { label: 'Groupement / GIE / Coop', value: hasGroupement ? groupementValue : 'Non renseigné', points: hasGroupement ? 5 : 0 },
+    { label: 'Foncier (formel ou coutumier)', value: hasFoncier ? foncierValue : 'Non renseigné', points: hasFoncier ? 5 : 0 },
     { label: 'Expérience agricole', value: experienceYears > 0 ? `${experienceYears} ans` : '⚠ Non renseigné (0 an)', points: Math.min(5, Math.floor(experienceYears / 2)) },
     { label: 'Mobile Money actif', value: (hasMobileMoney || paydunyaTx.length > 0) ? 'Oui' : 'Non', points: (hasMobileMoney || paydunyaTx.length > 0) ? 4 : 0 },
     { label: 'Tontine / épargne informelle', value: hasTontine ? 'Oui' : 'Non', points: hasTontine ? 4 : 0 },
@@ -7807,6 +7852,11 @@ function AccountPage({ actions, currentUser, notify, store }) {
     organization: currentUser.organization || '',
     region: currentUser.region || '',
     bio: currentUser.bio || '',
+    gender: currentUser.gender || '',
+    experienceYears: currentUser.experienceYears || '',
+    gie: currentUser.gie || '',
+    gieName: currentUser.gieName || '',
+    foncier: currentUser.foncier || '',
   });
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [emailForm, setEmailForm] = useState({
@@ -7931,6 +7981,39 @@ function AccountPage({ actions, currentUser, notify, store }) {
         <Field label="Téléphone"><input value={form.phone} onChange={(event) => updateForm(setForm, 'phone', event.target.value)} /></Field>
         <Field label="Organisation"><input value={form.organization} onChange={(event) => updateForm(setForm, 'organization', event.target.value)} /></Field>
         <Field label="Région"><input value={form.region} onChange={(event) => updateForm(setForm, 'region', event.target.value)} /></Field>
+        <Field label="Genre">
+          <select value={form.gender} onChange={(event) => updateForm(setForm, 'gender', event.target.value)}>
+            <option value="">— Sélectionner —</option>
+            <option value="Homme">Homme</option>
+            <option value="Femme">Femme</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </Field>
+        {currentUser.role === 'agriculteur' && (
+          <>
+            <Field label="Années d'expérience agricole">
+              <input type="number" min="0" max="60" value={form.experienceYears} onChange={(event) => updateForm(setForm, 'experienceYears', event.target.value)} />
+            </Field>
+            <Field label="GIE / Coopérative">
+              <select value={form.gie} onChange={(event) => updateForm(setForm, 'gie', event.target.value)}>
+                <option value="">— Sélectionner —</option>
+                <option value="Oui">Oui</option>
+                <option value="Non">Non</option>
+              </select>
+            </Field>
+            {form.gie === 'Oui' && (
+              <Field label="Nom du GIE / Coopérative"><input value={form.gieName} onChange={(event) => updateForm(setForm, 'gieName', event.target.value)} /></Field>
+            )}
+            <Field label="Foncier">
+              <select value={form.foncier} onChange={(event) => updateForm(setForm, 'foncier', event.target.value)}>
+                <option value="">— Sélectionner —</option>
+                <option value="Aucun">Aucun</option>
+                <option value="Coutumier">Coutumier</option>
+                <option value="Titre formel">Titre formel</option>
+              </select>
+            </Field>
+          </>
+        )}
         <Field label="Présentation"><textarea rows="4" value={form.bio} onChange={(event) => updateForm(setForm, 'bio', event.target.value)} /></Field>
         <Button type="submit"><Save size={18} /> Enregistrer</Button>
       </form>
@@ -12111,7 +12194,24 @@ function downloadJson(filename, value) {
 }
 
 function downloadHtml(filename, html) {
-  downloadText(filename, html, 'text/html;charset=utf-8;');
+  const pdfName = filename.replace(/\.html$/i, '.pdf');
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = 'none';
+  document.body.appendChild(iframe);
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+  iframe.contentWindow.document.title = pdfName;
+  setTimeout(() => {
+    iframe.contentWindow.print();
+    setTimeout(() => document.body.removeChild(iframe), 1000);
+  }, 300);
 }
 
 function downloadText(filename, text, type) {

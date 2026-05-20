@@ -398,7 +398,7 @@ async function handleAuth(request, response) {
   if (endpoint === 'register' && request.method === 'POST') {
     const body = await readBody(request);
     const data = JSON.parse(body || '{}');
-    const { name, email, password, role, phone, organization, region } = data;
+    const { name, email, password, role, phone, organization, region, gender, experienceYears, gie, gieName, foncier } = data;
 
     if (!name || !email || !password) {
       sendJson(response, 400, { error: 'Nom, email et mot de passe requis' });
@@ -462,6 +462,11 @@ async function handleAuth(request, response) {
         gpsLng,
         assignedHubId,
         agentProfile: (role === 'agentTerrain' && data.agentProfile) ? String(data.agentProfile).trim() : '',
+        gender: ['Homme', 'Femme', 'Autre'].includes(gender) ? gender : '',
+        experienceYears: Math.max(0, Math.min(60, Number(experienceYears) || 0)),
+        gie: ['Oui', 'Non'].includes(gie) ? gie : '',
+        gieName: gie === 'Oui' ? String(gieName || '').trim().slice(0, 100) : '',
+        foncier: ['Aucun', 'Coutumier', 'Titre formel'].includes(foncier) ? foncier : '',
         verificationScore: 0,
         verificationLevel: 0,
       };
