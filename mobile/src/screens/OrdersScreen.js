@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius } from '../theme';
@@ -16,10 +16,26 @@ export default function OrdersScreen({ user, store, onRefresh }) {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('all');
 
-  const allOrders = (store?.orders || []).filter(o => o.sellerId === user.id || o.buyerId === user.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  const orders = filter === 'all' ? allOrders
-    : filter === 'active' ? allOrders.filter(o => !['Livree', 'Annulee'].includes(o.status))
-    : allOrders.filter(o => o.status === 'Livree');
+  const usersMap = useMemo(() => {
+    const map = {};
+    for (const u of (store?.users || [])) { map[u.id] = u; }
+    return map;
+  }, [store?.users]);
+
+  const allOrders = useMemo(() =>
+    (store?.orders || [])
+      .filter(o => o.sellerId === user.id || o.buyerId === user.id)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
+    [store?.orders, user.id]
+  );
+
+  const orders = useMemo(() => {
+    if (filter === 'all') return allOrders;
+    if (filter === 'active') return allOrders.filter(o => !['Livree', 'Annulee'].includes(o.status));
+    return allOrders.filter(o => o.status === 'Livree');
+  }, [allOrders, filter]);
+
+  const activeCount = useMemo(() => allOrders.filter(o => !['Livree', 'Annulee'].includes(o.status)).length, [allOrders]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -36,7 +52,7 @@ export default function OrdersScreen({ user, store, onRefresh }) {
   function renderOrder({ item }) {
     const sc = statusConfig[item.status] || statusConfig['Nouvelle'];
     const isSeller = item.sellerId === user.id;
-    const otherUser = (store?.users || []).find(u => u.id === (isSeller ? item.buyerId : (item.sellerId || item.ownerId)));
+    const otherUser = usersMap[isSeller ? item.buyerId : (item.sellerId || item.ownerId)];
     const total = Number(item.totalAmount || item.total || 0);
 
     return (
@@ -85,7 +101,7 @@ export default function OrdersScreen({ user, store, onRefresh }) {
         {[['all', 'Toutes'], ['active', 'En cours'], ['done', 'Terminées']].map(([key, label]) => (
           <TouchableOpacity key={key} style={[styles.filterBtn, filter === key && styles.filterBtnActive]} onPress={() => setFilter(key)}>
             <Text style={[styles.filterText, filter === key && styles.filterTextActive]}>{label}</Text>
-            {key === 'active' && allOrders.filter(o => !['Livree', 'Annulee'].includes(o.status)).length > 0 && (
+            {key === 'active' && activeCount > 0 && (
               <View style={styles.filterDot} />
             )}
           </TouchableOpacity>

@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo, memo, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Text, FlatList, TextInput, TouchableOpacity } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -69,7 +69,7 @@ function getTabsForRole(role) {
     case 'admin':
       return [
         { name: 'Accueil', icon: 'home', component: 'home' },
-        { name: 'Utilisateurs', icon: 'people', component: 'farmers' },
+        { name: 'Utilisateurs', icon: 'people', component: 'adminUsers' },
         { name: 'Produits', icon: 'leaf', component: 'products' },
         { name: 'Dossiers', icon: 'document-text', component: 'dossiers' },
         { name: 'Profil', icon: 'person', component: 'profile' },
@@ -95,6 +95,7 @@ function HomeTabs({ user, store, onRefresh, onLogout, navigation }) {
       case 'orders': return () => <OrdersScreen user={user} store={store} onRefresh={onRefresh} />;
       case 'profile': return () => <ProfileScreen user={user} store={store} onLogout={onLogout} />;
       case 'farmers': return () => <FarmersScreen user={user} store={store} />;
+      case 'adminUsers': return () => <AdminUsersScreen user={user} store={store} onRefresh={onRefresh} />;
       case 'dossiers': return () => <DossiersScreen user={user} store={store} />;
       case 'lots': return () => <LotsScreen user={user} store={store} />;
       case 'verification': return () => <VerificationScreen user={user} store={store} />;
@@ -141,127 +142,362 @@ function HomeTabs({ user, store, onRefresh, onLogout, navigation }) {
 }
 
 function FarmersScreen({ user, store }) {
-  const farmers = (store?.users || []).filter(u => u.role === 'agriculteur');
+  const farmers = useMemo(() => (store?.users || []).filter(u => u.role === 'agriculteur'), [store?.users]);
+
+  const renderFarmer = useCallback(({ item: f }) => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, backgroundColor: colors.white, borderRadius: 12, marginBottom: 8, marginHorizontal: 16, ...shadow.sm }}>
+      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.green700, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: colors.white, fontWeight: '900', fontSize: 16 }}>{f.name?.[0]}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.gray800 }}>{f.name}</Text>
+        <Text style={{ fontSize: 12, color: colors.gray500 }}>{f.region || 'Non renseignée'} — Niv. {f.verificationLevel || 0}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
+    </View>
+  ), []);
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.gray50, padding: 16 }}>
-      <Text style={{ fontSize: 18, fontWeight: '800', color: colors.gray800, marginBottom: 16 }}>Agriculteurs ({farmers.length})</Text>
-      {farmers.map(f => (
-        <View key={f.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, backgroundColor: colors.white, borderRadius: 12, marginBottom: 8, ...shadow.sm }}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.green850, justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ color: colors.white, fontWeight: '900', fontSize: 16 }}>{f.name?.[0]}</Text>
+    <View style={{ flex: 1, backgroundColor: colors.gray50 }}>
+      <View style={{ padding: 16, paddingBottom: 8 }}>
+        <Text style={{ fontSize: 18, fontWeight: '800', color: colors.gray800 }}>Agriculteurs ({farmers.length})</Text>
+      </View>
+      <FlatList
+        data={farmers}
+        keyExtractor={item => item.id}
+        renderItem={renderFarmer}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      />
+    </View>
+  );
+}
+
+const ROLE_LABELS = {
+  agriculteur: 'Agriculteur',
+  client: 'Client',
+  acheteurB2B: 'Acheteur B2B',
+  agentTerrain: 'Agent terrain',
+  partenaire: 'Partenaire',
+  admin: 'Admin',
+};
+
+const ROLE_COLORS = {
+  agriculteur: colors.green700,
+  client: '#2563eb',
+  acheteurB2B: '#7c3aed',
+  agentTerrain: '#d97706',
+  partenaire: '#0891b2',
+  admin: '#dc2626',
+};
+
+const ROLE_FILTERS = ['Tous', 'agriculteur', 'client', 'acheteurB2B', 'agentTerrain', 'partenaire', 'admin'];
+
+const UserCard = memo(({ item }) => {
+  const roleColor = ROLE_COLORS[item.role] || colors.gray500;
+  const verLevel = item.verificationLevel || 0;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, backgroundColor: colors.white, borderRadius: 12, marginBottom: 8, marginHorizontal: 16, ...shadow.sm }}>
+      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: roleColor + '20', justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: roleColor, fontWeight: '900', fontSize: 17 }}>{item.name?.[0]?.toUpperCase() || '?'}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.gray800 }}>{item.name}</Text>
+        <Text style={{ fontSize: 11, color: colors.gray500, marginTop: 2 }}>{item.email}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+          <View style={{ backgroundColor: roleColor + '20', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 99 }}>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: roleColor }}>{ROLE_LABELS[item.role] || item.role}</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.gray800 }}>{f.name}</Text>
-            <Text style={{ fontSize: 12, color: colors.gray500 }}>{f.region || 'Non renseignée'} — Niv. {f.verificationLevel || 0}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
+          {item.region && <Text style={{ fontSize: 10, color: colors.gray400 }}>{item.region}</Text>}
+          {verLevel >= 2 && <Ionicons name="shield-checkmark" size={12} color={colors.green600} />}
         </View>
-      ))}
+      </View>
+      <View style={{ alignItems: 'flex-end' }}>
+        <Text style={{ fontSize: 10, color: colors.gray400 }}>Niv. {verLevel}</Text>
+        <View style={{ width: 8, height: 8, borderRadius: 4, marginTop: 4, backgroundColor: item.status === 'Actif' || !item.status ? colors.green500 : colors.red500 }} />
+      </View>
+    </View>
+  );
+});
+
+function AdminUsersScreen({ user, store, onRefresh }) {
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('Tous');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const allUsers = useMemo(() => store?.users || [], [store?.users]);
+
+  const filteredUsers = useMemo(() => {
+    let list = allUsers;
+    if (roleFilter !== 'Tous') {
+      list = list.filter(u => u.role === roleFilter);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase().trim();
+      list = list.filter(u =>
+        (u.name || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q) ||
+        (u.phone || '').includes(q) ||
+        (u.region || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [allUsers, roleFilter, search]);
+
+  const stats = useMemo(() => {
+    const byRole = {};
+    for (const u of allUsers) {
+      byRole[u.role] = (byRole[u.role] || 0) + 1;
+    }
+    return { total: allUsers.length, byRole };
+  }, [allUsers]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await onRefresh();
+    setRefreshing(false);
+  }, [onRefresh]);
+
+  const renderUser = useCallback(({ item }) => <UserCard item={item} />, []);
+  const keyExtractor = useCallback((item) => item.id, []);
+
+  const listHeader = useMemo(() => (
+    <View style={{ backgroundColor: colors.white, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: colors.gray100, marginBottom: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.gray50, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, gap: 8 }}>
+          <Ionicons name="search" size={16} color={colors.gray400} />
+          <TextInput
+            style={{ flex: 1, fontSize: 13, fontWeight: '500', color: colors.gray800, padding: 0 }}
+            placeholder="Rechercher un utilisateur..."
+            placeholderTextColor={colors.gray400}
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')}>
+              <Ionicons name="close-circle" size={16} color={colors.gray400} />
+            </TouchableOpacity>
+          )}
+        </View>
+        <View style={{ backgroundColor: colors.green100, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}>
+          <Text style={{ fontSize: 13, fontWeight: '900', color: colors.green700 }}>{filteredUsers.length}</Text>
+        </View>
+      </View>
+      <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+        {ROLE_FILTERS.map(role => {
+          const active = roleFilter === role;
+          const count = role === 'Tous' ? stats.total : (stats.byRole[role] || 0);
+          return (
+            <TouchableOpacity
+              key={role}
+              onPress={() => setRoleFilter(role)}
+              style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99, backgroundColor: active ? colors.green700 : colors.gray100 }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: '700', color: active ? colors.white : colors.gray600 }}>
+                {role === 'Tous' ? 'Tous' : ROLE_LABELS[role] || role} ({count})
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  ), [search, filteredUsers.length, roleFilter, stats]);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.gray50 }}>
+      <FlatList
+        data={filteredUsers}
+        keyExtractor={keyExtractor}
+        renderItem={renderUser}
+        ListHeaderComponent={listHeader}
+        stickyHeaderIndices={[0]}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
+        getItemLayout={(data, index) => ({ length: 82, offset: 82 * index, index })}
+        ListEmptyComponent={
+          <View style={{ alignItems: 'center', paddingVertical: 60, gap: 12 }}>
+            <Ionicons name="people-outline" size={48} color={colors.gray300} />
+            <Text style={{ fontSize: 14, color: colors.gray500, textAlign: 'center' }}>Aucun utilisateur trouvé</Text>
+          </View>
+        }
+      />
     </View>
   );
 }
 
 function DossiersScreen({ user, store }) {
-  const dossiers = store?.dossiers || [];
-  const filtered = user.role === 'admin' || user.role === 'partenaire' ? dossiers : dossiers.filter(d => d.userId === user.id || d.ownerId === user.id);
-  return (
-    <View style={{ flex: 1, backgroundColor: colors.gray50, padding: 16 }}>
-      <Text style={{ fontSize: 18, fontWeight: '800', color: colors.gray800, marginBottom: 16 }}>Dossiers bancaires ({filtered.length})</Text>
-      {filtered.length === 0 && (
-        <View style={{ alignItems: 'center', paddingVertical: 60, gap: 12 }}>
-          <Ionicons name="document-text-outline" size={48} color={colors.gray300} />
-          <Text style={{ fontSize: 14, color: colors.gray500, textAlign: 'center' }}>Aucun dossier bancaire disponible</Text>
-        </View>
-      )}
-      {filtered.map(d => {
-        const owner = (store?.users || []).find(u => u.id === (d.userId || d.ownerId));
-        return (
-          <View key={d.id} style={{ padding: 14, backgroundColor: colors.white, borderRadius: 12, marginBottom: 8, ...shadow.sm }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.gray800 }}>#{d.id?.slice(-6)}</Text>
-              <View style={{ backgroundColor: d.status === 'Valide' ? colors.green100 : '#fef3c7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: d.status === 'Valide' ? colors.green700 : '#d97706' }}>{d.status}</Text>
-              </View>
-            </View>
-            {owner && <Text style={{ fontSize: 12, color: colors.gray500, marginTop: 4 }}>{owner.name} - {owner.region || 'UEMOA'}</Text>}
-            <Text style={{ fontSize: 12, color: colors.gray500, marginTop: 2 }}>Score: {d.score || '--'}/100</Text>
+  const usersMap = useMemo(() => {
+    const map = {};
+    for (const u of (store?.users || [])) { map[u.id] = u; }
+    return map;
+  }, [store?.users]);
+
+  const filtered = useMemo(() => {
+    const dossiers = store?.dossiers || [];
+    if (user.role === 'admin' || user.role === 'partenaire') return dossiers;
+    return dossiers.filter(d => d.userId === user.id || d.ownerId === user.id);
+  }, [store?.dossiers, user.role, user.id]);
+
+  const renderDossier = useCallback(({ item: d }) => {
+    const owner = usersMap[d.userId || d.ownerId];
+    return (
+      <View style={{ padding: 14, backgroundColor: colors.white, borderRadius: 12, marginBottom: 8, marginHorizontal: 16, ...shadow.sm }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.gray800 }}>#{d.id?.slice(-6)}</Text>
+          <View style={{ backgroundColor: d.status === 'Valide' ? colors.green100 : '#fef3c7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: d.status === 'Valide' ? colors.green700 : '#d97706' }}>{d.status}</Text>
           </View>
-        );
-      })}
+        </View>
+        {owner && <Text style={{ fontSize: 12, color: colors.gray500, marginTop: 4 }}>{owner.name} - {owner.region || 'UEMOA'}</Text>}
+        <Text style={{ fontSize: 12, color: colors.gray500, marginTop: 2 }}>Score: {d.score || '--'}/100</Text>
+      </View>
+    );
+  }, [usersMap]);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.gray50 }}>
+      <View style={{ padding: 16, paddingBottom: 8 }}>
+        <Text style={{ fontSize: 18, fontWeight: '800', color: colors.gray800 }}>Dossiers bancaires ({filtered.length})</Text>
+      </View>
+      <FlatList
+        data={filtered}
+        keyExtractor={item => item.id}
+        renderItem={renderDossier}
+        initialNumToRender={10}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={true}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        ListEmptyComponent={
+          <View style={{ alignItems: 'center', paddingVertical: 60, gap: 12 }}>
+            <Ionicons name="document-text-outline" size={48} color={colors.gray300} />
+            <Text style={{ fontSize: 14, color: colors.gray500, textAlign: 'center' }}>Aucun dossier bancaire disponible</Text>
+          </View>
+        }
+      />
     </View>
   );
 }
 
 function LotsScreen({ user, store }) {
-  const orders = (store?.orders || []).filter(o => {
-    if (user.role === 'acheteurB2B') return o.buyerId === user.id || o.clientId === user.id;
-    return o.sellerId === user.id || o.ownerId === user.id;
-  });
-  const lots = orders.filter(o => (o.quantity || 0) >= 10 || (o.totalAmount || 0) >= 100000);
+  const lots = useMemo(() => {
+    const orders = (store?.orders || []).filter(o => {
+      if (user.role === 'acheteurB2B') return o.buyerId === user.id || o.clientId === user.id;
+      return o.sellerId === user.id || o.ownerId === user.id;
+    });
+    return orders.filter(o => (o.quantity || 0) >= 10 || (o.totalAmount || 0) >= 100000);
+  }, [store?.orders, user.id, user.role]);
+
+  const renderLot = useCallback(({ item: o }) => (
+    <View style={{ padding: 14, backgroundColor: colors.white, borderRadius: 12, marginBottom: 8, marginHorizontal: 16, ...shadow.sm }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.gray800 }}>Lot #{o.id?.slice(-6)}</Text>
+        <Text style={{ fontSize: 13, fontWeight: '800', color: colors.green700 }}>{Number(o.totalAmount || 0).toLocaleString()} F</Text>
+      </View>
+      <Text style={{ fontSize: 12, color: colors.gray500, marginTop: 4 }}>{o.status} - Qte: {o.quantity || '?'}</Text>
+    </View>
+  ), []);
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.gray50, padding: 16 }}>
-      <Text style={{ fontSize: 18, fontWeight: '800', color: colors.gray800, marginBottom: 4 }}>Lots & Achats en gros</Text>
-      <Text style={{ fontSize: 12, color: colors.gray500, marginBottom: 16 }}>Commandes de volume important</Text>
-      {lots.length === 0 && (
-        <View style={{ alignItems: 'center', paddingVertical: 60, gap: 12 }}>
-          <Ionicons name="cube-outline" size={48} color={colors.gray300} />
-          <Text style={{ fontSize: 14, color: colors.gray500, textAlign: 'center' }}>Aucun lot en cours</Text>
-        </View>
-      )}
-      {lots.map(o => (
-        <View key={o.id} style={{ padding: 14, backgroundColor: colors.white, borderRadius: 12, marginBottom: 8, ...shadow.sm }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.gray800 }}>Lot #{o.id?.slice(-6)}</Text>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: colors.green700 }}>{Number(o.totalAmount || 0).toLocaleString()} F</Text>
+    <View style={{ flex: 1, backgroundColor: colors.gray50 }}>
+      <View style={{ padding: 16, paddingBottom: 8 }}>
+        <Text style={{ fontSize: 18, fontWeight: '800', color: colors.gray800, marginBottom: 4 }}>Lots & Achats en gros</Text>
+        <Text style={{ fontSize: 12, color: colors.gray500 }}>Commandes de volume important</Text>
+      </View>
+      <FlatList
+        data={lots}
+        keyExtractor={item => item.id}
+        renderItem={renderLot}
+        initialNumToRender={10}
+        windowSize={5}
+        removeClippedSubviews={true}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        ListEmptyComponent={
+          <View style={{ alignItems: 'center', paddingVertical: 60, gap: 12 }}>
+            <Ionicons name="cube-outline" size={48} color={colors.gray300} />
+            <Text style={{ fontSize: 14, color: colors.gray500, textAlign: 'center' }}>Aucun lot en cours</Text>
           </View>
-          <Text style={{ fontSize: 12, color: colors.gray500, marginTop: 4 }}>{o.status} - Qte: {o.quantity || '?'}</Text>
-        </View>
-      ))}
+        }
+      />
     </View>
   );
 }
 
 function VerificationScreen({ user, store }) {
-  const farmers = (store?.users || []).filter(u => u.role === 'agriculteur');
-  const unverified = farmers.filter(f => (f.verificationLevel || 0) < 2);
-  const verified = farmers.filter(f => (f.verificationLevel || 0) >= 2);
+  const { unverified, verified } = useMemo(() => {
+    const farmers = (store?.users || []).filter(u => u.role === 'agriculteur');
+    return {
+      unverified: farmers.filter(f => (f.verificationLevel || 0) < 2),
+      verified: farmers.filter(f => (f.verificationLevel || 0) >= 2),
+    };
+  }, [store?.users]);
+
+  const renderFarmer = useCallback(({ item: f }) => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, backgroundColor: colors.white, borderRadius: 12, marginBottom: 8, marginHorizontal: 16, ...shadow.sm }}>
+      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center' }}>
+        <Ionicons name="shield-outline" size={18} color="#d97706" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.gray800 }}>{f.name}</Text>
+        <Text style={{ fontSize: 12, color: colors.gray500 }}>{f.region || 'Non renseignee'} - Niveau {f.verificationLevel || 0}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
+    </View>
+  ), []);
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.gray50, padding: 16 }}>
-      <Text style={{ fontSize: 18, fontWeight: '800', color: colors.gray800, marginBottom: 4 }}>Verifications</Text>
-      <Text style={{ fontSize: 12, color: colors.gray500, marginBottom: 16 }}>Identites a verifier et valider</Text>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-        <View style={{ flex: 1, padding: 12, backgroundColor: '#fef3c7', borderRadius: 10, alignItems: 'center' }}>
-          <Text style={{ fontSize: 20, fontWeight: '900', color: '#d97706' }}>{unverified.length}</Text>
-          <Text style={{ fontSize: 10, fontWeight: '700', color: '#d97706' }}>En attente</Text>
-        </View>
-        <View style={{ flex: 1, padding: 12, backgroundColor: colors.green100, borderRadius: 10, alignItems: 'center' }}>
-          <Text style={{ fontSize: 20, fontWeight: '900', color: colors.green700 }}>{verified.length}</Text>
-          <Text style={{ fontSize: 10, fontWeight: '700', color: colors.green700 }}>Verifies</Text>
+    <View style={{ flex: 1, backgroundColor: colors.gray50 }}>
+      <View style={{ padding: 16, paddingBottom: 8 }}>
+        <Text style={{ fontSize: 18, fontWeight: '800', color: colors.gray800, marginBottom: 4 }}>Verifications</Text>
+        <Text style={{ fontSize: 12, color: colors.gray500, marginBottom: 12 }}>Identites a verifier et valider</Text>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flex: 1, padding: 12, backgroundColor: '#fef3c7', borderRadius: 10, alignItems: 'center' }}>
+            <Text style={{ fontSize: 20, fontWeight: '900', color: '#d97706' }}>{unverified.length}</Text>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: '#d97706' }}>En attente</Text>
+          </View>
+          <View style={{ flex: 1, padding: 12, backgroundColor: colors.green100, borderRadius: 10, alignItems: 'center' }}>
+            <Text style={{ fontSize: 20, fontWeight: '900', color: colors.green700 }}>{verified.length}</Text>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: colors.green700 }}>Verifies</Text>
+          </View>
         </View>
       </View>
-      {unverified.map(f => (
-        <View key={f.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, backgroundColor: colors.white, borderRadius: 12, marginBottom: 8, ...shadow.sm }}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center' }}>
-            <Ionicons name="shield-outline" size={18} color="#d97706" />
+      <FlatList
+        data={unverified}
+        keyExtractor={item => item.id}
+        renderItem={renderFarmer}
+        initialNumToRender={15}
+        windowSize={5}
+        removeClippedSubviews={true}
+        contentContainerStyle={{ paddingTop: 8, paddingBottom: 20 }}
+        ListEmptyComponent={
+          <View style={{ alignItems: 'center', paddingVertical: 40, gap: 8 }}>
+            <Ionicons name="shield-checkmark-outline" size={40} color={colors.green500} />
+            <Text style={{ fontSize: 13, color: colors.gray500 }}>Tous les agriculteurs sont vérifiés</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.gray800 }}>{f.name}</Text>
-            <Text style={{ fontSize: 12, color: colors.gray500 }}>{f.region || 'Non renseignee'} - Niveau {f.verificationLevel || 0}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.gray400} />
-        </View>
-      ))}
+        }
+      />
     </View>
   );
 }
 
 function ImpactScreen({ user, store }) {
-  const farmers = (store?.users || []).filter(u => u.role === 'agriculteur');
-  const products = store?.products || [];
-  const orders = store?.orders || [];
-  const completedOrders = orders.filter(o => o.status === 'Livree');
-  const totalVolume = completedOrders.reduce((s, o) => s + Number(o.totalAmount || o.total || 0), 0);
-  const bancables = farmers.filter(f => (f.verificationLevel || 0) >= 2).length;
+  const { farmers, products, orders, completedOrders, totalVolume, bancables } = useMemo(() => {
+    const f = (store?.users || []).filter(u => u.role === 'agriculteur');
+    const p = store?.products || [];
+    const o = store?.orders || [];
+    const completed = o.filter(ord => ord.status === 'Livree');
+    const volume = completed.reduce((s, ord) => s + Number(ord.totalAmount || ord.total || 0), 0);
+    const banc = f.filter(fa => (fa.verificationLevel || 0) >= 2).length;
+    return { farmers: f, products: p, orders: o, completedOrders: completed, totalVolume: volume, bancables: banc };
+  }, [store?.users, store?.products, store?.orders]);
   return (
     <View style={{ flex: 1, backgroundColor: colors.gray50, padding: 16 }}>
       <Text style={{ fontSize: 18, fontWeight: '800', color: colors.gray800, marginBottom: 4 }}>Impact & Indicateurs</Text>
@@ -302,6 +538,7 @@ export default function App() {
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
+  const storeVersionRef = useRef(0);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -312,12 +549,15 @@ export default function App() {
 
   const fetchStore = useCallback(async () => {
     try {
-      const data = await api.getStore();
-      setStore(data);
-      cacheStore(data);
+      const data = await api.getStore(storeVersionRef.current);
+      if (data) {
+        setStore(data);
+        cacheStore(data);
+        if (data._v) storeVersionRef.current = data._v;
+      }
     } catch {
       const cached = await getCachedStore();
-      if (cached && !store) setStore(cached);
+      if (cached) setStore(prev => prev || cached);
     }
   }, []);
 

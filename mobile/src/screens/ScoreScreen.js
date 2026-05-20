@@ -1,35 +1,39 @@
+import { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, shadow } from '../theme';
 
 export default function ScoreScreen({ user, store }) {
-  const products = (store?.products || []).filter(p => (p.sellerId || p.ownerId) === user.id);
-  const orders = (store?.orders || []).filter(o => o.sellerId === user.id);
-  const completedOrders = orders.filter(o => o.status === 'Livree');
-  const payments = (store?.payments || []).filter(p => p.userId === user.id || orders.some(o => o.id === p.orderId));
-  const dossiers = (store?.dossiers || []).filter(d => d.userId === user.id);
-  const validDossiers = dossiers.filter(d => d.status === 'Valide');
-  const proofs = (store?.activityProofs || []).filter(p => p.userId === user.id);
-  const verifiedProofs = proofs.filter(p => p.status === 'verified');
-  const monthsActive = Math.min(6, Math.ceil((Date.now() - new Date(user.createdAt).getTime()) / (30 * 24 * 3600 * 1000)));
+  const { criteria, score, maxScore, scoreColor, scoreLabel } = useMemo(() => {
+    const products = (store?.products || []).filter(p => (p.sellerId || p.ownerId) === user.id);
+    const orders = (store?.orders || []).filter(o => o.sellerId === user.id);
+    const completedOrders = orders.filter(o => o.status === 'Livree');
+    const payments = (store?.payments || []).filter(p => p.userId === user.id || orders.some(o => o.id === p.orderId));
+    const dossiers = (store?.dossiers || []).filter(d => d.userId === user.id);
+    const validDossiers = dossiers.filter(d => d.status === 'Valide');
+    const proofs = (store?.activityProofs || []).filter(p => p.userId === user.id);
+    const verifiedProofs = proofs.filter(p => p.status === 'verified');
+    const monthsActive = Math.min(6, Math.ceil((Date.now() - new Date(user.createdAt).getTime()) / (30 * 24 * 3600 * 1000)));
 
-  const criteria = [
-    { label: 'Profil complet', points: (user.name && user.email && user.phone && user.region) ? 8 : (user.name && user.email) ? 4 : 0, max: 8, icon: 'person', tip: 'Remplissez tous les champs de votre profil' },
-    { label: 'Identité vérifiée', points: user.verificationLevel >= 2 ? 10 : user.verificationLevel === 1 ? 5 : 0, max: 10, icon: 'shield-checkmark', tip: 'Faites vérifier votre CNI par un agent' },
-    { label: 'Produits publiés', points: Math.min(10, products.length * 3), max: 10, icon: 'leaf', tip: 'Publiez au moins 3 produits' },
-    { label: 'Commandes reçues', points: Math.min(12, orders.length * 2), max: 12, icon: 'receipt', tip: 'Recevez des commandes d\'acheteurs' },
-    { label: 'Livraisons effectuées', points: Math.min(15, completedOrders.length * 3), max: 15, icon: 'checkmark-done', tip: 'Livrez vos commandes à temps' },
-    { label: 'Paiements reçus', points: Math.min(12, payments.filter(p => p.status === 'Paye').length * 3), max: 12, icon: 'wallet', tip: 'Recevez vos paiements' },
-    { label: 'Ancienneté', points: Math.min(8, monthsActive * 2), max: 8, icon: 'calendar', tip: 'Restez actif chaque mois' },
-    { label: 'Régularité', points: Math.min(8, Math.floor(orders.length / Math.max(1, monthsActive)) * 3), max: 8, icon: 'trending-up', tip: 'Maintenez un flux régulier' },
-    { label: 'Dossiers validés', points: Math.min(7, validDossiers.length * 4), max: 7, icon: 'document-text', tip: 'Constituez votre dossier bancaire' },
-    { label: 'Preuves vérifiées', points: Math.min(5, verifiedProofs.length * 2), max: 5, icon: 'camera', tip: 'Ajoutez des preuves d\'activité' },
-  ];
+    const crit = [
+      { label: 'Profil complet', points: (user.name && user.email && user.phone && user.region) ? 8 : (user.name && user.email) ? 4 : 0, max: 8, icon: 'person', tip: 'Remplissez tous les champs de votre profil' },
+      { label: 'Identité vérifiée', points: user.verificationLevel >= 2 ? 10 : user.verificationLevel === 1 ? 5 : 0, max: 10, icon: 'shield-checkmark', tip: 'Faites vérifier votre CNI par un agent' },
+      { label: 'Produits publiés', points: Math.min(10, products.length * 3), max: 10, icon: 'leaf', tip: 'Publiez au moins 3 produits' },
+      { label: 'Commandes reçues', points: Math.min(12, orders.length * 2), max: 12, icon: 'receipt', tip: 'Recevez des commandes d\'acheteurs' },
+      { label: 'Livraisons effectuées', points: Math.min(15, completedOrders.length * 3), max: 15, icon: 'checkmark-done', tip: 'Livrez vos commandes à temps' },
+      { label: 'Paiements reçus', points: Math.min(12, payments.filter(p => p.status === 'Paye').length * 3), max: 12, icon: 'wallet', tip: 'Recevez vos paiements' },
+      { label: 'Ancienneté', points: Math.min(8, monthsActive * 2), max: 8, icon: 'calendar', tip: 'Restez actif chaque mois' },
+      { label: 'Régularité', points: Math.min(8, Math.floor(orders.length / Math.max(1, monthsActive)) * 3), max: 8, icon: 'trending-up', tip: 'Maintenez un flux régulier' },
+      { label: 'Dossiers validés', points: Math.min(7, validDossiers.length * 4), max: 7, icon: 'document-text', tip: 'Constituez votre dossier bancaire' },
+      { label: 'Preuves vérifiées', points: Math.min(5, verifiedProofs.length * 2), max: 5, icon: 'camera', tip: 'Ajoutez des preuves d\'activité' },
+    ];
 
-  const score = Math.min(100, criteria.reduce((sum, c) => sum + c.points, 0));
-  const maxScore = criteria.reduce((sum, c) => sum + c.max, 0);
-  const scoreColor = score >= 60 ? colors.green600 : score >= 40 ? colors.orange500 : colors.red500;
-  const scoreLabel = score >= 60 ? 'Bancable' : score >= 40 ? 'En progression' : 'Débutant';
+    const s = Math.min(100, crit.reduce((sum, c) => sum + c.points, 0));
+    const max = crit.reduce((sum, c) => sum + c.max, 0);
+    const color = s >= 60 ? colors.green600 : s >= 40 ? colors.orange500 : colors.red500;
+    const label = s >= 60 ? 'Bancable' : s >= 40 ? 'En progression' : 'Débutant';
+    return { criteria: crit, score: s, maxScore: max, scoreColor: color, scoreLabel: label };
+  }, [user, store]);
 
   return (
     <ScrollView style={styles.container}>

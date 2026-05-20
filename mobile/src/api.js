@@ -35,17 +35,29 @@ async function request(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || `Erreur ${res.status}`);
-  return data;
+  const timeout = options.timeout || 15000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const res = await fetch(`${API_URL}${path}`, { ...options, headers, signal: controller.signal });
+    clearTimeout(timer);
+    if (res.status === 304) return null;
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Erreur ${res.status}`);
+    return data;
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') throw new Error('Délai de connexion dépassé');
+    throw err;
+  }
 }
 
 export const api = {
   login: (email, password) => request('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   register: (data) => request('/api/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   me: () => request('/api/auth/me'),
-  getStore: () => request('/api/store'),
+  getStore: (version) => request(`/api/store${version ? `?v=${version}` : ''}`),
   updateStore: (patch) => request('/api/store', { method: 'PUT', body: JSON.stringify(patch) }),
   addProduct: (product) => request('/api/products', { method: 'POST', body: JSON.stringify(product) }),
   createOrder: (order) => request('/api/orders', { method: 'POST', body: JSON.stringify(order) }),

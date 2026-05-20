@@ -1,14 +1,18 @@
+import { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius } from '../theme';
 import { clearToken } from '../api';
 
 export default function ProfileScreen({ user, store, onLogout }) {
-  const dossiers = (store?.dossiers || []).filter(d => d.userId === user.id);
-  const validDossiers = dossiers.filter(d => d.status === 'Valide');
-  const proofs = (store?.activityProofs || []).filter(p => p.userId === user.id);
-  const orders = (store?.orders || []).filter(o => o.sellerId === user.id || o.ownerId === user.id);
-  const totalRevenue = orders.filter(o => o.status === 'Livree').reduce((s, o) => s + Number(o.totalAmount || o.total || 0), 0);
+  const { dossiers, validDossiers, proofs, totalRevenue } = useMemo(() => {
+    const d = (store?.dossiers || []).filter(x => x.userId === user.id);
+    const valid = d.filter(x => x.status === 'Valide');
+    const p = (store?.activityProofs || []).filter(x => x.userId === user.id);
+    const orders = (store?.orders || []).filter(o => o.sellerId === user.id || o.ownerId === user.id);
+    const revenue = orders.filter(o => o.status === 'Livree').reduce((s, o) => s + Number(o.totalAmount || o.total || 0), 0);
+    return { dossiers: d, validDossiers: valid, proofs: p, totalRevenue: revenue };
+  }, [store?.dossiers, store?.activityProofs, store?.orders, user.id]);
 
   function handleLogout() {
     Alert.alert('Déconnexion', 'Voulez-vous vous déconnecter ?', [

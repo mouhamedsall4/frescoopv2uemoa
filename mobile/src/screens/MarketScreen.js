@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius } from '../theme';
@@ -12,10 +12,19 @@ export default function MarketScreen({ user, store, onRefresh, navigation }) {
   const [search, setSearch] = useState('');
   const [selectedCat, setSelectedCat] = useState('Tous');
 
-  const products = (store?.products || [])
-    .filter(p => p.status === 'Publie' && (p.sellerId || p.ownerId) !== user.id)
-    .filter(p => !search || p.name?.toLowerCase().includes(search.toLowerCase()))
-    .filter(p => selectedCat === 'Tous' || p.category === selectedCat);
+  const usersMap = useMemo(() => {
+    const map = {};
+    for (const u of (store?.users || [])) { map[u.id] = u; }
+    return map;
+  }, [store?.users]);
+
+  const products = useMemo(() => {
+    const q = search.toLowerCase();
+    return (store?.products || [])
+      .filter(p => p.status === 'Publie' && (p.sellerId || p.ownerId) !== user.id)
+      .filter(p => !search || p.name?.toLowerCase().includes(q))
+      .filter(p => selectedCat === 'Tous' || p.category === selectedCat);
+  }, [store?.products, user.id, search, selectedCat]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -24,7 +33,7 @@ export default function MarketScreen({ user, store, onRefresh, navigation }) {
   }, [onRefresh]);
 
   function renderProduct({ item }) {
-    const seller = (store?.users || []).find(u => u.id === (item.sellerId || item.ownerId));
+    const seller = usersMap[item.sellerId || item.ownerId];
     return (
       <TouchableOpacity style={styles.card} onPress={() => parentNav?.navigate?.('ProductDetail', { product: item })} activeOpacity={0.7}>
         <View style={styles.imageWrap}>

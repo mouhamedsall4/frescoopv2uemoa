@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius } from '../theme';
@@ -37,7 +37,7 @@ function buildBancabiliteScore(user, store) {
 
 export default function HomeScreen({ user, store, onRefresh }) {
   const [refreshing, setRefreshing] = useState(false);
-  const { score, criteria } = buildBancabiliteScore(user, store);
+  const { score, criteria } = useMemo(() => buildBancabiliteScore(user, store), [user, store]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -48,11 +48,14 @@ export default function HomeScreen({ user, store, onRefresh }) {
   const scoreColor = score >= 60 ? colors.green600 : score >= 40 ? colors.orange500 : colors.red500;
   const scoreLabel = score >= 60 ? 'Bancable' : score >= 40 ? 'En progression' : 'Débutant';
 
-  const products = (store?.products || []).filter(p => (p.sellerId || p.ownerId) === user.id);
-  const orders = (store?.orders || []).filter(o => o.sellerId === user.id);
-  const completedOrders = orders.filter(o => o.status === 'Livree');
-  const pendingOrders = orders.filter(o => o.status !== 'Livree' && o.status !== 'Annulee');
-  const totalRevenue = orders.filter(o => o.status === 'Livree').reduce((sum, o) => sum + Number(o.totalAmount || o.total || 0), 0);
+  const { products, orders, completedOrders, pendingOrders, totalRevenue } = useMemo(() => {
+    const prods = (store?.products || []).filter(p => (p.sellerId || p.ownerId) === user.id);
+    const ords = (store?.orders || []).filter(o => o.sellerId === user.id);
+    const completed = ords.filter(o => o.status === 'Livree');
+    const pending = ords.filter(o => o.status !== 'Livree' && o.status !== 'Annulee');
+    const revenue = completed.reduce((sum, o) => sum + Number(o.totalAmount || o.total || 0), 0);
+    return { products: prods, orders: ords, completedOrders: completed, pendingOrders: pending, totalRevenue: revenue };
+  }, [store?.products, store?.orders, user.id]);
 
   return (
     <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.green700]} />}>

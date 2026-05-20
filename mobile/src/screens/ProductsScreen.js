@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius } from '../theme';
@@ -6,7 +6,7 @@ import ProductImage from '../components/ProductImage';
 
 export default function ProductsScreen({ user, store, onRefresh, navigation }) {
   const [refreshing, setRefreshing] = useState(false);
-  const products = (store?.products || []).filter(p => (p.sellerId || p.ownerId) === user.id);
+  const products = useMemo(() => (store?.products || []).filter(p => (p.sellerId || p.ownerId) === user.id), [store?.products, user.id]);
   const parentNav = navigation?.getParent?.() || navigation;
 
   const handleRefresh = useCallback(async () => {
