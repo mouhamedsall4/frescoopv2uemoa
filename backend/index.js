@@ -9,6 +9,7 @@ import { createMutex } from './mutex.js';
 import { buildSeededAdmins, buildSeededDemoUser, getAdminPasswordHash, getDemoPasswordHash, getMobileDemoPasswordHash } from './seed-config.js';
 import { generateLocalAnswer } from './chatbot-fallback.js';
 import { processPayment, createLoan, applyDeduction, addToGuaranteeFund, getLoanSummary, getCreditSystemStats, createSolidarityGroup } from './credit-system.js';
+import { mergeIncomingStore } from './lib.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -1702,68 +1703,10 @@ async function handleStore(request, response) {
     }
     incoming = preservePrivateUserFields(incoming, currentStoreForMerge);
 
-    // === MERGE SERVER-CREATED DATA ===
-    // Le client peut ne pas avoir les données créées côté serveur entre son dernier sync et ce PUT.
-    // On merge : les entrées serveur absentes du PUT sont préservées.
     if (currentStoreForMerge) {
-      const mergeKeys = ['notifications', 'activityProofs', 'messages', 'orders'];
-      for (const key of mergeKeys) {
-        if (Array.isArray(currentStoreForMerge[key])) {
-          const incomingIds = new Set((incoming[key] || []).map((item) => item.id));
-          const serverOnly = currentStoreForMerge[key].filter((item) => item && item.id && !incomingIds.has(item.id));
-          if (serverOnly.length > 0) {
-            incoming[key] = [...serverOnly, ...(incoming[key] || [])];
-          }
-          // Preserve read/readAt state: always keep the "read" version if either side has it
-          if (key === 'notifications') {
-            const serverMap = new Map(currentStoreForMerge[key].map((item) => [item.id, item]));
-            incoming[key] = (incoming[key] || []).map((item) => {
-              const serverItem = serverMap.get(item.id);
-              if (!serverItem) return item;
-              // If either side has read=true, keep it as read
-              const incomingRead = item.read || item.readAt;
-              const serverRead = serverItem.read || serverItem.readAt;
-              if (serverRead && !incomingRead) {
-                return { ...item, read: true, readAt: serverItem.readAt || item.readAt };
-              }
-              if (incomingRead && !serverRead) {
-                return { ...item, read: true, readAt: item.readAt || serverItem.readAt };
-              }
-              return item;
-            });
-          }
-        }
-      }
-
-      // === MERGE LOANS (last-write-wins per loan) ===
-      // Prevent a stale client from overwriting a partner's decision on a loan.
-      if (Array.isArray(currentStoreForMerge.loans)) {
-        const serverLoansMap = new Map(currentStoreForMerge.loans.map((l) => [l.id, l]));
-        const incomingLoansMap = new Map((incoming.loans || []).map((l) => [l.id, l]));
-        // Preserve server-only loans not present in incoming
-        for (const [id, serverLoan] of serverLoansMap) {
-          if (!incomingLoansMap.has(id)) {
-            incoming.loans = [serverLoan, ...(incoming.loans || [])];
-          }
-        }
-        // For loans present in both, keep the one with the most recent decision
-        incoming.loans = (incoming.loans || []).map((incomingLoan) => {
-          const serverLoan = serverLoansMap.get(incomingLoan.id);
-          if (!serverLoan) return incomingLoan;
-          // If server has a decision but incoming doesn't, keep server version
-          if (serverLoan.decidedAt && !incomingLoan.decidedAt) return serverLoan;
-          // If both have decisions, keep the most recent
-          if (serverLoan.decidedAt && incomingLoan.decidedAt) {
-            return new Date(serverLoan.decidedAt) > new Date(incomingLoan.decidedAt) ? serverLoan : incomingLoan;
-          }
-          // If server status changed more recently
-          if (serverLoan.statusUpdatedAt && !incomingLoan.statusUpdatedAt) return serverLoan;
-          if (serverLoan.statusUpdatedAt && incomingLoan.statusUpdatedAt) {
-            return new Date(serverLoan.statusUpdatedAt) > new Date(incomingLoan.statusUpdatedAt) ? serverLoan : incomingLoan;
-          }
-          return incomingLoan;
-        });
-      }
+      // Le client peut ne pas avoir les données créées côté serveur entre son dernier sync et ce PUT.
+      // On préserve aussi les notifications lues, les commandes serveur et les décisions de prêt récentes.
+      incoming = mergeIncomingStore(incoming, currentStoreForMerge);
     }
 
     // === BACKUP ROTATIF ===

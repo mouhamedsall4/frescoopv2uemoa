@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: frescoop-api
+    name: frescoop-api-v2hm
     runtime: node
     region: frankfurt
     rootDir: backend
@@ -60,7 +60,7 @@ services:
     routes:
       - type: rewrite
         source: /api/*
-        destination: https://frescoop-api.onrender.com/api/*
+        destination: https://frescoop-api-v2hm.onrender.com/api/*
       - type: rewrite
         source: /*
         destination: /index.html

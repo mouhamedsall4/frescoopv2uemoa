@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeStore, dedupeOrders, preservePrivateUserFields } from '../../backend/lib.js';
+import {
+  normalizeStore,
+  dedupeOrders,
+  preservePrivateUserFields,
+  mergeIncomingStore,
+  mergeNotificationsPreservingRead,
+  mergeLoansByDecision,
+} from '../../backend/lib.js';
 
 const emptyStore = {
   users: [],
@@ -9,6 +16,7 @@ const emptyStore = {
   transactions: [],
   proofs: [],
   hubs: [],
+  activityProofs: [],
   orders: [],
   messages: [],
   notifications: [],
@@ -110,5 +118,52 @@ describe('preservePrivateUserFields', () => {
     const incoming = { users: [{ id: 'u1-different', email: 'test@b.com' }] };
     const result = preservePrivateUserFields(incoming, current);
     expect(result.users[0].passwordHash).toBe('secret');
+  });
+});
+
+describe('server merge helpers', () => {
+  it('preserves orders created on the server when a stale client PUT omits them', () => {
+    const incoming = { orders: [{ id: 'ord-local', status: 'Nouvelle' }], notifications: [], activityProofs: [], messages: [], loans: [] };
+    const current = { orders: [{ id: 'ord-server', status: 'Paiement en attente' }], notifications: [], activityProofs: [], messages: [], loans: [] };
+    const result = mergeIncomingStore(incoming, current);
+    expect(result.orders.map((order) => order.id)).toEqual(['ord-server', 'ord-local']);
+  });
+
+  it('keeps notification read state when either client or server has marked it read', () => {
+    const serverRead = mergeNotificationsPreservingRead(
+      [{ id: 'ntf-1', read: false, readAt: '' }],
+      [{ id: 'ntf-1', read: true, readAt: '2026-05-20T10:00:00.000Z' }],
+    );
+    expect(serverRead[0]).toMatchObject({ read: true, readAt: '2026-05-20T10:00:00.000Z' });
+
+    const clientRead = mergeNotificationsPreservingRead(
+      [{ id: 'ntf-2', read: true, readAt: '2026-05-20T11:00:00.000Z' }],
+      [{ id: 'ntf-2', read: false, readAt: '' }],
+    );
+    expect(clientRead[0]).toMatchObject({ read: true, readAt: '2026-05-20T11:00:00.000Z' });
+  });
+
+  it('keeps the loan with the most recent decision timestamp', () => {
+    const result = mergeLoansByDecision(
+      [{ id: 'loan-1', status: 'En attente' }],
+      [{ id: 'loan-1', status: 'Refusé', decidedAt: '2026-05-20T10:00:00.000Z' }],
+    );
+    expect(result[0].status).toBe('Refusé');
+  });
+
+  it('allows a partner to approve after a refusal when the new decision is newer', () => {
+    const result = mergeLoansByDecision(
+      [{ id: 'loan-1', status: 'Approuvé', decidedAt: '2026-05-20T12:00:00.000Z' }],
+      [{ id: 'loan-1', status: 'Refusé', decidedAt: '2026-05-20T10:00:00.000Z' }],
+    );
+    expect(result[0].status).toBe('Approuvé');
+  });
+
+  it('allows a newer reset to pending to survive a stale refused server copy', () => {
+    const result = mergeLoansByDecision(
+      [{ id: 'loan-1', status: 'En attente', statusUpdatedAt: '2026-05-20T12:00:00.000Z' }],
+      [{ id: 'loan-1', status: 'Refusé', decidedAt: '2026-05-20T10:00:00.000Z' }],
+    );
+    expect(result[0].status).toBe('En attente');
   });
 });

@@ -4702,7 +4702,17 @@ function ActivityProofPage({ actions, currentUser, navigate, notify, store }) {
       return;
     }
     if (!window.confirm('Annuler cette décision et remettre la preuve en attente ?')) return;
-    actions.setActivityProofs((items) => items.map((p) => p.id === proofId ? { ...p, status: 'en_attente', reviewedAt: null, reviewedBy: null } : p));
+    const nextProofs = (store.activityProofs || []).map((p) => (
+      p.id === proofId ? { ...p, status: 'en_attente', reviewedAt: null, reviewedBy: null } : p
+    ));
+    const userProofs = nextProofs.filter((p) => p.userId === proof.userId);
+    const targetUser = store.users.find((u) => u.id === proof.userId);
+    const totalScore = computeClientProofScore(userProofs, targetUser?.role);
+    const level = getClientVerificationLevel(totalScore);
+    actions.setActivityProofs(() => nextProofs);
+    actions.setUsers((items) => items.map((u) => (
+      u.id === proof.userId ? { ...u, verificationScore: totalScore, verificationLevel: level } : u
+    )));
     notify('Décision annulée — preuve remise en attente.', 'success');
   }
 
@@ -9134,18 +9144,10 @@ function useProductionStore() {
         if (cancelled || !remote) return;
         if (pendingMutation.current) return;
         const normalized = normalizeStore(remote);
-        // Preserve local readAt on notifications to avoid losing read state
         setStoreRaw((localStore) => {
-          const localNotifMap = new Map((localStore.notifications || []).map((n) => [n.id, n]));
-          normalized.notifications = (normalized.notifications || []).map((n) => {
-            const local = localNotifMap.get(n.id);
-            if (local && (local.read || local.readAt) && !n.read && !n.readAt) {
-              return { ...n, read: true, readAt: local.readAt };
-            }
-            return n;
-          });
-          lastSyncedSerialized.current = JSON.stringify(normalized);
-          return normalized;
+          const merged = preserveLocalNotificationReadState(normalized, localStore);
+          lastSyncedSerialized.current = JSON.stringify(merged);
+          return merged;
         });
       } catch {
         /* offline */
@@ -9202,8 +9204,8 @@ function useProductionStore() {
               ...storeRef.current,
               products: (storeRef.current.products || []).map((p) => ({
                 ...p,
-                image: p.image ? (p.image.url ? { id: p.image.id, name: p.image.name, url: p.image.url } : { id: p.image.id, name: p.image.name }) : null,
-                images: (p.images || []).filter((img) => img && img.url).map((img) => ({ id: img.id, name: img.name, url: img.url })),
+                image: lightAttachmentForStorage(p.image),
+                images: (p.images || []).map(lightAttachmentForStorage).filter(Boolean),
               })),
             };
             window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lightStore));
@@ -9243,8 +9245,11 @@ function useProductionStore() {
             if (freshRes.ok) {
               const remote = await freshRes.json();
               const normalized = normalizeStore(remote);
-              lastSyncedSerialized.current = JSON.stringify(normalized);
-              setStoreRaw(normalized);
+              setStoreRaw((localStore) => {
+                const merged = preserveLocalNotificationReadState(normalized, localStore);
+                lastSyncedSerialized.current = JSON.stringify(merged);
+                return merged;
+              });
             }
           } catch {}
         }
@@ -9338,6 +9343,38 @@ function normalizeStore(value) {
   next.orders = dedupeOrders(next.orders);
   next.notifications = normalizeNotifications(next.notifications);
   return next;
+}
+
+function preserveLocalNotificationReadState(remoteStore, localStore) {
+  const localNotifMap = new Map((localStore?.notifications || []).map((item) => [item.id, item]));
+  return {
+    ...remoteStore,
+    notifications: (remoteStore.notifications || []).map((item) => {
+      const local = localNotifMap.get(item.id);
+      if (local && (local.read || local.readAt) && !item.read && !item.readAt) {
+        return { ...item, read: true, readAt: local.readAt || '' };
+      }
+      return item;
+    }),
+  };
+}
+
+function lightAttachmentForStorage(file) {
+  if (!file) return null;
+  if (typeof file === 'string') {
+    return /^https?:\/\//i.test(file) ? file : null;
+  }
+  if (typeof file !== 'object') return null;
+  const url = file.url || file.secure_url;
+  if (!url) return null;
+  return {
+    id: file.id || file.public_id || '',
+    name: file.name || '',
+    type: file.type || '',
+    size: file.size || 0,
+    url,
+    uploadedAt: file.uploadedAt || '',
+  };
 }
 
 function dedupeById(arr) {

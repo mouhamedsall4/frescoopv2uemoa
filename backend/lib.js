@@ -90,6 +90,92 @@ export function preservePrivateUserFields(incoming, current) {
   };
 }
 
+export const DEFAULT_SERVER_MERGE_KEYS = ['notifications', 'activityProofs', 'messages', 'orders'];
+
+export function mergeIncomingStore(incoming, current, mergeKeys = DEFAULT_SERVER_MERGE_KEYS) {
+  if (!incoming || typeof incoming !== 'object') return incoming;
+  if (!current || typeof current !== 'object') return incoming;
+
+  const next = { ...incoming };
+
+  for (const key of mergeKeys) {
+    if (!Array.isArray(current[key])) continue;
+    const incomingItems = Array.isArray(next[key]) ? next[key] : [];
+    const incomingIds = new Set(incomingItems.map((item) => item?.id).filter(Boolean));
+    const serverOnly = current[key].filter((item) => item && item.id && !incomingIds.has(item.id));
+    next[key] = [...serverOnly, ...incomingItems];
+
+    if (key === 'notifications') {
+      next[key] = mergeNotificationsPreservingRead(next[key], current[key]);
+    }
+  }
+
+  if (Array.isArray(current.loans)) {
+    next.loans = mergeLoansByDecision(next.loans, current.loans);
+  }
+
+  return next;
+}
+
+export function mergeNotificationsPreservingRead(incomingNotifications, serverNotifications) {
+  const serverById = new Map((Array.isArray(serverNotifications) ? serverNotifications : [])
+    .filter((item) => item && item.id)
+    .map((item) => [item.id, item]));
+
+  return (Array.isArray(incomingNotifications) ? incomingNotifications : []).map((item) => {
+    if (!item || typeof item !== 'object' || !item.id) return item;
+    const serverItem = serverById.get(item.id);
+    if (!serverItem) return item;
+
+    const incomingRead = Boolean(item.read || item.readAt);
+    const serverRead = Boolean(serverItem.read || serverItem.readAt);
+    if (!incomingRead && !serverRead) return item;
+
+    return {
+      ...item,
+      read: true,
+      readAt: item.readAt || serverItem.readAt || '',
+      resolvedAt: item.resolvedAt || serverItem.resolvedAt,
+      resolvedBy: item.resolvedBy || serverItem.resolvedBy,
+      resolvedStatus: item.resolvedStatus || serverItem.resolvedStatus,
+    };
+  });
+}
+
+export function mergeLoansByDecision(incomingLoans, serverLoans) {
+  const incoming = Array.isArray(incomingLoans) ? incomingLoans : [];
+  const server = Array.isArray(serverLoans) ? serverLoans : [];
+  const incomingById = new Map(incoming.filter((loan) => loan && loan.id).map((loan) => [loan.id, loan]));
+  const serverOnly = server.filter((loan) => loan?.id && !incomingById.has(loan.id));
+  const merged = [...serverOnly, ...incoming];
+
+  const serverById = new Map(server.filter((loan) => loan && loan.id).map((loan) => [loan.id, loan]));
+  return merged.map((incomingLoan) => {
+    if (!incomingLoan?.id) return incomingLoan;
+    const serverLoan = serverById.get(incomingLoan.id);
+    if (!serverLoan) return incomingLoan;
+
+    const incomingStamp = getLoanDecisionStamp(incomingLoan);
+    const serverStamp = getLoanDecisionStamp(serverLoan);
+    if (serverStamp > incomingStamp) return serverLoan;
+    return incomingLoan;
+  });
+}
+
+function getLoanDecisionStamp(loan) {
+  return Math.max(
+    toTime(loan?.decidedAt),
+    toTime(loan?.statusUpdatedAt),
+    toTime(loan?.updatedAt),
+  );
+}
+
+function toTime(value) {
+  if (!value) return 0;
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : 0;
+}
+
 export function checkRateLimit(buckets, ip, isAuthEndpoint = false, windowMs = 60000, maxRequests = 120, authMax = 10) {
   const now = Date.now();
   const key = isAuthEndpoint ? `auth:${ip}` : ip;

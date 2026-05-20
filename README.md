@@ -73,14 +73,17 @@ Le fichier `render.yaml` de la racine deploie l'API Node depuis `backend`.
 MONGODB_URI=mongodb+srv://...
 TOKEN_SECRET=une-longue-cle-aleatoire-stable
 CORS_ORIGINS=https://votre-projet.vercel.app
+CLOUDINARY_CLOUD_NAME=votre-cloud-name
+CLOUDINARY_API_KEY=votre-api-key
+CLOUDINARY_API_SECRET=votre-api-secret
 ```
 
-Variables optionnelles si les modules correspondants sont utilises: `PAYDUNYA_*`, `CLOUDINARY_*`, `OPENROUTER_*`, `FRESCOOP_*_PASSWORD_HASH`.
+Variables optionnelles si les modules correspondants sont utilises: `PAYDUNYA_*`, `OPENROUTER_*`, `FRESCOOP_*_PASSWORD_HASH`.
 
 L'API expose le healthcheck sur `/api/health`. Avec le nom de service actuel, l'URL attendue est:
 
 ```bash
-https://frescoop-api.onrender.com/api/health
+https://frescoop-api-v2hm.onrender.com/api/health
 ```
 
 ### Frontend sur Vercel
@@ -99,7 +102,7 @@ Output Directory: dist
 Ne definissez pas `VITE_API_URL` si vous voulez utiliser le proxy `/api` configure dans `frontend/vercel.json`. Le rewrite envoie les appels API vers:
 
 ```bash
-https://frescoop-api.onrender.com
+https://frescoop-api-v2hm.onrender.com
 ```
 
 Si Render genere une autre URL de service, mettez a jour la destination `/api/:path*` dans `frontend/vercel.json`, puis redeployez Vercel.
