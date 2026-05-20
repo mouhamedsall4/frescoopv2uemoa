@@ -6785,18 +6785,30 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
       signedAt: decision === 'Approuvé' ? now : '',
       status: decision === 'Approuvé' ? 'actif' : 'refuse',
     });
-    actions.setLoans((items) => items.map((item) => item.id === loan.id ? {
-      ...item,
-      status: decision,
-      partnerId: currentUser.id,
-      decidedAt: now,
-      tranches: updatedTranches,
-      disbursedPct: decision === 'Approuvé' ? 40 : 0,
-      contractCode,
-      contract: nextContract,
-      remainingBalance: Number.isFinite(Number(item.remainingBalance)) ? Number(item.remainingBalance) : Number(item.amount || 0),
-      repaidAmount: Number(item.repaidAmount || 0),
-    } : item));
+    actions.setLoans((items) => {
+      const updated = items.map((item) => item.id === loan.id ? {
+        ...item,
+        status: decision,
+        partnerId: currentUser.id,
+        decidedAt: now,
+        statusUpdatedAt: now,
+        tranches: updatedTranches,
+        disbursedPct: decision === 'Approuvé' ? 40 : 0,
+        contractCode,
+        contract: nextContract,
+        remainingBalance: Number.isFinite(Number(item.remainingBalance)) ? Number(item.remainingBalance) : Number(item.amount || 0),
+        repaidAmount: Number(item.repaidAmount || 0),
+      } : item);
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const stored = JSON.parse(raw);
+          stored.loans = updated;
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+        }
+      } catch {}
+      return updated;
+    });
     if (farmer) {
       const body = decision === 'Approuvé'
         ? `Votre prêt de ${formatMoney(loan.amount)} a été approuvé. Tranche 1 (${formatMoney(Math.round(loan.amount * 0.4))}) débloquée. Remboursement: ${nextContract.repaymentPct}% de chaque vente FresCoop. Contrat: ${contractCode}`
