@@ -1964,7 +1964,18 @@ function Header({ actions, activePath, currentUser, logout, menuLinks, messages 
 
   function openNotification(item) {
     const now = new Date().toISOString();
-    actions.setNotifications((entries) => entries.map((entry) => entry.id === item.id ? { ...entry, read: true, readAt: entry.readAt || now } : entry));
+    actions.setNotifications((entries) => {
+      const updated = entries.map((entry) => entry.id === item.id ? { ...entry, read: true, readAt: entry.readAt || now } : entry);
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const stored = JSON.parse(raw);
+          stored.notifications = updated;
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+        }
+      } catch {}
+      return updated;
+    });
     const path = getNotificationPath(item, messages);
     if (path) {
       navigate(path);
@@ -1976,11 +1987,20 @@ function Header({ actions, activePath, currentUser, logout, menuLinks, messages 
     event.stopPropagation();
     if (isNotificationRead(notif)) return;
     const now = new Date().toISOString();
-    actions.setNotifications((entries) =>
-      entries.map((entry) =>
+    actions.setNotifications((entries) => {
+      const updated = entries.map((entry) =>
         entry.id === notif.id ? { ...entry, read: true, readAt: entry.readAt || now } : entry,
-      ),
-    );
+      );
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const stored = JSON.parse(raw);
+          stored.notifications = updated;
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+        }
+      } catch {}
+      return updated;
+    });
   }
 
   function markAllRead() {
@@ -2001,6 +2021,17 @@ function Header({ actions, activePath, currentUser, logout, menuLinks, messages 
           window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
         }
       } catch {}
+      setTimeout(() => {
+        try {
+          const payload = window.localStorage.getItem(STORAGE_KEY);
+          if (payload) {
+            const authHeaders = { 'Content-Type': 'application/json' };
+            const savedToken = sessionStorage.getItem('frescoop.auth.token');
+            if (savedToken) authHeaders['Authorization'] = `Bearer ${savedToken}`;
+            fetch(API_BASE + '/api/store?force=true', { method: 'PUT', headers: authHeaders, body: payload });
+          }
+        } catch {}
+      }, 300);
       return updated;
     });
   }
@@ -6902,7 +6933,18 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
     const currentTranche = (loan.tranches || []).find((t) => t.status === 'disbursed' && t.proofStatus !== 'valide');
     if (!currentTranche) { notify('Aucune tranche en attente de preuve.'); return; }
     const updatedTranches = (loan.tranches || []).map((t) => t.id === currentTranche.id ? { ...t, proofStatus: 'en_attente', proofSubmittedAt: now, proofFile: file?.name || '' } : t);
-    actions.setLoans((items) => items.map((item) => item.id === loan.id ? { ...item, tranches: updatedTranches } : item));
+    actions.setLoans((items) => {
+      const updated = items.map((item) => item.id === loan.id ? { ...item, tranches: updatedTranches, statusUpdatedAt: now } : item);
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const stored = JSON.parse(raw);
+          stored.loans = updated;
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+        }
+      } catch {}
+      return updated;
+    });
     const partners = store.users.filter((u) => u.role === 'partenaire' || u.id === loan.partnerId);
     const notifs = partners.map((p) => createAppNotification({
       actor: currentUser,
@@ -6912,7 +6954,29 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
       title: 'Preuve tranche soumise',
       type: 'loan-tranche-proof',
     }));
-    actions.setNotifications((items) => [...notifs, ...items]);
+    actions.setNotifications((items) => {
+      const updated = [...notifs, ...items];
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const stored = JSON.parse(raw);
+          stored.notifications = updated;
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+        }
+      } catch {}
+      setTimeout(() => {
+        try {
+          const payload = window.localStorage.getItem(STORAGE_KEY);
+          if (payload) {
+            const authHeaders = { 'Content-Type': 'application/json' };
+            const savedToken = sessionStorage.getItem('frescoop.auth.token');
+            if (savedToken) authHeaders['Authorization'] = `Bearer ${savedToken}`;
+            fetch(API_BASE + '/api/store?force=true', { method: 'PUT', headers: authHeaders, body: payload });
+          }
+        } catch {}
+      }, 300);
+      return updated;
+    });
     notify(`Preuve soumise pour tranche ${currentTranche.id} (${currentTranche.label})`);
   }
 
@@ -6931,17 +6995,64 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
         newDisbursedPct += updatedTranches[nextIdx].pct;
       }
     }
-    actions.setLoans((items) => items.map((item) => item.id === loan.id ? { ...item, tranches: updatedTranches, disbursedPct: newDisbursedPct } : item));
+    actions.setLoans((items) => {
+      const updated = items.map((item) => item.id === loan.id ? { ...item, tranches: updatedTranches, disbursedPct: newDisbursedPct, statusUpdatedAt: now } : item);
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const stored = JSON.parse(raw);
+          stored.loans = updated;
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+        }
+      } catch {}
+      return updated;
+    });
     const farmer = store.users.find((u) => u.id === loan.farmerId);
-    if (farmer && decision === 'valide') {
+    if (farmer) {
       const nextTranche = updatedTranches[trancheIdx + 1];
-      const body = nextTranche
-        ? `Preuve validée. Tranche ${nextTranche.id} (${formatMoney(Math.round(loan.amount * nextTranche.pct / 100))}) débloquée.`
-        : `Toutes les tranches ont été débloquées. Montant total décaissé.`;
-      actions.setNotifications((items) => [
-        createAppNotification({ actor: currentUser, body, path: '/bancabilite', recipientId: farmer.id, title: 'Tranche débloquée', type: 'loan-tranche-unlocked' }),
-        ...items,
-      ]);
+      const body = decision === 'valide'
+        ? (nextTranche
+          ? `Preuve validée. Tranche ${nextTranche.id} (${formatMoney(Math.round(loan.amount * nextTranche.pct / 100))}) débloquée.`
+          : `Toutes les tranches ont été débloquées. Montant total décaissé.`)
+        : `Votre preuve pour la tranche a été rejetée. Veuillez soumettre une nouvelle preuve.`;
+      actions.setNotifications((items) => {
+        const updated = [
+          createAppNotification({ actor: currentUser, body, path: '/bancabilite', recipientId: farmer.id, title: decision === 'valide' ? 'Tranche débloquée' : 'Preuve rejetée', type: decision === 'valide' ? 'loan-tranche-unlocked' : 'loan-tranche-rejected' }),
+          ...items,
+        ];
+        try {
+          const raw = window.localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const stored = JSON.parse(raw);
+            stored.notifications = updated;
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+          }
+        } catch {}
+        setTimeout(() => {
+          try {
+            const payload = window.localStorage.getItem(STORAGE_KEY);
+            if (payload) {
+              const authHeaders = { 'Content-Type': 'application/json' };
+              const savedToken = sessionStorage.getItem('frescoop.auth.token');
+              if (savedToken) authHeaders['Authorization'] = `Bearer ${savedToken}`;
+              fetch(API_BASE + '/api/store?force=true', { method: 'PUT', headers: authHeaders, body: payload });
+            }
+          } catch {}
+        }, 300);
+        return updated;
+      });
+    } else {
+      setTimeout(() => {
+        try {
+          const payload = window.localStorage.getItem(STORAGE_KEY);
+          if (payload) {
+            const authHeaders = { 'Content-Type': 'application/json' };
+            const savedToken = sessionStorage.getItem('frescoop.auth.token');
+            if (savedToken) authHeaders['Authorization'] = `Bearer ${savedToken}`;
+            fetch(API_BASE + '/api/store?force=true', { method: 'PUT', headers: authHeaders, body: payload });
+          }
+        } catch {}
+      }, 300);
     }
     notify(decision === 'valide' ? 'Preuve validée, tranche suivante débloquée' : 'Preuve rejetée');
   }
@@ -10013,9 +10124,10 @@ function preserveLocalNotificationReadState(remoteStore, localStore) {
     const remoteWeight = STATUS_WEIGHT[remoteLoan.status] ?? -1;
     if (localLoan.decidedAt && !remoteLoan.decidedAt && localWeight > 0) return localLoan;
     if (localWeight > remoteWeight) return localLoan;
-    const localStamp = Math.max(toTimeValue(localLoan.decidedAt), toTimeValue(localLoan.statusUpdatedAt));
-    const remoteStamp = Math.max(toTimeValue(remoteLoan.decidedAt), toTimeValue(remoteLoan.statusUpdatedAt));
+    const localStamp = Math.max(toTimeValue(localLoan.decidedAt), toTimeValue(localLoan.statusUpdatedAt), toTimeValue(localLoan.updatedAt));
+    const remoteStamp = Math.max(toTimeValue(remoteLoan.decidedAt), toTimeValue(remoteLoan.statusUpdatedAt), toTimeValue(remoteLoan.updatedAt));
     if (localStamp > remoteStamp) return localLoan;
+    if (localStamp === remoteStamp && localWeight >= remoteWeight) return localLoan;
     return remoteLoan;
   });
   const localOnlyLoans = (localStore?.loans || []).filter(
