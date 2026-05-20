@@ -41,6 +41,7 @@ import {
   Printer,
   ReceiptText,
   RefreshCcw,
+  RotateCcw,
   Save,
   Search,
   Send,
@@ -4670,6 +4671,8 @@ function ActivityProofPage({ actions, currentUser, navigate, notify, store }) {
   }
 
   async function handleAdminReview(proofId, status) {
+    const actionLabel = status === 'valide' ? 'valider' : 'rejeter';
+    if (!window.confirm(`Êtes-vous sûr de vouloir ${actionLabel} cette preuve ?`)) return;
     try {
       const token = sessionStorage.getItem('frescoop.auth.token');
       const resp = await fetch(API_BASE + '/api/activity-proofs', {
@@ -4688,6 +4691,19 @@ function ActivityProofPage({ actions, currentUser, navigate, notify, store }) {
     } catch (err) {
       notify(err.message || 'Erreur', 'error');
     }
+  }
+
+  function handleUndoReview(proofId) {
+    const proof = (store.activityProofs || []).find((p) => p.id === proofId);
+    if (!proof || !proof.reviewedAt) return;
+    const hoursSinceReview = (Date.now() - new Date(proof.reviewedAt).getTime()) / (1000 * 60 * 60);
+    if (hoursSinceReview > 24) {
+      notify('Annulation impossible : délai de 24h dépassé.', 'error');
+      return;
+    }
+    if (!window.confirm('Annuler cette décision et remettre la preuve en attente ?')) return;
+    actions.setActivityProofs((items) => items.map((p) => p.id === proofId ? { ...p, status: 'en_attente', reviewedAt: null, reviewedBy: null } : p));
+    notify('Décision annulée — preuve remise en attente.', 'success');
   }
 
   const assignedHub = store.hubs.find((h) => h.id === currentUser.assignedHubId);
@@ -4921,6 +4937,9 @@ function ActivityProofPage({ actions, currentUser, navigate, notify, store }) {
                             <Button variant="primary" onClick={() => handleAdminReview(proof.id, 'valide')} style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}><CheckCircle2 size={12} /> Valider</Button>
                             <Button variant="secondary" onClick={() => handleAdminReview(proof.id, 'rejete')} style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}><X size={12} /> Rejeter</Button>
                           </>
+                        )}
+                        {(proof.status === 'valide' || proof.status === 'rejete') && proof.reviewedAt && ((Date.now() - new Date(proof.reviewedAt).getTime()) / (1000 * 60 * 60)) <= 24 && (
+                          <Button variant="secondary" onClick={() => handleUndoReview(proof.id)} style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', color: '#d97706' }}><RotateCcw size={12} /> Annuler</Button>
                         )}
                       </div>
                     </div>
