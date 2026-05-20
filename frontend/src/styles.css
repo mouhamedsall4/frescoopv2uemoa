@@ -1361,8 +1361,11 @@ button:disabled {
   border: 1px solid rgba(215, 229, 220, 0.9);
   border-radius: 999px;
   background: rgba(237, 246, 241, 0.72);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
 }
+.public-nav-links::-webkit-scrollbar { display: none; }
 
 .public-nav-links button {
   min-height: 36px;

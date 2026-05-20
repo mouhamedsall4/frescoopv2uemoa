@@ -888,7 +888,6 @@ function PublicSiteNav({ navigate, path }) {
         <span>Menu</span>
       </button>
       <div className="public-nav-auth">
-        <Button variant="secondary" onClick={() => navigate('/sondage')}><FileText size={17} /> Questionnaire</Button>
         <Button variant="secondary" onClick={() => navigate('/login')}><LockKeyhole size={17} /> Se connecter</Button>
         <Button onClick={() => navigate('/login')}><UserCheck size={17} /> S'inscrire</Button>
       </div>
@@ -898,7 +897,6 @@ function PublicSiteNav({ navigate, path }) {
             {navItems.map(([href, label]) => <button key={href} type="button" className={path === href ? 'active' : ''} onClick={() => navigate(href)}>{label}</button>)}
           </div>
           <div className="public-nav-mobile-auth">
-            <Button variant="secondary" onClick={() => navigate('/sondage')}><FileText size={17} /> Questionnaire</Button>
             <Button variant="secondary" onClick={() => navigate('/login')}><LockKeyhole size={17} /> Se connecter</Button>
             <Button onClick={() => navigate('/login')}><UserCheck size={17} /> S'inscrire</Button>
           </div>
