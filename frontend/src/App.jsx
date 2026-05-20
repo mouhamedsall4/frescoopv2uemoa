@@ -4237,7 +4237,7 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
                 showOrderList ? (
                   <>
                     {isBuyerRole(currentUser.role) ? (
-                      <ClientOrderList onCancel={cancelOrder} onPay={(orderId) => navigate(`/paiement?orders=${orderId}`)} onSelect={toggleOrderSelection} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
+                      <ClientOrderList currentUser={currentUser} onCancel={cancelOrder} onPay={(orderId) => navigate(`/paiement?orders=${orderId}`)} onRate={(orderId) => { const r = prompt('Notez cette commande de 1 à 5 étoiles :'); if (r && Number(r) >= 1 && Number(r) <= 5) rateOrder(orderId, Number(r)); }} onSelect={toggleOrderSelection} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
                     ) : (
                       <OrderCardGrid currentUser={currentUser} onAgentStep={markAgentStep} onCancel={cancelOrder} onRate={(orderId) => { const r = prompt('Notez cette commande de 1 à 5 étoiles :'); if (r && Number(r) >= 1 && Number(r) <= 5) rateOrder(orderId, Number(r)); }} onSelect={toggleOrderSelection} onStatusChange={updateOrder} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
                     )}
@@ -8845,13 +8845,15 @@ function OrderVisibilityToolbar({
   );
 }
 
-function ClientOrderList({ onCancel, onPay, onSelect, orders, selectedIds, store }) {
+function ClientOrderList({ currentUser, onCancel, onPay, onRate, onSelect, orders, selectedIds, store }) {
   return (
     <div className="compact-order-list client-order-list">
       {orders.map((order) => {
         const product = getOrderProduct(order, store);
         const seller = store.users.find((item) => item.id === order.sellerId);
         const cancellable = order.status !== 'Annulee' && order.status !== 'Livree';
+        const alreadyRated = (store.ratings || []).some((r) => r.orderId === order.id && r.userId === currentUser.id);
+        const existingRating = (store.ratings || []).find((r) => r.orderId === order.id);
         return (
           <article id={`order-${order.id}`} key={order.id} className="compact-order-row">
             <label className="order-row-check" title="Sélectionner cette commande">
@@ -8872,6 +8874,12 @@ function ClientOrderList({ onCancel, onPay, onSelect, orders, selectedIds, store
             <div className="order-row-actions">
               {order.status === 'Paiement en attente' && <Button onClick={() => onPay(order.id)}><ReceiptText size={16} /> Payer</Button>}
               {cancellable && <Button variant="danger" onClick={() => onCancel(order.id)}><X size={16} /> Annuler</Button>}
+              {order.status === 'Livree' && !alreadyRated && (
+                <Button title="Noter cette commande" onClick={() => onRate && onRate(order.id)} style={{ fontSize: '0.75rem', padding: '4px 10px', gap: '4px', background: '#fef3c7', color: '#92400e', border: '1px solid #f59e0b', borderRadius: '6px', fontWeight: 700 }}><Star size={14} /> Noter</Button>
+              )}
+              {order.status === 'Livree' && existingRating && (
+                <span className="order-rating-badge">{'★'.repeat(existingRating.rating || 0)}{'☆'.repeat(5 - (existingRating.rating || 0))}</span>
+              )}
             </div>
           </article>
         );
