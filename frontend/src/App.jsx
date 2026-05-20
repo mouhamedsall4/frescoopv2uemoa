@@ -6659,20 +6659,9 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                       <Button variant="secondary" onClick={() => farmer && exportDossier(farmer)}><Download size={16} /> Dossier</Button>
                     </div>
                   )}
-                  {isFinancePartner && (loan.status === 'Approuvé' || loan.status === 'En cours') && (
-                    <div className="loan-post-credit">
-                      <small style={{ fontWeight: 600, marginBottom: '0.4rem', display: 'block' }}>Suivi post-crédit</small>
-                      <div className="button-row">
-                        <Button variant="secondary" onClick={() => updateLoanStatus(loan, 'En cours')} disabled={loan.status === 'En cours'}><Activity size={14} /> En cours</Button>
-                        <Button variant="secondary" onClick={() => updateLoanStatus(loan, 'Remboursé')}><CheckCircle2 size={14} /> Remboursé</Button>
-                        <Button variant="secondary" onClick={() => updateLoanStatus(loan, 'Retard')}><CircleAlert size={14} /> Retard</Button>
-                        <Button variant="secondary" onClick={() => updateLoanStatus(loan, 'Défaut')}><X size={14} /> Défaut</Button>
-                      </div>
-                    </div>
-                  )}
-                  {(loan.status === 'Remboursé' || loan.status === 'Retard' || loan.status === 'Défaut' || loan.status === 'En cours') && (
-                    <div style={{ marginTop: '0.5rem', padding: '0.4rem 0.6rem', borderRadius: '0.375rem', fontSize: '0.8rem', background: loan.status === 'Remboursé' ? '#dcfce7' : loan.status === 'Retard' ? '#fef3c7' : loan.status === 'Défaut' ? '#fee2e2' : '#dbeafe' }}>
-                      Statut : <strong>{loan.status}</strong>{loan.statusUpdatedAt && <span> · {formatDate(loan.statusUpdatedAt)}</span>}
+                  {(loan.status === 'Approuvé' || loan.status === 'En cours' || loan.status === 'Remboursé' || loan.status === 'Retard' || loan.status === 'Défaut') && (
+                    <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', fontSize: '0.85rem', background: loan.status === 'Approuvé' ? '#dcfce7' : loan.status === 'En cours' ? '#dbeafe' : loan.status === 'Remboursé' ? '#dcfce7' : loan.status === 'Retard' ? '#fef3c7' : '#fee2e2', fontWeight: 600 }}>
+                      Statut : <strong>{loan.status}</strong>{loan.decidedAt && <span> · Décidé le {formatDate(loan.decidedAt)}</span>}{loan.statusUpdatedAt && <span> · Mis à jour le {formatDate(loan.statusUpdatedAt)}</span>}
                     </div>
                   )}
                 </article>
