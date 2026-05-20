@@ -494,6 +494,19 @@ function App() {
     else window.localStorage.removeItem(SESSION_KEY);
   }, [sessionUserId]);
 
+  // Redirection automatique quand un compte "En attente" est approuvé
+  const prevStatusRef = useRef(currentUser?.status);
+  useEffect(() => {
+    if (!currentUser) return;
+    const prev = normalize(prevStatusRef.current || '');
+    const curr = normalize(currentUser.status || 'Actif');
+    if (prev === 'en attente' && curr === 'actif') {
+      setToast({ message: 'Votre compte a été validé ! Bienvenue.', type: 'success' });
+      navigate(getRoleHomePath(currentUser.role));
+    }
+    prevStatusRef.current = currentUser.status;
+  }, [currentUser?.status]);
+
   // Deconnexion forcee si le compte courant est suspendu/rejete/bloque (mais pas "En attente")
   useEffect(() => {
     if (!currentUser) return;
