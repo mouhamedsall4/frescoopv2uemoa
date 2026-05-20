@@ -6248,7 +6248,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
 
   const loans = store.loans || [];
   const myLoans = isFinancePartner
-    ? loans.filter((loan) => loan.partnerId === currentUser.id || loan.status === 'En attente')
+    ? loans.filter((loan) => loan.partnerId === currentUser.id || loan.status === 'En attente' || loan.status === 'Refusé')
     : loans.filter((loan) => loan.farmerId === currentUser.id);
 
   const enriched = scope.map((user) => ({ user, dossier: buildBancabiliteDossier(user, store) }));
@@ -6603,6 +6603,8 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                     <div><em>Durée</em><b>{loan.months} mois</b></div>
                     <div><em>Objet</em><b>{loan.purpose}</b></div>
                     <div><em>Décaissé</em><b>{loan.disbursedPct || 0}%</b></div>
+                    {loan.partnerId && (() => { const partner = store.users.find((u) => u.id === loan.partnerId); return partner ? <div><em>Partenaire</em><b>{partner.name}</b></div> : null; })()}
+                    {loan.decidedAt && <div><em>Décision le</em><b>{formatDate(loan.decidedAt)}</b></div>}
                     {isFinancePartner && farmerDossier && (
                       <>
                         <div><em>Revenu mensuel</em><b>{formatMoney(farmerDossier.monthlyAverage)}</b></div>
@@ -6610,6 +6612,11 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                       </>
                     )}
                   </div>
+                  {isAgriculteur && loan.status === 'Refusé' && (
+                    <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', fontSize: '0.85rem', background: '#fee2e2', color: '#991b1b' }}>
+                      Votre demande a été refusée{loan.partnerId ? ` par ${store.users.find((u) => u.id === loan.partnerId)?.name || 'un partenaire'}` : ''}{loan.decidedAt ? ` le ${formatDate(loan.decidedAt)}` : ''}. Vous pouvez soumettre une nouvelle demande ou contacter le partenaire.
+                    </div>
+                  )}
                   {(loan.status === 'Approuvé' || loan.status === 'En cours') && Array.isArray(loan.tranches) && (
                     <div className="loan-tranches">
                       <small style={{ fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>Plan de décaissement</small>
@@ -6647,7 +6654,8 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                   {isFinancePartner && (loan.status === 'En attente' || loan.status === 'Refusé') && (
                     <div className="button-row">
                       <Button onClick={() => decideLoan(loan, 'Approuvé')}><CheckCircle2 size={16} /> Approuver</Button>
-                      {loan.status !== 'Refusé' && <Button variant="secondary" onClick={() => decideLoan(loan, 'Refusé')}><X size={16} /> Refuser</Button>}
+                      {loan.status === 'En attente' && <Button variant="secondary" onClick={() => decideLoan(loan, 'Refusé')}><X size={16} /> Refuser</Button>}
+                      {loan.status === 'Refusé' && <Button variant="secondary" onClick={() => updateLoanStatus(loan, 'En attente')}><RefreshCcw size={16} /> Remettre en attente</Button>}
                       <Button variant="secondary" onClick={() => farmer && exportDossier(farmer)}><Download size={16} /> Dossier</Button>
                     </div>
                   )}
