@@ -9285,10 +9285,19 @@ function normalizeStore(value) {
   const base = createEmptyStore();
   if (!value || typeof value !== 'object') return base;
   const next = Object.fromEntries(Object.keys(base).map((key) => [key, Array.isArray(value[key]) ? value[key] : []]));
-  next.users = ensureSeedAdmin(next.users);
+  next.users = dedupeById(ensureSeedAdmin(next.users));
   next.orders = dedupeOrders(next.orders);
   next.notifications = normalizeNotifications(next.notifications);
   return next;
+}
+
+function dedupeById(arr) {
+  const seen = new Set();
+  return arr.filter((item) => {
+    if (!item || !item.id || seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
 }
 
 function dedupeOrders(orders) {
