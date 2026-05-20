@@ -582,7 +582,7 @@ function App() {
   if (!currentUser) {
     return (
       <AuthShell meta={basePageMeta['/login']}>
-        <LoginPage actions={actions} notify={notify} onLogin={(id, user) => { if (user && !store.users.some((u) => u.id === id)) { actions.setUsers((items) => [user, ...items]); } setSessionUserId(id); const role = user?.role || store.users.find((u) => u.id === id)?.role || 'client'; const status = normalize(user?.status || store.users.find((u) => u.id === id)?.status || 'Actif'); if (status !== 'en attente') navigate(getRoleHomePath(role)); }} store={store} />
+        <LoginPage actions={actions} notify={notify} onLogin={(id, user) => { if (user) { actions.setUsers((items) => items.some((u) => u.id === id) ? items : [user, ...items]); } setSessionUserId(id); const role = user?.role || store.users.find((u) => u.id === id)?.role || 'client'; const status = normalize(user?.status || store.users.find((u) => u.id === id)?.status || 'Actif'); if (status !== 'en attente') navigate(getRoleHomePath(role)); }} store={store} />
         {toast && <Toast toast={toast} />}
       </AuthShell>
     );
