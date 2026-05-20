@@ -60,6 +60,7 @@ import {
   Users,
   Warehouse,
   X,
+  Star,
 } from 'lucide-react';
 import {
   Area,
@@ -2492,7 +2493,7 @@ function SellerHomePage({ currentUser, navigate, store }) {
       <div className="money-kpi-grid">
         <MoneyKpi icon={Landmark} label="Score" value={`${bancabiliteScore}/100`} detail={scoreLevel} />
         <MoneyKpi icon={CircleDollarSign} label="Ventes" value={formatMoney(orderValue)} detail={`${orders.length} commande(s)`} />
-        <MoneyKpi icon={Store} label="Produits" value={`${publishedProducts.length}/${products.length}`} detail="en ligne" />
+        <MoneyKpi icon={Star} label="Avis clients" value={(() => { const r = (store.ratings || []).filter((rt) => rt.sellerId === currentUser.id); return r.length ? `${(r.reduce((s, rt) => s + rt.rating, 0) / r.length).toFixed(1)}/5` : '—'; })()} detail={`${(store.ratings || []).filter((rt) => rt.sellerId === currentUser.id).length} avis`} />
         <MoneyKpi icon={FileCheck2} label="Preuves" value={transactions.length + dossiers.length} detail="au dossier" />
       </div>
 
@@ -2614,8 +2615,8 @@ function ClientHomePage({ currentUser, navigate, store }) {
       <div className="status-grid">
         <StatCard icon={Store} label="Produits disponibles" value={products.length} tone="green" />
         <StatCard icon={ShoppingCart} label="Commandes actives" value={clientHomeOrders.length} tone="blue" />
-        <StatCard icon={MessageSquare} label="Conversations" value={buildConversations(messages).length} tone="gold" />
-        <StatCard icon={ShieldCheck} label="Parcours" value="Client" tone="coral" />
+        <StatCard icon={Star} label="Cashback gagné" value={`${(store.cashbackRecords || []).filter((r) => r.userId === currentUser.id && r.status === 'credited').reduce((s, r) => s + (r.amount || 0), 0).toLocaleString()} F`} tone="gold" />
+        <StatCard icon={MessageSquare} label="Conversations" value={buildConversations(messages).length} tone="coral" />
       </div>
 
       <div className="quick-grid">
@@ -4238,7 +4239,7 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
                     {isBuyerRole(currentUser.role) ? (
                       <ClientOrderList onCancel={cancelOrder} onPay={(orderId) => navigate(`/paiement?orders=${orderId}`)} onSelect={toggleOrderSelection} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
                     ) : (
-                      <OrderCardGrid currentUser={currentUser} onAgentStep={markAgentStep} onCancel={cancelOrder} onSelect={toggleOrderSelection} onStatusChange={updateOrder} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
+                      <OrderCardGrid currentUser={currentUser} onAgentStep={markAgentStep} onCancel={cancelOrder} onRate={(orderId) => { const r = prompt('Notez cette commande de 1 à 5 étoiles :'); if (r && Number(r) >= 1 && Number(r) <= 5) rateOrder(orderId, Number(r)); }} onSelect={toggleOrderSelection} onStatusChange={updateOrder} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
                     )}
                     <CatalogPager page={orderPage} totalPages={orderTotalPages} onPageChange={setOrderPage} />
                   </>
@@ -8912,7 +8913,7 @@ function DeliveryMissionList({ onSelect, onStatusChange, orders, selectedIds, st
   );
 }
 
-function OrderCardGrid({ currentUser, onAgentStep = () => {}, onCancel, onSelect, onStatusChange, orders, selectedIds, store }) {
+function OrderCardGrid({ currentUser, onAgentStep = () => {}, onCancel, onRate, onSelect, onStatusChange, orders, selectedIds, store }) {
   const agentMode = currentUser.role === 'agentTerrain';
   return (
     <div className={`order-card-grid order-activity-list ${agentMode ? 'agent-order-grid' : ''}`}>
@@ -8938,6 +8939,14 @@ function OrderCardGrid({ currentUser, onAgentStep = () => {}, onCancel, onSelect
               <span>{formatNumber(quantity)} {unit}</span>
             </div>
             <time className="order-activity-date" dateTime={order.createdAt}>{formatDate(order.createdAt)}</time>
+            {order.status === 'Livree' && (isBuyerRole(currentUser.role) || currentUser.role === 'client') && !(store.ratings || []).some((r) => r.orderId === order.id && r.userId === currentUser.id) && (
+              <div className="order-actions">
+                <Button className="order-icon-action" title="Noter cette commande" onClick={() => onRate && onRate(order.id)}><Star size={16} /> Noter</Button>
+              </div>
+            )}
+            {order.status === 'Livree' && (store.ratings || []).some((r) => r.orderId === order.id) && (
+              <span className="order-rating-badge" title="Note client">{'★'.repeat((store.ratings || []).find((r) => r.orderId === order.id)?.rating || 0)}{'☆'.repeat(5 - ((store.ratings || []).find((r) => r.orderId === order.id)?.rating || 0))}</span>
+            )}
             {(isBuyerRole(currentUser.role) || currentUser.role === 'admin') && order.status !== 'Annulee' && order.status !== 'Livree' && (
               <div className="order-actions">
                 <Button aria-label="Annuler la commande" className="order-icon-action" title="Annuler" variant="danger" onClick={() => onCancel(order.id)}><X size={16} /></Button>
@@ -12655,7 +12664,7 @@ function buildVerificationCode(prefix) {
 
 function formatDate(value) {
   if (!value) return 'Non renseigne';
-  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(value));
+  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
 function formatNumber(value) {
