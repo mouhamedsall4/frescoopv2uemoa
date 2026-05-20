@@ -9933,21 +9933,29 @@ function preserveLocalNotificationReadState(remoteStore, localStore) {
   const localOnlyRead = (localStore?.notifications || []).filter(
     (item) => item.id && !remoteNotifIds.has(item.id) && (item.read || item.readAt),
   );
+  const STATUS_WEIGHT = { 'En attente': 0, 'Refusé': 1, 'Approuvé': 2, 'En cours': 3, 'Retard': 4, 'Remboursé': 5, 'Défaut': 5 };
   const localLoanMap = new Map((localStore?.loans || []).filter((l) => l && l.id).map((l) => [l.id, l]));
+  const remoteLoanIds = new Set((remoteStore.loans || []).map((l) => l?.id).filter(Boolean));
   const mergedLoans = (remoteStore.loans || []).map((remoteLoan) => {
     if (!remoteLoan?.id) return remoteLoan;
     const localLoan = localLoanMap.get(remoteLoan.id);
     if (!localLoan) return remoteLoan;
-    if (localLoan.decidedAt && !remoteLoan.decidedAt) return localLoan;
+    const localWeight = STATUS_WEIGHT[localLoan.status] ?? -1;
+    const remoteWeight = STATUS_WEIGHT[remoteLoan.status] ?? -1;
+    if (localLoan.decidedAt && !remoteLoan.decidedAt && localWeight > 0) return localLoan;
+    if (localWeight > remoteWeight) return localLoan;
     const localStamp = Math.max(toTimeValue(localLoan.decidedAt), toTimeValue(localLoan.statusUpdatedAt));
     const remoteStamp = Math.max(toTimeValue(remoteLoan.decidedAt), toTimeValue(remoteLoan.statusUpdatedAt));
     if (localStamp > remoteStamp) return localLoan;
     return remoteLoan;
   });
+  const localOnlyLoans = (localStore?.loans || []).filter(
+    (l) => l && l.id && !remoteLoanIds.has(l.id),
+  );
   return {
     ...remoteStore,
     notifications: [...mergedNotifications, ...localOnlyRead],
-    loans: mergedLoans,
+    loans: [...mergedLoans, ...localOnlyLoans],
   };
 }
 
