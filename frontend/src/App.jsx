@@ -1985,13 +1985,24 @@ function Header({ actions, activePath, currentUser, logout, menuLinks, messages 
 
   function markAllRead() {
     const now = new Date().toISOString();
-    actions.setNotifications((entries) => entries.map((entry) => {
-      if (isNotificationRead(entry)) return entry;
-      const matchesUser = entry.recipientId === currentUser.id
-        || (entry.recipientRole && entry.recipientRole === currentUser.role)
-        || (Array.isArray(entry.recipientRoles) && entry.recipientRoles.includes(currentUser.role));
-      return matchesUser ? { ...entry, read: true, readAt: entry.readAt || now } : entry;
-    }));
+    actions.setNotifications((entries) => {
+      const updated = entries.map((entry) => {
+        if (isNotificationRead(entry)) return entry;
+        const matchesUser = entry.recipientId === currentUser.id
+          || (entry.recipientRole && entry.recipientRole === currentUser.role)
+          || (Array.isArray(entry.recipientRoles) && entry.recipientRoles.includes(currentUser.role));
+        return matchesUser ? { ...entry, read: true, readAt: entry.readAt || now } : entry;
+      });
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const stored = JSON.parse(raw);
+          stored.notifications = updated;
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+        }
+      } catch {}
+      return updated;
+    });
   }
 
   return (
@@ -9925,13 +9936,13 @@ function preserveLocalNotificationReadState(remoteStore, localStore) {
   const remoteNotifIds = new Set((remoteStore.notifications || []).map((item) => item.id));
   const mergedNotifications = (remoteStore.notifications || []).map((item) => {
     const local = localNotifMap.get(item.id);
-    if (local && (local.read || local.readAt) && !item.read && !item.readAt) {
-      return { ...item, read: true, readAt: local.readAt || '' };
+    if (local && (local.read || local.readAt)) {
+      return { ...item, read: true, readAt: local.readAt || item.readAt || '' };
     }
     return item;
   });
-  const localOnlyRead = (localStore?.notifications || []).filter(
-    (item) => item.id && !remoteNotifIds.has(item.id) && (item.read || item.readAt),
+  const localOnlyNotifs = (localStore?.notifications || []).filter(
+    (item) => item.id && !remoteNotifIds.has(item.id),
   );
   const STATUS_WEIGHT = { 'En attente': 0, 'Refusé': 1, 'Approuvé': 2, 'En cours': 3, 'Retard': 4, 'Remboursé': 5, 'Défaut': 5 };
   const localLoanMap = new Map((localStore?.loans || []).filter((l) => l && l.id).map((l) => [l.id, l]));
@@ -9954,7 +9965,7 @@ function preserveLocalNotificationReadState(remoteStore, localStore) {
   );
   return {
     ...remoteStore,
-    notifications: [...mergedNotifications, ...localOnlyRead],
+    notifications: [...mergedNotifications, ...localOnlyNotifs],
     loans: [...mergedLoans, ...localOnlyLoans],
   };
 }
