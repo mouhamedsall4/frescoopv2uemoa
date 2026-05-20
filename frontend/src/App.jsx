@@ -6827,22 +6827,34 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
             window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
           }
         } catch {}
+        setTimeout(() => {
+          try {
+            const payload = window.localStorage.getItem(STORAGE_KEY);
+            if (payload) {
+              const authHeaders = { 'Content-Type': 'application/json' };
+              const savedToken = sessionStorage.getItem('frescoop.auth.token');
+              if (savedToken) authHeaders['Authorization'] = `Bearer ${savedToken}`;
+              fetch(API_BASE + '/api/store?force=true', { method: 'PUT', headers: authHeaders, body: payload });
+            }
+          } catch {}
+        }, 300);
         return updated;
       });
+    } else {
+      setTimeout(() => {
+        try {
+          const payload = window.localStorage.getItem(STORAGE_KEY);
+          if (payload) {
+            const authHeaders = { 'Content-Type': 'application/json' };
+            const savedToken = sessionStorage.getItem('frescoop.auth.token');
+            if (savedToken) authHeaders['Authorization'] = `Bearer ${savedToken}`;
+            fetch(API_BASE + '/api/store?force=true', { method: 'PUT', headers: authHeaders, body: payload });
+          }
+        } catch {}
+      }, 300);
     }
     actions.setAuditLogs((items) => [createAuditLog(currentUser, 'loan_decision', `${decision} prêt ${formatMoney(loan.amount)} pour ${loan.farmerName}${decision === 'Approuvé' ? ` [${contractCode}]` : ''}`, loan.id), ...items]);
     notify(`Demande ${decision.toLowerCase()}`);
-    setTimeout(() => {
-      try {
-        const payload = window.localStorage.getItem(STORAGE_KEY);
-        if (payload) {
-          const authHeaders = { 'Content-Type': 'application/json' };
-          const savedToken = sessionStorage.getItem('frescoop.auth.token');
-          if (savedToken) authHeaders['Authorization'] = `Bearer ${savedToken}`;
-          fetch(API_BASE + '/api/store?force=true', { method: 'PUT', headers: authHeaders, body: payload });
-        }
-      } catch {}
-    }, 100);
   }
 
   function updateLoanStatus(loan, newStatus) {
@@ -6993,7 +7005,18 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
 
       {isAgriculteur && (() => {
         const dossier = buildBancabiliteDossier(currentUser, store);
-        const sFactor = dossier.score >= 80 ? 0.7 : dossier.score >= 60 ? 0.5 : dossier.score >= 40 ? 0.3 : 0;
+        if (dossier.score < 60) {
+          return (
+            <section className="panel">
+              <PanelToolbar icon={Landmark} title="Demander un prêt" />
+              <div style={{ padding: '1rem', background: '#fef3c7', borderRadius: '8px', fontSize: '0.88rem', color: '#92400e' }}>
+                <strong>Grade B minimum requis</strong>
+                <p style={{ margin: '0.4rem 0 0' }}>Votre score actuel est de {dossier.score}/100 (Grade {dossier.grade}). Vous devez atteindre un score de 60 ou plus (Grade B) pour pouvoir demander un prêt. Continuez à vendre, soumettre des preuves et compléter votre profil.</p>
+              </div>
+            </section>
+          );
+        }
+        const sFactor = dossier.score >= 80 ? 0.7 : dossier.score >= 60 ? 0.5 : 0;
         const regBonus = dossier.transactionsCount >= 10 ? 1.2 : dossier.transactionsCount >= 5 ? 1.1 : 1.0;
         const pdBonus = dossier.paydunyaCount >= 3 ? 1.15 : 1.0;
         const maxEligible6m = Math.round(dossier.monthlyAverage * 6 * sFactor * regBonus * pdBonus);
