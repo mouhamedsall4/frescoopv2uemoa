@@ -6809,14 +6809,26 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
       } catch {}
       return updated;
     });
-    if (farmer) {
-      const body = decision === 'Approuvé'
-        ? `Votre prêt de ${formatMoney(loan.amount)} a été approuvé. Tranche 1 (${formatMoney(Math.round(loan.amount * 0.4))}) débloquée. Remboursement: ${nextContract.repaymentPct}% de chaque vente FresCoop. Contrat: ${contractCode}`
-        : `Votre demande de prêt de ${formatMoney(loan.amount)} a été refusée.`;
-      actions.setNotifications((items) => [
-        createAppNotification({ actor: currentUser, body, path: '/bancabilite', recipientId: farmer.id, title: decision === 'Approuvé' ? 'Prêt approuvé' : 'Prêt refusé', type: 'loan-decision' }),
-        ...items,
-      ]);
+    const notifBody = decision === 'Approuvé'
+      ? `Votre prêt de ${formatMoney(loan.amount)} a été approuvé. Tranche 1 (${formatMoney(Math.round(loan.amount * 0.4))}) débloquée. Remboursement: ${nextContract.repaymentPct}% de chaque vente FresCoop. Contrat: ${contractCode}`
+      : `Votre demande de prêt de ${formatMoney(loan.amount)} a été refusée par ${currentUser.name}.`;
+    const recipientId = farmer ? farmer.id : loan.farmerId;
+    if (recipientId) {
+      actions.setNotifications((items) => {
+        const updated = [
+          createAppNotification({ actor: currentUser, body: notifBody, path: '/bancabilite', recipientId, title: decision === 'Approuvé' ? 'Prêt approuvé' : 'Prêt refusé', type: 'loan-decision' }),
+          ...items,
+        ];
+        try {
+          const raw = window.localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const stored = JSON.parse(raw);
+            stored.notifications = updated;
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+          }
+        } catch {}
+        return updated;
+      });
     }
     actions.setAuditLogs((items) => [createAuditLog(currentUser, 'loan_decision', `${decision} prêt ${formatMoney(loan.amount)} pour ${loan.farmerName}${decision === 'Approuvé' ? ` [${contractCode}]` : ''}`, loan.id), ...items]);
     notify(`Demande ${decision.toLowerCase()}`);
