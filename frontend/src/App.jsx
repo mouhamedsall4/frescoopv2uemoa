@@ -9145,8 +9145,19 @@ function useProductionStore() {
         if (cancelled || !remote) return;
         if (pendingMutation.current) return;
         const normalized = normalizeStore(remote);
-        lastSyncedSerialized.current = JSON.stringify(normalized);
-        setStoreRaw(normalized);
+        // Preserve local readAt on notifications to avoid losing read state
+        setStoreRaw((localStore) => {
+          const localNotifMap = new Map((localStore.notifications || []).map((n) => [n.id, n]));
+          normalized.notifications = (normalized.notifications || []).map((n) => {
+            const local = localNotifMap.get(n.id);
+            if (local && (local.read || local.readAt) && !n.read && !n.readAt) {
+              return { ...n, read: true, readAt: local.readAt };
+            }
+            return n;
+          });
+          lastSyncedSerialized.current = JSON.stringify(normalized);
+          return normalized;
+        });
       } catch {
         /* offline */
       } finally {

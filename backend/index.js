@@ -1706,7 +1706,7 @@ async function handleStore(request, response) {
     // Le client peut ne pas avoir les données créées côté serveur entre son dernier sync et ce PUT.
     // On merge : les entrées serveur absentes du PUT sont préservées.
     if (currentStoreForMerge) {
-      const mergeKeys = ['notifications', 'activityProofs', 'messages'];
+      const mergeKeys = ['notifications', 'activityProofs', 'messages', 'orders'];
       for (const key of mergeKeys) {
         if (Array.isArray(currentStoreForMerge[key])) {
           const incomingIds = new Set((incoming[key] || []).map((item) => item.id));
