@@ -1727,6 +1727,36 @@ async function handleStore(request, response) {
           }
         }
       }
+
+      // === MERGE LOANS (last-write-wins per loan) ===
+      // Prevent a stale client from overwriting a partner's decision on a loan.
+      if (Array.isArray(currentStoreForMerge.loans)) {
+        const serverLoansMap = new Map(currentStoreForMerge.loans.map((l) => [l.id, l]));
+        const incomingLoansMap = new Map((incoming.loans || []).map((l) => [l.id, l]));
+        // Preserve server-only loans not present in incoming
+        for (const [id, serverLoan] of serverLoansMap) {
+          if (!incomingLoansMap.has(id)) {
+            incoming.loans = [serverLoan, ...(incoming.loans || [])];
+          }
+        }
+        // For loans present in both, keep the one with the most recent decision
+        incoming.loans = (incoming.loans || []).map((incomingLoan) => {
+          const serverLoan = serverLoansMap.get(incomingLoan.id);
+          if (!serverLoan) return incomingLoan;
+          // If server has a decision but incoming doesn't, keep server version
+          if (serverLoan.decidedAt && !incomingLoan.decidedAt) return serverLoan;
+          // If both have decisions, keep the most recent
+          if (serverLoan.decidedAt && incomingLoan.decidedAt) {
+            return new Date(serverLoan.decidedAt) > new Date(incomingLoan.decidedAt) ? serverLoan : incomingLoan;
+          }
+          // If server status changed more recently
+          if (serverLoan.statusUpdatedAt && !incomingLoan.statusUpdatedAt) return serverLoan;
+          if (serverLoan.statusUpdatedAt && incomingLoan.statusUpdatedAt) {
+            return new Date(serverLoan.statusUpdatedAt) > new Date(incomingLoan.statusUpdatedAt) ? serverLoan : incomingLoan;
+          }
+          return incomingLoan;
+        });
+      }
     }
 
     // === BACKUP ROTATIF ===
