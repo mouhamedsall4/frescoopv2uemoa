@@ -27,6 +27,7 @@ const emptyStore = {
   consentRecords: [],
   auditLogs: [],
   loans: [],
+  loanRepayments: [],
   surveyLeads: [],
 };
 
@@ -127,6 +128,21 @@ describe('server merge helpers', () => {
     const current = { orders: [{ id: 'ord-server', status: 'Paiement en attente' }], notifications: [], activityProofs: [], messages: [], loans: [] };
     const result = mergeIncomingStore(incoming, current);
     expect(result.orders.map((order) => order.id)).toEqual(['ord-server', 'ord-local']);
+  });
+
+  it('preserves automatic loan repayments from the server during stale client PUTs', () => {
+    const incoming = { loanRepayments: [], notifications: [], activityProofs: [], messages: [], orders: [], loans: [] };
+    const current = {
+      loanRepayments: [{ id: 'repay-server', loanId: 'loan-1', amount: 15000, type: 'sale_deduction' }],
+      notifications: [],
+      activityProofs: [],
+      messages: [],
+      orders: [],
+      loans: [],
+    };
+    const result = mergeIncomingStore(incoming, current);
+    expect(result.loanRepayments).toHaveLength(1);
+    expect(result.loanRepayments[0].id).toBe('repay-server');
   });
 
   it('keeps notification read state when either client or server has marked it read', () => {

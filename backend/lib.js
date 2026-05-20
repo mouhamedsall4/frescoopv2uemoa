@@ -90,7 +90,7 @@ export function preservePrivateUserFields(incoming, current) {
   };
 }
 
-export const DEFAULT_SERVER_MERGE_KEYS = ['notifications', 'activityProofs', 'messages', 'orders'];
+export const DEFAULT_SERVER_MERGE_KEYS = ['notifications', 'activityProofs', 'messages', 'orders', 'paymentRecords', 'transactions', 'loanRepayments'];
 
 export function mergeIncomingStore(incoming, current, mergeKeys = DEFAULT_SERVER_MERGE_KEYS) {
   if (!incoming || typeof incoming !== 'object') return incoming;
@@ -142,6 +142,8 @@ export function mergeNotificationsPreservingRead(incomingNotifications, serverNo
   });
 }
 
+const LOAN_STATUS_WEIGHT = { 'En attente': 0, 'Refusé': 1, 'Approuvé': 2, 'En cours': 3, 'Retard': 4, 'Remboursé': 5, 'Défaut': 5 };
+
 export function mergeLoansByDecision(incomingLoans, serverLoans) {
   const incoming = Array.isArray(incomingLoans) ? incomingLoans : [];
   const server = Array.isArray(serverLoans) ? serverLoans : [];
@@ -155,9 +157,16 @@ export function mergeLoansByDecision(incomingLoans, serverLoans) {
     const serverLoan = serverById.get(incomingLoan.id);
     if (!serverLoan) return incomingLoan;
 
+    const serverWeight = LOAN_STATUS_WEIGHT[serverLoan.status] ?? -1;
+    const incomingWeight = LOAN_STATUS_WEIGHT[incomingLoan.status] ?? -1;
+    if (serverLoan.decidedAt && !incomingLoan.decidedAt && serverWeight > 0) return serverLoan;
+    if (incomingLoan.decidedAt && !serverLoan.decidedAt && incomingWeight > 0) return incomingLoan;
+
     const incomingStamp = getLoanDecisionStamp(incomingLoan);
     const serverStamp = getLoanDecisionStamp(serverLoan);
     if (serverStamp > incomingStamp) return serverLoan;
+    if (incomingStamp > serverStamp) return incomingLoan;
+    if (serverWeight > incomingWeight) return serverLoan;
     return incomingLoan;
   });
 }

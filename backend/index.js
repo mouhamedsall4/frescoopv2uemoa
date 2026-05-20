@@ -211,6 +211,7 @@ const emptyStore = {
   auditLogs: [],
   kpiAggregates: [],
   loans: [],
+  loanRepayments: [],
   surveyLeads: [],
 };
 

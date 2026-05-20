@@ -4236,10 +4236,40 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
     const paidIds = new Set(eligibleOrders.map((order) => order.id));
     const totalAmount = eligibleOrders.reduce((sum, order) => sum + getOrderTotal(order, store), 0);
     const notifications = [];
+    const loanRepayments = [];
+    const remainingByLoan = new Map();
     const paymentRecords = eligibleOrders.map((order) => {
       const product = getOrderProduct(order, store);
       const farmer = store.users.find((user) => user.id === order.sellerId);
       const agent = getOrderAgent(order, store);
+      const paymentId = uid('pay');
+      let loanDeduction = calculateLoanSaleDeduction(order, store);
+      if (loanDeduction) {
+        const currentRemaining = remainingByLoan.has(loanDeduction.loan.id)
+          ? remainingByLoan.get(loanDeduction.loan.id)
+          : getLoanRepaymentStats(loanDeduction.loan, store).remaining;
+        const amount = Math.min(currentRemaining, Math.round(loanDeduction.orderTotal * loanDeduction.repaymentPct / 100));
+        loanDeduction = amount > 0 ? { ...loanDeduction, amount, remainingAfter: Math.max(0, currentRemaining - amount) } : null;
+        if (loanDeduction) remainingByLoan.set(loanDeduction.loan.id, loanDeduction.remainingAfter);
+      }
+      if (loanDeduction) {
+        loanRepayments.push({
+          id: uid('repay'),
+          createdAt: now,
+          type: 'sale_deduction',
+          loanId: loanDeduction.loan.id,
+          orderId: order.id,
+          paymentId,
+          farmerId: order.sellerId,
+          farmerName: farmer?.name || loanDeduction.loan.farmerName || 'Agriculteur',
+          partnerId: loanDeduction.loan.partnerId || '',
+          amount: loanDeduction.amount,
+          saleAmount: loanDeduction.orderTotal,
+          repaymentPct: loanDeduction.repaymentPct,
+          remainingAfter: loanDeduction.remainingAfter,
+          status: loanDeduction.remainingAfter <= 0 ? 'Remboursé' : 'Prélevé',
+        });
+      }
       if (farmer) {
         notifications.push(createAppNotification({
           actor: currentUser,
@@ -4249,6 +4279,28 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
           recipientId: farmer.id,
           title: 'Commande payée à préparer',
           type: 'order',
+        }));
+        if (loanDeduction) {
+          notifications.push(createAppNotification({
+            actor: currentUser,
+            body: `${formatMoney(loanDeduction.amount)} prélevés sur cette vente (${loanDeduction.repaymentPct}%) pour rembourser le prêt ${loanDeduction.loan.contractCode || loanDeduction.loan.id}. Solde restant: ${formatMoney(loanDeduction.remainingAfter)}.`,
+            path: '/bancabilite',
+            relatedId: loanDeduction.loan.id,
+            recipientId: farmer.id,
+            title: 'Remboursement prêt prélevé',
+            type: 'loan-repayment',
+          }));
+        }
+      }
+      if (loanDeduction?.loan?.partnerId) {
+        notifications.push(createAppNotification({
+          actor: currentUser,
+          body: `${formatMoney(loanDeduction.amount)} prélevés sur une vente de ${farmer?.name || 'l agriculteur'} (${loanDeduction.repaymentPct}%). Solde restant: ${formatMoney(loanDeduction.remainingAfter)}.`,
+          path: '/bancabilite',
+          relatedId: loanDeduction.loan.id,
+          recipientId: loanDeduction.loan.partnerId,
+          title: 'Remboursement crédit reçu',
+          type: 'loan-repayment',
         }));
       }
       if (agent) {
@@ -4263,7 +4315,7 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
         }));
       }
       return {
-        id: uid('pay'),
+        id: paymentId,
         createdAt: now,
         orderId: order.id,
         payerId: currentUser.id,
@@ -4275,6 +4327,9 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
         receiptCode,
         paydunyaToken: token,
         paydunyaReceiptUrl: paydunyaData?.receiptUrl || '',
+        loanDeductionAmount: loanDeduction?.amount || 0,
+        loanDeductionPct: loanDeduction?.repaymentPct || 0,
+        sellerNetAmount: getOrderTotal(order, store) - (loanDeduction?.amount || 0),
         regulatoryNote: 'Paiement execute via PayDunya. FresCoop conserve la preuve de coordination.',
       };
     });
@@ -4290,9 +4345,32 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
       updatedAt: now,
     } : order));
     actions.setPaymentRecords((items) => [...paymentRecords, ...items]);
+    if (loanRepayments.length) {
+      actions.setLoanRepayments((items) => [...loanRepayments, ...items]);
+      const repaymentByLoan = loanRepayments.reduce((map, repayment) => {
+        map.set(repayment.loanId, (map.get(repayment.loanId) || 0) + Number(repayment.amount || 0));
+        return map;
+      }, new Map());
+      actions.setLoans((items) => items.map((loan) => {
+        const repaidNow = repaymentByLoan.get(loan.id);
+        if (!repaidNow) return loan;
+        const stats = getLoanRepaymentStats(loan, store);
+        const repaidAmount = Math.min(Number(loan.amount || 0), stats.paid + repaidNow);
+        const remainingBalance = Math.max(0, Number(loan.amount || 0) - repaidAmount);
+        return {
+          ...loan,
+          repaidAmount,
+          remainingBalance,
+          status: remainingBalance <= 0 ? 'Remboursé' : 'En cours',
+          statusUpdatedAt: now,
+          lastRepaymentAt: now,
+        };
+      }));
+    }
 
     const sellerTransactions = eligibleOrders.map((order) => {
       const product = getOrderProduct(order, store);
+      const repayment = loanRepayments.find((item) => item.orderId === order.id);
       return {
         id: uid('trx'),
         createdAt: now,
@@ -4307,6 +4385,8 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
         orderId: order.id,
         receiptCode,
         paydunyaToken: token,
+        loanDeductionAmount: repayment?.amount || 0,
+        netAmount: getOrderTotal(order, store) - (repayment?.amount || 0),
       };
     });
     if (sellerTransactions.length) {
@@ -4672,7 +4752,14 @@ function ActivityProofPage({ actions, currentUser, navigate, notify, store }) {
 
   async function handleAdminReview(proofId, status) {
     const actionLabel = status === 'valide' ? 'valider' : 'rejeter';
-    if (!window.confirm(`Êtes-vous sûr de vouloir ${actionLabel} cette preuve ?`)) return;
+    const confirmed = await askConfirm({
+      title: status === 'valide' ? 'Valider la preuve' : 'Rejeter la preuve',
+      message: `Voulez-vous ${actionLabel} cette preuve ?`,
+      confirmLabel: status === 'valide' ? 'Valider' : 'Rejeter',
+      cancelLabel: 'Annuler',
+      variant: status === 'valide' ? 'primary' : 'danger',
+    });
+    if (!confirmed) return;
     try {
       const token = sessionStorage.getItem('frescoop.auth.token');
       const resp = await fetch(API_BASE + '/api/activity-proofs', {
@@ -4686,6 +4773,22 @@ function ActivityProofPage({ actions, currentUser, navigate, notify, store }) {
       const proof = (store.activityProofs || []).find((p) => p.id === proofId);
       if (proof && data.level >= 1) {
         actions.setUsers((items) => items.map((u) => u.id === proof.userId ? { ...u, verificationScore: data.score, verificationLevel: data.level, status: 'Actif' } : u));
+      }
+      if (proof) {
+        const notifBody = status === 'valide'
+          ? `Votre preuve "${proof.proofType || 'activité'}" a été validée par un agent. Votre score de bancabilité a été mis à jour.`
+          : `Votre preuve "${proof.proofType || 'activité'}" a été rejetée. Veuillez soumettre un nouveau justificatif.`;
+        actions.setNotifications((items) => [
+          createAppNotification({
+            actor: currentUser,
+            body: notifBody,
+            path: '/verification',
+            recipientId: proof.userId,
+            title: status === 'valide' ? 'Preuve validée' : 'Preuve rejetée',
+            type: 'proof_review',
+          }),
+          ...items,
+        ]);
       }
       notify(`Preuve ${status === 'valide' ? 'validée' : 'rejetée'}`, 'success');
     } catch (err) {
@@ -6243,12 +6346,200 @@ function estimateShelfLife(key) {
   return 10;
 }
 
+function sanitizeRepaymentPct(value) {
+  const pct = Number(value);
+  if (!Number.isFinite(pct)) return 30;
+  return Math.min(40, Math.max(5, Math.round(pct)));
+}
+
+function suggestLoanRepaymentPct(dossier, months) {
+  const score = Number(dossier?.score || 0);
+  const duration = Number(months || 6);
+  if (score >= 80 && duration <= 6) return 15;
+  if (score >= 60) return duration > 12 ? 25 : 20;
+  return duration > 12 ? 30 : 25;
+}
+
+function buildLoanContractSnapshot({ contractCode, dossier, farmer, loan, partner, repaymentPct, signedAt = '', status = 'propose' }) {
+  const amount = Number(loan?.amount || 0);
+  const months = Number(loan?.months || 0);
+  const tranches = Array.isArray(loan?.tranches) ? loan.tranches : [];
+  return {
+    code: contractCode || loan?.contractCode || buildVerificationCode('CTR'),
+    status,
+    createdAt: loan?.createdAt || new Date().toISOString(),
+    signedAt,
+    farmerId: farmer?.id || loan?.farmerId || '',
+    farmerName: farmer?.name || loan?.farmerName || '',
+    partnerId: partner?.id || loan?.partnerId || '',
+    partnerName: partner?.name || '',
+    amount,
+    months,
+    purpose: loan?.purpose || '',
+    repaymentPct: sanitizeRepaymentPct(repaymentPct ?? loan?.repaymentPct),
+    totalDue: amount,
+    interestRatePct: Number(loan?.interestRatePct || 0),
+    currency: 'FCFA',
+    score: loan?.score || dossier?.score || 0,
+    grade: loan?.grade || dossier?.grade || '',
+    verificationCode: loan?.verificationCode || dossier?.verificationCode || '',
+    deductionMethod: 'prelevement_automatique_ventes_frescoop',
+    terms: [
+      'Le remboursement se fait automatiquement sur les ventes payees dans FresCoop.',
+      'Le pourcentage contractuel est applique sur chaque paiement client jusqu au remboursement total.',
+      'Le prelevement ne depasse jamais le solde restant du pret.',
+      'Chaque prelevement cree une ligne de remboursement visible par l agriculteur et le partenaire.',
+      'Les tranches suivantes restent conditionnees a la validation des preuves de decaissement.',
+      'Aucun interet additionnel n est ajoute dans ce contrat FresCoop, sauf modification explicite signee par les parties.',
+    ],
+    tranches: tranches.map((tranche) => ({
+      id: tranche.id,
+      pct: Number(tranche.pct || 0),
+      label: tranche.label || '',
+      amount: Math.round(amount * Number(tranche.pct || 0) / 100),
+    })),
+  };
+}
+
+function getLoanContract(loan, store) {
+  const farmer = (store.users || []).find((user) => user.id === loan.farmerId);
+  const partner = (store.users || []).find((user) => user.id === loan.partnerId);
+  const dossier = farmer ? buildBancabiliteDossier(farmer, store) : null;
+  return {
+    ...buildLoanContractSnapshot({
+      contractCode: loan.contractCode || loan.contract?.code,
+      dossier,
+      farmer,
+      loan,
+      partner,
+      repaymentPct: loan.repaymentPct,
+      signedAt: loan.contract?.signedAt || loan.decidedAt || '',
+      status: loan.contract?.status || (loan.status === 'Approuvé' || loan.status === 'En cours' ? 'actif' : 'propose'),
+    }),
+    ...(loan.contract || {}),
+    partnerName: loan.contract?.partnerName || partner?.name || '',
+  };
+}
+
+function getLoanRepaymentStats(loan, store) {
+  const repayments = (store.loanRepayments || []).filter((item) => item.loanId === loan.id && item.type === 'sale_deduction');
+  const paidByRows = repayments.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const total = Number(loan.amount || 0);
+  const paid = loan.status === 'Remboursé' ? total : Math.max(Number(loan.repaidAmount || 0), paidByRows);
+  const remaining = loan.status === 'Remboursé' ? 0 : Number.isFinite(Number(loan.remainingBalance))
+    ? Math.max(0, Number(loan.remainingBalance))
+    : Math.max(0, total - paid);
+  return {
+    paid,
+    remaining,
+    total,
+    pct: total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0,
+    repayments,
+  };
+}
+
+function findRepayableLoanForSeller(sellerId, store) {
+  return (store.loans || [])
+    .filter((loan) => loan.farmerId === sellerId && ['Approuvé', 'En cours'].includes(loan.status))
+    .sort((a, b) => new Date(a.decidedAt || a.createdAt || 0) - new Date(b.decidedAt || b.createdAt || 0))
+    .find((loan) => getLoanRepaymentStats(loan, store).remaining > 0);
+}
+
+function calculateLoanSaleDeduction(order, store) {
+  const loan = findRepayableLoanForSeller(order.sellerId, store);
+  if (!loan) return null;
+  const stats = getLoanRepaymentStats(loan, store);
+  const repaymentPct = sanitizeRepaymentPct(loan.repaymentPct);
+  const orderTotal = getOrderTotal(order, store);
+  const amount = Math.min(stats.remaining, Math.round(orderTotal * repaymentPct / 100));
+  if (amount <= 0) return null;
+  return { loan, amount, repaymentPct, orderTotal, remainingAfter: Math.max(0, stats.remaining - amount) };
+}
+
+function RepayLoanBlock({ loan, actions, currentUser, store, notify }) {
+  const [showForm, setShowForm] = useState(false);
+  const [repayAmount, setRepayAmount] = useState('');
+  const remaining = loan.remainingBalance || loan.amount || 0;
+
+  function handleRepay(e) {
+    e.preventDefault();
+    const amount = Number(repayAmount);
+    if (!amount || amount <= 0) { notify('Montant invalide.', 'error'); return; }
+    if (amount > remaining) { notify(`Le montant dépasse le solde restant (${formatMoney(remaining)}).`, 'error'); return; }
+    const now = new Date().toISOString();
+    const newRemaining = Math.max(0, remaining - amount);
+    const newRepaid = (loan.repaidAmount || 0) + amount;
+    const isFullyRepaid = newRemaining <= 0;
+    actions.setLoans((items) => items.map((item) => item.id === loan.id ? {
+      ...item,
+      remainingBalance: newRemaining,
+      repaidAmount: newRepaid,
+      status: isFullyRepaid ? 'Remboursé' : item.status,
+      statusUpdatedAt: now,
+    } : item));
+    const repayment = {
+      id: `repay-${Date.now().toString(36)}`,
+      createdAt: now,
+      loanId: loan.id,
+      farmerId: currentUser.id,
+      farmerName: currentUser.name,
+      partnerId: loan.partnerId,
+      amount,
+      type: 'manual',
+      status: isFullyRepaid ? 'Remboursé' : 'Partiel',
+    };
+    actions.setLoanRepayments((items) => [repayment, ...items]);
+    if (loan.partnerId) {
+      const notif = createAppNotification({
+        actor: currentUser,
+        body: `${currentUser.name} a remboursé ${formatMoney(amount)}${isFullyRepaid ? ' (solde complet)' : ''} sur le prêt ${loan.contractCode || ''}.`,
+        path: '/bancabilite',
+        recipientId: loan.partnerId,
+        title: isFullyRepaid ? 'Prêt intégralement remboursé' : 'Remboursement reçu',
+        type: 'loan-status-update',
+      });
+      actions.setNotifications((items) => [notif, ...items]);
+    }
+    notify(isFullyRepaid ? 'Prêt intégralement remboursé !' : `Remboursement de ${formatMoney(amount)} enregistré.`);
+    setRepayAmount('');
+    setShowForm(false);
+  }
+
+  return (
+    <div className="loan-repay-block">
+      {!showForm ? (
+        <button type="button" className="btn btn-secondary" onClick={() => setShowForm(true)} style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+          <CircleDollarSign size={15} /> Rembourser
+        </button>
+      ) : (
+        <form onSubmit={handleRepay} className="loan-repay-form">
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              type="number"
+              min="1"
+              max={remaining}
+              value={repayAmount}
+              onChange={(e) => setRepayAmount(e.target.value)}
+              placeholder={`Max ${formatMoney(remaining)}`}
+              style={{ flex: 1, minWidth: '140px', padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid var(--line)', fontSize: '0.85rem' }}
+              autoFocus
+            />
+            <button type="submit" className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '0.45rem 0.8rem' }}>Valider</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)} style={{ fontSize: '0.82rem', padding: '0.45rem 0.8rem' }}>Annuler</button>
+          </div>
+          <small style={{ color: 'var(--muted)', marginTop: '0.25rem', display: 'block' }}>Solde restant : {formatMoney(remaining)}</small>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function BancabilitePage({ actions, currentUser, notify, store }) {
   const isFinancePartner = currentUser.role === 'partenaire';
   const isAgriculteur = currentUser.role === 'agriculteur';
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [loanForm, setLoanForm] = useState({ amount: '', purpose: '', months: '6' });
+  const [loanForm, setLoanForm] = useState({ amount: '', purpose: '', months: '6', repaymentPct: '30' });
   const [showLoanForm, setShowLoanForm] = useState(false);
 
   const scope = useMemo(() => {
@@ -6258,7 +6549,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
 
   const loans = store.loans || [];
   const myLoans = isFinancePartner
-    ? loans.filter((loan) => loan.partnerId === currentUser.id || loan.status === 'En attente' || loan.status === 'Refusé')
+    ? loans.filter((loan) => loan.partnerId === currentUser.id || loan.status === 'En attente')
     : loans.filter((loan) => loan.farmerId === currentUser.id);
 
   const enriched = scope.map((user) => ({ user, dossier: buildBancabiliteDossier(user, store) }));
@@ -6279,6 +6570,12 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
     notify(`Dossier bancabilité généré pour ${user.name}`);
   }
 
+  function exportLoanContract(loan) {
+    const contract = getLoanContract(loan, store);
+    downloadHtml(`contrat-pret-${contract.code || loan.id}.html`, renderLoanContractHtml(loan, store));
+    notify('Contrat de prêt généré');
+  }
+
   function submitLoanRequest(event) {
     event.preventDefault();
     if (!loanForm.amount || !loanForm.purpose) {
@@ -6291,8 +6588,8 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
       return;
     }
     const dossier = buildBancabiliteDossier(currentUser, store);
-    if (dossier.score < 40) {
-      notify('Score insuffisant (< 40). Complétez votre activité avant de demander un prêt.', 'error');
+    if (dossier.score < 60) {
+      notify(`Score insuffisant (${dossier.score}/100, Grade ${dossier.grade}). Un grade B minimum (≥ 60) est requis pour demander un prêt.`, 'error');
       return;
     }
     const hasCni = (store.activityProofs || []).some((p) => p.userId === currentUser.id && /cni/i.test(p.proofType) && (p.status === 'valide' || p.status === 'auto_valide'));
@@ -6305,13 +6602,17 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
       notify('Au moins 2 ventes confirmées requises avant de demander un prêt.', 'error');
       return;
     }
+    const now = new Date().toISOString();
+    const amount = Number(loanForm.amount);
+    const repaymentPct = sanitizeRepaymentPct(loanForm.repaymentPct || suggestLoanRepaymentPct(dossier, loanForm.months));
+    const contractCode = buildVerificationCode('CTR');
     const loan = {
       id: uid('loan'),
-      createdAt: new Date().toISOString(),
+      createdAt: now,
       farmerId: currentUser.id,
       farmerName: currentUser.name,
       partnerId: '',
-      amount: Number(loanForm.amount),
+      amount,
       purpose: loanForm.purpose.trim(),
       months: Number(loanForm.months),
       status: 'En attente',
@@ -6324,9 +6625,12 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
         { id: 3, pct: 30, status: 'locked', label: 'Récolte et livraison', proofStatus: '', proofSubmittedAt: '' },
       ],
       disbursedPct: 0,
-      repaymentPct: 30,
-      contractCode: '',
+      repaymentPct,
+      repaidAmount: 0,
+      remainingBalance: amount,
+      contractCode,
     };
+    loan.contract = buildLoanContractSnapshot({ contractCode, dossier, farmer: currentUser, loan, repaymentPct });
     actions.setLoans((items) => [loan, ...items]);
     const partners = store.users.filter((user) => user.role === 'partenaire');
     const notifs = partners.map((partner) => createAppNotification({
@@ -6339,12 +6643,12 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
     }));
     actions.setNotifications((items) => [...notifs, ...items]);
     actions.setAuditLogs((items) => [createAuditLog(currentUser, 'loan_request_submitted', `Demande ${formatMoney(loan.amount)} / ${loan.months} mois`, loan.id), ...items]);
-    notify('Demande envoyée aux partenaires finance');
-    setLoanForm({ amount: '', purpose: '', months: '6' });
+    notify('Demande envoyée avec contrat de remboursement');
+    setLoanForm({ amount: '', purpose: '', months: '6', repaymentPct: '30' });
     setShowLoanForm(false);
   }
 
-  function decideLoan(loan, decision) {
+  async function decideLoan(loan, decision) {
     const currentLoan = (store.loans || []).find((item) => item.id === loan.id);
     if (!currentLoan) { notify('Prêt introuvable.', 'error'); return; }
     if (currentLoan.status !== 'En attente' && currentLoan.status !== 'Refusé') {
@@ -6352,7 +6656,14 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
       return;
     }
     const actionLabel = decision === 'Approuvé' ? 'approuver' : 'refuser';
-    if (!window.confirm(`Êtes-vous sûr de vouloir ${actionLabel} ce prêt de ${formatMoney(loan.amount)} ?`)) return;
+    const confirmed = await askConfirm({
+      title: decision === 'Approuvé' ? 'Approuver le prêt' : 'Refuser le prêt',
+      message: `Voulez-vous ${actionLabel} le prêt de ${formatMoney(loan.amount)} pour ${loan.farmerName} ?`,
+      confirmLabel: decision === 'Approuvé' ? 'Approuver' : 'Refuser',
+      cancelLabel: 'Annuler',
+      variant: decision === 'Approuvé' ? 'primary' : 'danger',
+    });
+    if (!confirmed) return;
     const now = new Date().toISOString();
     const contractCode = decision === 'Approuvé'
       ? (currentLoan.contractCode || `PRET-${Date.now().toString(36).slice(-4).toUpperCase()}-${currentUser.name.split(' ')[0]?.slice(0, 4).toUpperCase() || 'FIN'}`)
@@ -6360,6 +6671,18 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
     const updatedTranches = decision === 'Approuvé'
       ? (currentLoan.tranches || []).map((t, i) => i === 0 ? { ...t, status: 'disbursed', disbursedAt: now } : t)
       : currentLoan.tranches || [];
+    const farmer = store.users.find((user) => user.id === loan.farmerId);
+    const farmerDossier = farmer ? buildBancabiliteDossier(farmer, store) : null;
+    const nextContract = buildLoanContractSnapshot({
+      contractCode,
+      dossier: farmerDossier,
+      farmer,
+      loan: { ...currentLoan, tranches: updatedTranches },
+      partner: currentUser,
+      repaymentPct: currentLoan.repaymentPct,
+      signedAt: decision === 'Approuvé' ? now : '',
+      status: decision === 'Approuvé' ? 'actif' : 'refuse',
+    });
     actions.setLoans((items) => items.map((item) => item.id === loan.id ? {
       ...item,
       status: decision,
@@ -6368,11 +6691,13 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
       tranches: updatedTranches,
       disbursedPct: decision === 'Approuvé' ? 40 : 0,
       contractCode,
+      contract: nextContract,
+      remainingBalance: Number.isFinite(Number(item.remainingBalance)) ? Number(item.remainingBalance) : Number(item.amount || 0),
+      repaidAmount: Number(item.repaidAmount || 0),
     } : item));
-    const farmer = store.users.find((user) => user.id === loan.farmerId);
     if (farmer) {
       const body = decision === 'Approuvé'
-        ? `Votre prêt de ${formatMoney(loan.amount)} a été approuvé. Tranche 1 (${formatMoney(Math.round(loan.amount * 0.4))}) débloquée. Contrat: ${contractCode}`
+        ? `Votre prêt de ${formatMoney(loan.amount)} a été approuvé. Tranche 1 (${formatMoney(Math.round(loan.amount * 0.4))}) débloquée. Remboursement: ${nextContract.repaymentPct}% de chaque vente FresCoop. Contrat: ${contractCode}`
         : `Votre demande de prêt de ${formatMoney(loan.amount)} a été refusée.`;
       actions.setNotifications((items) => [
         createAppNotification({ actor: currentUser, body, path: '/bancabilite', recipientId: farmer.id, title: decision === 'Approuvé' ? 'Prêt approuvé' : 'Prêt refusé', type: 'loan-decision' }),
@@ -6384,11 +6709,20 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
   }
 
   function updateLoanStatus(loan, newStatus) {
-    actions.setLoans((items) => items.map((item) => item.id === loan.id ? { ...item, status: newStatus, statusUpdatedAt: new Date().toISOString() } : item));
+    const now = new Date().toISOString();
+    actions.setLoans((items) => items.map((item) => {
+      if (item.id !== loan.id) return item;
+      const patch = { ...item, status: newStatus, statusUpdatedAt: now };
+      if (newStatus === 'En attente') {
+        patch.decidedAt = '';
+        patch.contract = { ...(item.contract || getLoanContract(item, store)), status: 'propose', signedAt: '' };
+      }
+      return patch;
+    }));
     if (newStatus === 'Remboursé' || newStatus === 'Défaut') {
       const repayment = {
         id: uid('repay'),
-        createdAt: new Date().toISOString(),
+        createdAt: now,
         loanId: loan.id,
         farmerId: loan.farmerId,
         farmerName: loan.farmerName,
@@ -6514,7 +6848,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
             )}
             <div className="button-row">
               <Button variant="secondary" onClick={() => exportDossier(currentUser)}><Download size={16} /> Exporter mon dossier (PDF)</Button>
-              {maxEligible > 0 && <Button onClick={() => { setShowLoanForm(true); updateForm(setLoanForm, 'amount', String(suggestedForDuration)); }}><Landmark size={16} /> Demander un crédit ({formatMoney(suggestedForDuration)})</Button>}
+              {maxEligible > 0 && <Button onClick={() => { setShowLoanForm(true); updateForm(setLoanForm, 'amount', String(suggestedForDuration)); updateForm(setLoanForm, 'repaymentPct', String(suggestLoanRepaymentPct(myDossier, loanForm.months))); }}><Landmark size={16} /> Demander un crédit ({formatMoney(suggestedForDuration)})</Button>}
             </div>
           </section>
         );
@@ -6530,11 +6864,17 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
         const maxForDuration = Math.round(maxEligible6m * mFactor);
         const requestedAmount = Number(loanForm.amount) || 0;
         const pctUsed = maxForDuration > 0 ? Math.min(100, Math.round((requestedAmount / maxForDuration) * 100)) : 0;
+        const suggestedRepaymentPct = suggestLoanRepaymentPct(dossier, loanForm.months);
+        const selectedRepaymentPct = sanitizeRepaymentPct(loanForm.repaymentPct || suggestedRepaymentPct);
+        const estimatedMonthlyRepayment = Math.round(dossier.monthlyAverage * selectedRepaymentPct / 100);
+        const estimatedRepaymentMonths = estimatedMonthlyRepayment > 0 && requestedAmount > 0
+          ? Math.ceil(requestedAmount / estimatedMonthlyRepayment)
+          : null;
 
         return (
           <section className="panel">
             <PanelToolbar icon={Landmark} title="Demander un prêt" action={
-              <Button onClick={() => { setShowLoanForm((open) => !open); if (!loanForm.amount && maxForDuration > 0) updateForm(setLoanForm, 'amount', String(maxForDuration)); }} variant={showLoanForm ? 'secondary' : 'primary'}>
+              <Button onClick={() => { setShowLoanForm((open) => !open); if (!loanForm.amount && maxForDuration > 0) updateForm(setLoanForm, 'amount', String(maxForDuration)); if (!loanForm.repaymentPct) updateForm(setLoanForm, 'repaymentPct', String(suggestLoanRepaymentPct(dossier, loanForm.months))); }} variant={showLoanForm ? 'secondary' : 'primary'}>
                 {showLoanForm ? 'Annuler' : 'Nouvelle demande'}
               </Button>
             } />
@@ -6570,7 +6910,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                     <input type="number" min="0" max={maxForDuration || undefined} value={loanForm.amount} onChange={(event) => updateForm(setLoanForm, 'amount', event.target.value)} placeholder={maxForDuration > 0 ? String(maxForDuration) : ''} />
                   </Field>
                   <Field label="Durée (mois)" required>
-                    <select value={loanForm.months} onChange={(event) => { updateForm(setLoanForm, 'months', event.target.value); const newMax = Math.round(maxEligible6m * (Number(event.target.value) / 6)); if (!loanForm.amount || Number(loanForm.amount) === maxForDuration) updateForm(setLoanForm, 'amount', String(newMax)); }}>
+                    <select value={loanForm.months} onChange={(event) => { updateForm(setLoanForm, 'months', event.target.value); updateForm(setLoanForm, 'repaymentPct', String(suggestLoanRepaymentPct(dossier, event.target.value))); const newMax = Math.round(maxEligible6m * (Number(event.target.value) / 6)); if (!loanForm.amount || Number(loanForm.amount) === maxForDuration) updateForm(setLoanForm, 'amount', String(newMax)); }}>
                       <option value="3">3 mois</option>
                       <option value="6">6 mois</option>
                       <option value="12">12 mois</option>
@@ -6579,12 +6919,25 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                     </select>
                   </Field>
                 </div>
+                <Field label="Pourcentage prélevé sur chaque vente FresCoop" required>
+                  <select value={loanForm.repaymentPct || String(suggestedRepaymentPct)} onChange={(event) => updateForm(setLoanForm, 'repaymentPct', event.target.value)}>
+                    {[10, 15, 20, 25, 30, 35, 40].map((pct) => <option key={pct} value={pct}>{pct}% des ventes payées</option>)}
+                  </select>
+                </Field>
                 {requestedAmount > maxForDuration && maxForDuration > 0 && (
                   <p style={{ color: '#dc2626', fontSize: '0.82rem', margin: 0 }}>⚠ Le montant dépasse votre capacité estimée ({formatMoney(maxForDuration)}). La demande risque d'être refusée.</p>
                 )}
                 <Field label="Objet (intrants, matériel, transport...)" required>
                   <textarea rows="3" value={loanForm.purpose} onChange={(event) => updateForm(setLoanForm, 'purpose', event.target.value)} />
                 </Field>
+                <div className="loan-ia-box" style={{ background: '#f8fafc' }}>
+                  <div className="loan-ia-header"><ReceiptText size={18} /><strong>Contrat de remboursement proposé</strong></div>
+                  <div className="loan-ia-details">
+                    <small>{selectedRepaymentPct}% sera prélevé automatiquement sur chaque vente payée via FresCoop jusqu'au remboursement complet.</small>
+                    <small>Sur la base du revenu moyen actuel, cela représente environ {formatMoney(estimatedMonthlyRepayment)} par mois{estimatedRepaymentMonths ? `, soit ${estimatedRepaymentMonths} mois estimés` : ''}.</small>
+                    <small>Le prélèvement est plafonné au solde restant et chaque ligne sera visible dans le contrat.</small>
+                  </div>
+                </div>
                 <Button type="submit"><Send size={16} /> Envoyer la demande</Button>
               </form>
             )}
@@ -6599,6 +6952,8 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
             {myLoans.map((loan) => {
               const farmer = store.users.find((u) => u.id === loan.farmerId);
               const farmerDossier = farmer ? buildBancabiliteDossier(farmer, store) : null;
+              const contract = getLoanContract(loan, store);
+              const repaymentStats = getLoanRepaymentStats(loan, store);
               return (
                 <article key={loan.id} className={`loan-card loan-${loan.status.toLowerCase().replace(/\s/g, '-')}`}>
                   <header>
@@ -6622,6 +6977,30 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                       </>
                     )}
                   </div>
+                  {loan.status !== 'Refusé' && (
+                    <div className="loan-ia-box" style={{ marginTop: '0.65rem', background: '#f8fafc' }}>
+                      <div className="loan-ia-header">
+                        <ReceiptText size={18} />
+                        <strong>{contract.status === 'actif' ? 'Contrat de remboursement actif' : 'Contrat de remboursement proposé'}</strong>
+                      </div>
+                      <div className="loan-body">
+                        <div><em>Code contrat</em><b>{contract.code}</b></div>
+                        <div><em>Prélèvement ventes</em><b>{contract.repaymentPct}%</b></div>
+                        <div><em>Remboursé</em><b>{formatMoney(repaymentStats.paid)} ({repaymentStats.pct}%)</b></div>
+                        <div><em>Solde restant</em><b>{formatMoney(repaymentStats.remaining)}</b></div>
+                      </div>
+                      <div className="loan-ia-bar" aria-label="Progression remboursement">
+                        <div className="loan-ia-fill" style={{ width: `${repaymentStats.pct}%`, background: repaymentStats.remaining <= 0 ? '#16a34a' : '#2563eb' }} />
+                      </div>
+                      <div className="loan-ia-details">
+                        <small>{contract.repaymentPct}% de chaque vente payée via FresCoop est prélevé automatiquement jusqu'au remboursement complet.</small>
+                        <small>{contract.partnerName ? `Partenaire: ${contract.partnerName}. ` : ''}{contract.signedAt ? `Signé le ${formatDate(contract.signedAt)}.` : 'En attente de validation partenaire.'}</small>
+                      </div>
+                      <div className="button-row" style={{ marginTop: '0.5rem' }}>
+                        <Button variant="secondary" onClick={() => exportLoanContract(loan)}><Download size={16} /> Contrat</Button>
+                      </div>
+                    </div>
+                  )}
                   {isAgriculteur && loan.status === 'Refusé' && (
                     <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', fontSize: '0.85rem', background: '#fee2e2', color: '#991b1b' }}>
                       Votre demande a été refusée{loan.partnerId ? ` par ${store.users.find((u) => u.id === loan.partnerId)?.name || 'un partenaire'}` : ''}{loan.decidedAt ? ` le ${formatDate(loan.decidedAt)}` : ''}. Vous pouvez soumettre une nouvelle demande ou contacter le partenaire.
@@ -6672,7 +7051,11 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                   {(loan.status === 'Approuvé' || loan.status === 'En cours' || loan.status === 'Remboursé' || loan.status === 'Retard' || loan.status === 'Défaut') && (
                     <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0.375rem', fontSize: '0.85rem', background: loan.status === 'Approuvé' ? '#dcfce7' : loan.status === 'En cours' ? '#dbeafe' : loan.status === 'Remboursé' ? '#dcfce7' : loan.status === 'Retard' ? '#fef3c7' : '#fee2e2', fontWeight: 600 }}>
                       Statut : <strong>{loan.status}</strong>{loan.decidedAt && <span> · Décidé le {formatDate(loan.decidedAt)}</span>}{loan.statusUpdatedAt && <span> · Mis à jour le {formatDate(loan.statusUpdatedAt)}</span>}
+                      {(loan.remainingBalance > 0 || (!loan.remainingBalance && loan.status !== 'Remboursé')) && <span> · Restant : <strong>{formatMoney(loan.remainingBalance || loan.amount)}</strong></span>}
                     </div>
+                  )}
+                  {isAgriculteur && (loan.status === 'Approuvé' || loan.status === 'En cours') && (loan.remainingBalance > 0 || !loan.remainingBalance) && loan.status !== 'Remboursé' && (
+                    <RepayLoanBlock loan={loan} actions={actions} currentUser={currentUser} store={store} notify={notify} />
                   )}
                 </article>
               );
@@ -7078,12 +7461,12 @@ function buildBancabiliteDossier(user, store) {
     { label: 'Anciennete compte', value: `${monthsActive} mois`, points: Math.min(15, monthsActive * 2) },
     { label: 'Transactions vérifiées', value: transactions.length + paidOrders.length, points: Math.min(15, (transactions.length + paidOrders.length) * 2) },
     { label: 'Paiements PayDunya', value: paydunyaTx.length, points: Math.min(10, paydunyaTx.length * 3) },
-    { label: 'Preuves vérification validées', value: activityProofs.length, points: Math.min(15, activityProofs.length * 4) },
-    { label: 'Preuves économiques', value: proofs.length + paidOrders.length, points: Math.min(10, (proofs.length + paidOrders.length) * 2) },
+    { label: 'Vérifications terrain par agent', value: activityProofs.length, points: Math.min(15, activityProofs.length * 4) },
+    { label: 'Justificatifs de revenus vérifiés', value: proofs.length + paidOrders.length, points: Math.min(10, (proofs.length + paidOrders.length) * 2) },
     { label: 'Revenu mensuel moyen', value: `${formatCompact(monthlyAverage)} FCFA`, points: Math.min(10, Math.floor(monthlyAverage / 50000) * 2) },
-    { label: 'Groupement / GIE / Coop', value: hasGroupement ? latestCollection.groupement : '—', points: hasGroupement ? 5 : 0 },
-    { label: 'Foncier (formel ou coutumier)', value: hasFoncier ? latestCollection.foncier : '—', points: hasFoncier ? 5 : 0 },
-    { label: 'Expérience agricole', value: `${experienceYears} ans`, points: Math.min(5, Math.floor(experienceYears / 2)) },
+    { label: 'Groupement / GIE / Coop', value: hasGroupement ? latestCollection.groupement : 'Non renseigné', points: hasGroupement ? 5 : 0 },
+    { label: 'Foncier (formel ou coutumier)', value: hasFoncier ? latestCollection.foncier : 'Non renseigné', points: hasFoncier ? 5 : 0 },
+    { label: 'Expérience agricole', value: experienceYears > 0 ? `${experienceYears} ans` : '⚠ Non renseigné (0 an)', points: Math.min(5, Math.floor(experienceYears / 2)) },
     { label: 'Mobile Money actif', value: (hasMobileMoney || paydunyaTx.length > 0) ? 'Oui' : 'Non', points: (hasMobileMoney || paydunyaTx.length > 0) ? 4 : 0 },
     { label: 'Tontine / épargne informelle', value: hasTontine ? 'Oui' : 'Non', points: hasTontine ? 4 : 0 },
     { label: 'Historique remboursement', value: repaid > 0 ? `${repaid} remboursé(s)${defaults > 0 ? `, ${defaults} défaut(s)` : ''}` : '—', points: Math.max(0, repaymentBonus) },
@@ -7132,11 +7515,72 @@ function renderBancabiliteHtml(dossier) {
       <p>Revenu total vérifié: <strong>${escapeHtml(formatMoney(dossier.totalRevenue))}</strong></p>
       <p>Revenu mensuel moyen: <strong>${escapeHtml(formatMoney(dossier.monthlyAverage))}</strong></p>
       <p>Transactions vérifiées: ${dossier.transactionsCount} | Paiements PayDunya: ${dossier.paydunyaCount}</p>
-      <p>Preuves vérification validées: ${dossier.activityProofsCount}</p>
+      <p>Vérifications terrain par agent: ${dossier.activityProofsCount}</p>
     </section>
     <section>
       <h2>Note aux partenaires finance</h2>
       <p>Ce dossier a été généré automatiquement par FresCoop à partir de données transactionnelles et logistiques vérifiées. Le code de vérification ci-dessus permet d'authentifier les informations auprès de la plateforme.</p>
+    </section>
+  `);
+}
+
+function renderLoanContractHtml(loan, store) {
+  const contract = getLoanContract(loan, store);
+  const stats = getLoanRepaymentStats(loan, store);
+  const trancheRows = (contract.tranches || []).map((tranche) => `
+    <tr>
+      <td>T${escapeHtml(String(tranche.id))}</td>
+      <td>${escapeHtml(tranche.label)}</td>
+      <td>${escapeHtml(String(tranche.pct))}%</td>
+      <td>${escapeHtml(formatMoney(tranche.amount))}</td>
+    </tr>
+  `).join('');
+  const repaymentRows = stats.repayments.length
+    ? stats.repayments.map((item) => `
+      <tr>
+        <td>${escapeHtml(formatDate(item.createdAt))}</td>
+        <td>${escapeHtml(item.orderId || item.paymentId || '')}</td>
+        <td>${escapeHtml(formatMoney(item.saleAmount || 0))}</td>
+        <td>${escapeHtml(String(item.repaymentPct || contract.repaymentPct))}%</td>
+        <td>${escapeHtml(formatMoney(item.amount || 0))}</td>
+        <td>${escapeHtml(formatMoney(item.remainingAfter || 0))}</td>
+      </tr>
+    `).join('')
+    : '<tr><td colspan="6">Aucun remboursement automatique encore enregistre.</td></tr>';
+
+  return renderDocumentShell(`Contrat de prêt ${contract.code}`, `
+    <h1>Contrat de prêt FresCoop</h1>
+    <p class="code">Code contrat: ${escapeHtml(contract.code)}</p>
+    <section>
+      <h2>Parties</h2>
+      <p><strong>Agriculteur:</strong> ${escapeHtml(contract.farmerName || loan.farmerName)}</p>
+      <p><strong>Partenaire finance:</strong> ${escapeHtml(contract.partnerName || 'En attente de validation')}</p>
+      <p><strong>Statut:</strong> ${escapeHtml(contract.status)}${contract.signedAt ? ` - signe le ${escapeHtml(formatDate(contract.signedAt))}` : ''}</p>
+    </section>
+    <section>
+      <h2>Conditions principales</h2>
+      <table>
+        <tr><td>Montant du prêt</td><td><strong>${escapeHtml(formatMoney(contract.amount))}</strong></td></tr>
+        <tr><td>Durée cible</td><td><strong>${escapeHtml(String(contract.months))} mois</strong></td></tr>
+        <tr><td>Objet</td><td>${escapeHtml(contract.purpose)}</td></tr>
+        <tr><td>Score au moment de la demande</td><td>${escapeHtml(String(contract.score))}/100 - Grade ${escapeHtml(contract.grade)}</td></tr>
+        <tr><td>Intérêt additionnel</td><td>${escapeHtml(String(contract.interestRatePct || 0))}%</td></tr>
+        <tr><td>Pourcentage prélevé sur ventes</td><td><strong>${escapeHtml(String(contract.repaymentPct))}%</strong> de chaque vente payée via FresCoop</td></tr>
+        <tr><td>Solde restant</td><td><strong>${escapeHtml(formatMoney(stats.remaining))}</strong></td></tr>
+      </table>
+    </section>
+    <section>
+      <h2>Modalités de remboursement</h2>
+      <ul>${(contract.terms || []).map((term) => `<li>${escapeHtml(term)}</li>`).join('')}</ul>
+      <p>Exemple: pour une vente payée ${escapeHtml(formatMoney(100000))}, FresCoop enregistre automatiquement ${escapeHtml(formatMoney(Math.round(100000 * contract.repaymentPct / 100)))} comme remboursement du prêt, dans la limite du solde restant.</p>
+    </section>
+    <section>
+      <h2>Plan de décaissement</h2>
+      <table><thead><tr><th>Tranche</th><th>Objet</th><th>%</th><th>Montant</th></tr></thead><tbody>${trancheRows}</tbody></table>
+    </section>
+    <section>
+      <h2>Historique de remboursement</h2>
+      <table><thead><tr><th>Date</th><th>Commande/Paiement</th><th>Vente</th><th>%</th><th>Prélevé</th><th>Solde restant</th></tr></thead><tbody>${repaymentRows}</tbody></table>
     </section>
   `);
 }
@@ -9347,16 +9791,39 @@ function normalizeStore(value) {
 
 function preserveLocalNotificationReadState(remoteStore, localStore) {
   const localNotifMap = new Map((localStore?.notifications || []).map((item) => [item.id, item]));
+  const remoteNotifIds = new Set((remoteStore.notifications || []).map((item) => item.id));
+  const mergedNotifications = (remoteStore.notifications || []).map((item) => {
+    const local = localNotifMap.get(item.id);
+    if (local && (local.read || local.readAt) && !item.read && !item.readAt) {
+      return { ...item, read: true, readAt: local.readAt || '' };
+    }
+    return item;
+  });
+  const localOnlyRead = (localStore?.notifications || []).filter(
+    (item) => item.id && !remoteNotifIds.has(item.id) && (item.read || item.readAt),
+  );
+  const localLoanMap = new Map((localStore?.loans || []).filter((l) => l && l.id).map((l) => [l.id, l]));
+  const mergedLoans = (remoteStore.loans || []).map((remoteLoan) => {
+    if (!remoteLoan?.id) return remoteLoan;
+    const localLoan = localLoanMap.get(remoteLoan.id);
+    if (!localLoan) return remoteLoan;
+    if (localLoan.decidedAt && !remoteLoan.decidedAt) return localLoan;
+    const localStamp = Math.max(toTimeValue(localLoan.decidedAt), toTimeValue(localLoan.statusUpdatedAt));
+    const remoteStamp = Math.max(toTimeValue(remoteLoan.decidedAt), toTimeValue(remoteLoan.statusUpdatedAt));
+    if (localStamp > remoteStamp) return localLoan;
+    return remoteLoan;
+  });
   return {
     ...remoteStore,
-    notifications: (remoteStore.notifications || []).map((item) => {
-      const local = localNotifMap.get(item.id);
-      if (local && (local.read || local.readAt) && !item.read && !item.readAt) {
-        return { ...item, read: true, readAt: local.readAt || '' };
-      }
-      return item;
-    }),
+    notifications: [...mergedNotifications, ...localOnlyRead],
+    loans: mergedLoans,
   };
+}
+
+function toTimeValue(v) {
+  if (!v) return 0;
+  const t = new Date(v).getTime();
+  return Number.isFinite(t) ? t : 0;
 }
 
 function lightAttachmentForStorage(file) {
