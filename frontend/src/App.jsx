@@ -9187,7 +9187,11 @@ function useProductionStore() {
           try {
             const lightStore = {
               ...storeRef.current,
-              products: (storeRef.current.products || []).map((p) => ({ ...p, image: p.image ? { id: p.image.id, name: p.image.name } : null, images: [] })),
+              products: (storeRef.current.products || []).map((p) => ({
+                ...p,
+                image: p.image ? (p.image.url ? { id: p.image.id, name: p.image.name, url: p.image.url } : { id: p.image.id, name: p.image.name }) : null,
+                images: (p.images || []).filter((img) => img && img.url).map((img) => ({ id: img.id, name: img.name, url: img.url })),
+              })),
             };
             window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lightStore));
           } catch {}
