@@ -12664,7 +12664,12 @@ function buildVerificationCode(prefix) {
 
 function formatDate(value) {
   if (!value) return 'Non renseigne';
-  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+  const d = new Date(value);
+  const day = d.getDate().toString().padStart(2, '0');
+  const month = d.toLocaleString('fr-FR', { month: 'short' });
+  const hour = d.getHours().toString().padStart(2, '0');
+  const min = d.getMinutes().toString().padStart(2, '0');
+  return `${day} ${month} ${hour}:${min}`;
 }
 
 function formatNumber(value) {
