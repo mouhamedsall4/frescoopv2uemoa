@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = 'https://frescoop-api.onrender.com';
+const API_URL = 'https://frescoop-api-v2hm.onrender.com';
 
 let authToken = null;
 

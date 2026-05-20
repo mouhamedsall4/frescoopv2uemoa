@@ -1714,13 +1714,20 @@ async function handleStore(request, response) {
           if (serverOnly.length > 0) {
             incoming[key] = [...serverOnly, ...(incoming[key] || [])];
           }
-          // Preserve read/readAt state: if server has read=true but client sends read=false, keep server version
+          // Preserve read/readAt state: always keep the "read" version if either side has it
           if (key === 'notifications') {
             const serverMap = new Map(currentStoreForMerge[key].map((item) => [item.id, item]));
             incoming[key] = (incoming[key] || []).map((item) => {
               const serverItem = serverMap.get(item.id);
-              if (serverItem && (serverItem.read || serverItem.readAt) && !item.read && !item.readAt) {
-                return { ...item, read: serverItem.read, readAt: serverItem.readAt };
+              if (!serverItem) return item;
+              // If either side has read=true, keep it as read
+              const incomingRead = item.read || item.readAt;
+              const serverRead = serverItem.read || serverItem.readAt;
+              if (serverRead && !incomingRead) {
+                return { ...item, read: true, readAt: serverItem.readAt || item.readAt };
+              }
+              if (incomingRead && !serverRead) {
+                return { ...item, read: true, readAt: item.readAt || serverItem.readAt };
               }
               return item;
             });
