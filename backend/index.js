@@ -8,7 +8,7 @@ import { MongoClient } from 'mongodb';
 import { createMutex } from './mutex.js';
 import { buildSeededAdmins, buildSeededDemoUser, getAdminPasswordHash, getDemoPasswordHash, getMobileDemoPasswordHash } from './seed-config.js';
 import { generateLocalAnswer } from './chatbot-fallback.js';
-import { processPayment, createLoan, applyDeduction, addToGuaranteeFund, getLoanSummary, getCreditSystemStats, createSolidarityGroup } from './credit-system.js';
+import { processPayment, createLoan, applyDeduction, addToGuaranteeFund, getLoanSummary, getCreditSystemStats, createSolidarityGroup, getBlockingLoan } from './credit-system.js';
 import { mergeIncomingStore } from './lib.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1565,9 +1565,9 @@ async function handleCredit(request, response) {
 
     const result = await storeMutex.withLock(async () => {
       const store = await readStore();
-      const existingLoan = (store.loans || []).find(l => l.userId === authData.uid && l.status === 'active');
+      const existingLoan = getBlockingLoan(authData.uid, store);
       if (existingLoan) {
-        return { status: 400, body: { error: 'Vous avez déjà un prêt actif en cours de remboursement.' } };
+        return { status: 400, body: { error: 'Vous avez déjà un prêt ou une demande en cours. Remboursez le prêt entièrement avant une nouvelle demande.' } };
       }
       const loan = createLoan(authData.uid, amount, store);
       await writeStore(store);

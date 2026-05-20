@@ -142,7 +142,7 @@ export function mergeNotificationsPreservingRead(incomingNotifications, serverNo
   });
 }
 
-const LOAN_STATUS_WEIGHT = { 'En attente': 0, 'Refusé': 1, 'Approuvé': 2, 'En cours': 3, 'Retard': 4, 'Remboursé': 5, 'Défaut': 5 };
+const LOAN_STATUS_WEIGHT = { pending: 0, 'En attente': 0, rejected: 1, 'Refusé': 1, approved: 2, active: 3, 'Approuvé': 2, 'En cours': 3, overdue: 4, 'Retard': 4, repaid: 5, defaulted: 5, 'Remboursé': 5, 'Défaut': 5 };
 
 export function mergeLoansByDecision(incomingLoans, serverLoans) {
   const incoming = Array.isArray(incomingLoans) ? incomingLoans : [];
@@ -159,13 +159,21 @@ export function mergeLoansByDecision(incomingLoans, serverLoans) {
 
     const serverWeight = LOAN_STATUS_WEIGHT[serverLoan.status] ?? -1;
     const incomingWeight = LOAN_STATUS_WEIGHT[incomingLoan.status] ?? -1;
-    if (serverLoan.decidedAt && !incomingLoan.decidedAt && serverWeight > 0) return serverLoan;
+    const serverDecisionStamp = toTime(serverLoan.decidedAt);
+    const incomingResetStamp = toTime(incomingLoan.statusResetAt || incomingLoan.resetAt);
+    if (serverDecisionStamp && !incomingLoan.decidedAt && serverWeight > 0 && (!incomingResetStamp || incomingResetStamp <= serverDecisionStamp)) return serverLoan;
     if (incomingLoan.decidedAt && !serverLoan.decidedAt && incomingWeight > 0) return incomingLoan;
 
     const incomingStamp = getLoanDecisionStamp(incomingLoan);
     const serverStamp = getLoanDecisionStamp(serverLoan);
     if (serverStamp > incomingStamp) return serverLoan;
     if (incomingStamp > serverStamp) return incomingLoan;
+
+    const serverProgress = getLoanProgressRank(serverLoan);
+    const incomingProgress = getLoanProgressRank(incomingLoan);
+    if (serverProgress > incomingProgress) return serverLoan;
+    if (incomingProgress > serverProgress) return incomingLoan;
+
     if (serverWeight > incomingWeight) return serverLoan;
     return incomingLoan;
   });
@@ -183,6 +191,23 @@ function toTime(value) {
   if (!value) return 0;
   const time = new Date(value).getTime();
   return Number.isFinite(time) ? time : 0;
+}
+
+function getLoanProgressRank(loan) {
+  const tranches = Array.isArray(loan?.tranches) ? loan.tranches : [];
+  const trancheRank = tranches.reduce((sum, tranche, index) => {
+    const base = Number(tranche?.pct || 0) || (index === 0 ? 40 : 30);
+    const status = String(tranche?.status || '');
+    const proofStatus = String(tranche?.proofStatus || '');
+    if (status === 'completed' || proofStatus === 'valide') return sum + base * 4;
+    if (status === 'disbursed') return sum + base * 3;
+    if (proofStatus === 'en_attente') return sum + base * 2;
+    if (proofStatus === 'rejete') return sum + base;
+    return sum;
+  }, 0);
+  const disbursedRank = Number(loan?.disbursedPct || 0) * 3;
+  const paidRank = Number(loan?.repaidAmount || 0) > 0 ? 1000 : 0;
+  return trancheRank + disbursedRank + paidRank;
 }
 
 export function checkRateLimit(buckets, ip, isAuthEndpoint = false, windowMs = 60000, maxRequests = 120, authMax = 10) {

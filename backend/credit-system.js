@@ -10,7 +10,8 @@ const PROGRESSIVE_RATES = [
 
 const GUARANTEE_FUND_RATE = 0.02; // 2% of each transaction goes to guarantee fund
 const SOLIDARITY_GROUP_SIZE = 5;
-const MAX_LOAN_DURATION_MONTHS = 12;
+const LOAN_CLOSED_STATUSES = new Set(['Refusé', 'Remboursé', 'Annulé', 'repaid', 'rejected', 'cancelled']);
+const LOAN_BLOCKING_STATUSES = new Set(['En attente', 'Approuvé', 'En cours', 'Retard', 'Défaut', 'active', 'pending', 'approved', 'overdue', 'defaulted']);
 
 export function calculateDeductionRate(monthlyRevenue) {
   for (const bracket of PROGRESSIVE_RATES) {
@@ -36,13 +37,42 @@ export function processPayment(amount, seller, store) {
     guaranteeFund,
     rate,
     loanId: loan.id,
-    remainingBalance: loan.remainingBalance - deducted,
+    remainingBalance: Math.max(0, Number(loan.remainingBalance || loan.amount || 0) - deducted),
   };
 }
 
 export function getActiveLoan(userId, store) {
   const loans = store.loans || [];
-  return loans.find(l => l.userId === userId && l.status === 'active' && l.remainingBalance > 0);
+  return loans.find(l => {
+    const ownerId = l.userId || l.farmerId;
+    if (ownerId !== userId) return false;
+    if (LOAN_CLOSED_STATUSES.has(l.status)) return false;
+    if (!LOAN_BLOCKING_STATUSES.has(l.status)) return false;
+    if (l.status === 'En attente' || l.status === 'pending') return false;
+    const total = Number(l.amount || 0);
+    const repaid = Number(l.repaidAmount || 0);
+    const remaining = Number.isFinite(Number(l.remainingBalance))
+      ? Number(l.remainingBalance)
+      : Math.max(0, total - repaid);
+    return remaining > 0;
+  });
+}
+
+export function getBlockingLoan(userId, store) {
+  const loans = store.loans || [];
+  return loans.find(l => {
+    const ownerId = l.userId || l.farmerId;
+    if (ownerId !== userId) return false;
+    if (LOAN_CLOSED_STATUSES.has(l.status)) return false;
+    if (!LOAN_BLOCKING_STATUSES.has(l.status)) return false;
+    if (l.status === 'En attente' || l.status === 'pending') return true;
+    const total = Number(l.amount || 0);
+    const repaid = Number(l.repaidAmount || 0);
+    const remaining = Number.isFinite(Number(l.remainingBalance))
+      ? Number(l.remainingBalance)
+      : Math.max(0, total - repaid);
+    return remaining > 0;
+  });
 }
 
 export function getMonthlyRevenue(userId, store) {
@@ -55,15 +85,21 @@ export function getMonthlyRevenue(userId, store) {
 }
 
 export function createLoan(userId, amount, store) {
+  const now = new Date().toISOString();
   const id = `loan_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const loan = {
     id,
     userId,
+    farmerId: userId,
     amount,
     remainingBalance: amount,
-    status: 'active',
+    repaidAmount: 0,
+    status: 'En cours',
+    disbursedPct: 40,
+    tranches: buildLoanTranches(now),
     deductions: [],
-    createdAt: new Date().toISOString(),
+    createdAt: now,
+    statusUpdatedAt: now,
     estimatedRepaymentMonths: null,
   };
 
@@ -75,20 +111,31 @@ export function createLoan(userId, amount, store) {
   return loan;
 }
 
+function buildLoanTranches(now) {
+  return [
+    { id: 1, pct: 40, status: 'disbursed', label: 'Achat intrants', proofStatus: '', proofSubmittedAt: '', disbursedAt: now },
+    { id: 2, pct: 30, status: 'locked', label: 'Exploitation', proofStatus: '', proofSubmittedAt: '' },
+    { id: 3, pct: 30, status: 'locked', label: 'Récolte et livraison', proofStatus: '', proofSubmittedAt: '' },
+  ];
+}
+
 export function applyDeduction(loanId, amount, paymentId, store) {
   const loan = (store.loans || []).find(l => l.id === loanId);
   if (!loan) return null;
 
   loan.remainingBalance = Math.max(0, loan.remainingBalance - amount);
+  loan.repaidAmount = Math.max(Number(loan.repaidAmount || 0), Number(loan.amount || 0) - loan.remainingBalance);
+  if (!Array.isArray(loan.deductions)) loan.deductions = [];
   loan.deductions.push({
     amount,
     paymentId,
     date: new Date().toISOString(),
     remainingAfter: loan.remainingBalance,
   });
+  loan.statusUpdatedAt = new Date().toISOString();
 
   if (loan.remainingBalance <= 0) {
-    loan.status = 'repaid';
+    loan.status = 'Remboursé';
     loan.repaidAt = new Date().toISOString();
   }
 
@@ -146,17 +193,17 @@ export function getLoanSummary(userId, store) {
     currentRate: rate,
     monthlyRevenue,
     estimatedMonthsRemaining: monthsRemaining,
-    totalDeducted: loan.deductions.reduce((s, d) => s + d.amount, 0),
-    deductionCount: loan.deductions.length,
+    totalDeducted: (loan.deductions || []).reduce((s, d) => s + d.amount, 0),
+    deductionCount: (loan.deductions || []).length,
     group: getSolidarityGroup(userId, store),
   };
 }
 
 export function getCreditSystemStats(store) {
   const loans = store.loans || [];
-  const active = loans.filter(l => l.status === 'active');
-  const repaid = loans.filter(l => l.status === 'repaid');
-  const defaulted = loans.filter(l => l.status === 'defaulted');
+  const active = loans.filter(l => ['active', 'Approuvé', 'En cours'].includes(l.status));
+  const repaid = loans.filter(l => ['repaid', 'Remboursé'].includes(l.status));
+  const defaulted = loans.filter(l => ['defaulted', 'Défaut'].includes(l.status));
   const fund = store.guaranteeFund || { balance: 0 };
 
   return {

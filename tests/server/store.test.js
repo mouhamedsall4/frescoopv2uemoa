@@ -177,9 +177,42 @@ describe('server merge helpers', () => {
 
   it('allows a newer reset to pending to survive a stale refused server copy', () => {
     const result = mergeLoansByDecision(
-      [{ id: 'loan-1', status: 'En attente', statusUpdatedAt: '2026-05-20T12:00:00.000Z' }],
+      [{ id: 'loan-1', status: 'En attente', statusUpdatedAt: '2026-05-20T12:00:00.000Z', statusResetAt: '2026-05-20T12:00:00.000Z' }],
       [{ id: 'loan-1', status: 'Refusé', decidedAt: '2026-05-20T10:00:00.000Z' }],
     );
     expect(result[0].status).toBe('En attente');
+  });
+
+  it('does not let a stale pending loan overwrite a refused decision', () => {
+    const result = mergeLoansByDecision(
+      [{ id: 'loan-1', status: 'En attente', statusUpdatedAt: '2026-05-20T12:00:00.000Z' }],
+      [{ id: 'loan-1', status: 'Refusé', decidedAt: '2026-05-20T10:00:00.000Z' }],
+    );
+    expect(result[0].status).toBe('Refusé');
+  });
+
+  it('keeps the loan copy with the most advanced tranche state on timestamp ties', () => {
+    const result = mergeLoansByDecision(
+      [{
+        id: 'loan-1',
+        status: 'Approuvé',
+        statusUpdatedAt: '2026-05-20T12:00:00.000Z',
+        tranches: [
+          { id: 1, pct: 40, status: 'disbursed', proofStatus: 'en_attente' },
+          { id: 2, pct: 30, status: 'locked' },
+        ],
+      }],
+      [{
+        id: 'loan-1',
+        status: 'Approuvé',
+        statusUpdatedAt: '2026-05-20T12:00:00.000Z',
+        tranches: [
+          { id: 1, pct: 40, status: 'completed', proofStatus: 'valide' },
+          { id: 2, pct: 30, status: 'disbursed' },
+        ],
+      }],
+    );
+    expect(result[0].tranches[0].status).toBe('completed');
+    expect(result[0].tranches[1].status).toBe('disbursed');
   });
 });
