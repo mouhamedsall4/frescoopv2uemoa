@@ -6832,6 +6832,17 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
     }
     actions.setAuditLogs((items) => [createAuditLog(currentUser, 'loan_decision', `${decision} prêt ${formatMoney(loan.amount)} pour ${loan.farmerName}${decision === 'Approuvé' ? ` [${contractCode}]` : ''}`, loan.id), ...items]);
     notify(`Demande ${decision.toLowerCase()}`);
+    setTimeout(() => {
+      try {
+        const payload = window.localStorage.getItem(STORAGE_KEY);
+        if (payload) {
+          const authHeaders = { 'Content-Type': 'application/json' };
+          const savedToken = sessionStorage.getItem('frescoop.auth.token');
+          if (savedToken) authHeaders['Authorization'] = `Bearer ${savedToken}`;
+          fetch(API_BASE + '/api/store?force=true', { method: 'PUT', headers: authHeaders, body: payload });
+        }
+      } catch {}
+    }, 100);
   }
 
   function updateLoanStatus(loan, newStatus) {
