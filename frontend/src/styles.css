@@ -3094,20 +3094,22 @@ button:disabled {
 }
 
 .file-input.compact {
-  display: inline-flex;
+  display: inline-block;
   grid-template-columns: none;
-  gap: 0;
   min-height: auto;
   margin-bottom: 0;
   padding: 0;
   border: none;
   background: transparent;
+  overflow: visible;
+  cursor: pointer;
 }
 
 .file-input.compact .btn {
   font-size: 0.8rem;
-  padding: 0.35rem 0.7rem;
-  gap: 4px;
+  padding: 0.4rem 0.75rem;
+  gap: 5px;
+  pointer-events: none;
 }
 
 .check-grid {
