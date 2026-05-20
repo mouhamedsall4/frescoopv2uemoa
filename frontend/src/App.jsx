@@ -6336,12 +6336,17 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
 
   function decideLoan(loan, decision) {
     const currentLoan = (store.loans || []).find((item) => item.id === loan.id);
-    if (!currentLoan || currentLoan.status !== 'En attente') {
+    if (!currentLoan) { notify('Prêt introuvable.', 'error'); return; }
+    if (currentLoan.status !== 'En attente' && currentLoan.status !== 'Refusé') {
       notify('Cette demande a déjà été traitée.', 'info');
       return;
     }
+    const actionLabel = decision === 'Approuvé' ? 'approuver' : 'refuser';
+    if (!window.confirm(`Êtes-vous sûr de vouloir ${actionLabel} ce prêt de ${formatMoney(loan.amount)} ?`)) return;
     const now = new Date().toISOString();
-    const contractCode = `PRET-${Date.now().toString(36).slice(-4).toUpperCase()}-${currentUser.name.split(' ')[0]?.slice(0, 4).toUpperCase() || 'FIN'}`;
+    const contractCode = decision === 'Approuvé'
+      ? (currentLoan.contractCode || `PRET-${Date.now().toString(36).slice(-4).toUpperCase()}-${currentUser.name.split(' ')[0]?.slice(0, 4).toUpperCase() || 'FIN'}`)
+      : '';
     const updatedTranches = decision === 'Approuvé'
       ? (currentLoan.tranches || []).map((t, i) => i === 0 ? { ...t, status: 'disbursed', disbursedAt: now } : t)
       : currentLoan.tranches || [];
@@ -6352,15 +6357,15 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
       decidedAt: now,
       tranches: updatedTranches,
       disbursedPct: decision === 'Approuvé' ? 40 : 0,
-      contractCode: decision === 'Approuvé' ? contractCode : '',
+      contractCode,
     } : item));
     const farmer = store.users.find((user) => user.id === loan.farmerId);
     if (farmer) {
       const body = decision === 'Approuvé'
         ? `Votre prêt de ${formatMoney(loan.amount)} a été approuvé. Tranche 1 (${formatMoney(Math.round(loan.amount * 0.4))}) débloquée. Contrat: ${contractCode}`
-        : `Votre demande de ${formatMoney(loan.amount)} a été refusée.`;
+        : `Votre demande de prêt de ${formatMoney(loan.amount)} a été refusée.`;
       actions.setNotifications((items) => [
-        createAppNotification({ actor: currentUser, body, path: '/bancabilite', recipientId: farmer.id, title: `Prêt ${decision}`, type: 'loan-decision' }),
+        createAppNotification({ actor: currentUser, body, path: '/bancabilite', recipientId: farmer.id, title: decision === 'Approuvé' ? 'Prêt approuvé' : 'Prêt refusé', type: 'loan-decision' }),
         ...items,
       ]);
     }
@@ -6639,10 +6644,10 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                       ))}
                     </div>
                   )}
-                  {isFinancePartner && loan.status === 'En attente' && (
+                  {isFinancePartner && (loan.status === 'En attente' || loan.status === 'Refusé') && (
                     <div className="button-row">
                       <Button onClick={() => decideLoan(loan, 'Approuvé')}><CheckCircle2 size={16} /> Approuver</Button>
-                      <Button variant="secondary" onClick={() => decideLoan(loan, 'Refusé')}><X size={16} /> Refuser</Button>
+                      {loan.status !== 'Refusé' && <Button variant="secondary" onClick={() => decideLoan(loan, 'Refusé')}><X size={16} /> Refuser</Button>}
                       <Button variant="secondary" onClick={() => farmer && exportDossier(farmer)}><Download size={16} /> Dossier</Button>
                     </div>
                   )}
