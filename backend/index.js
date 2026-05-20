@@ -174,10 +174,10 @@ const mobileDemoPasswordHash = getMobileDemoPasswordHash();
 const seededAdmins = buildSeededAdmins();
 const seededDemoUser = buildSeededDemoUser();
 
-const paydunyaMode = (process.env.PAYDUNYA_MODE || 'test').toLowerCase();
-const paydunyaApiBase = paydunyaMode === 'live'
-  ? 'https://app.paydunya.com/api/v1'
-  : 'https://app.paydunya.com/sandbox-api/v1';
+const gimpayMode = (process.env.GIMPAY_MODE || 'test').toLowerCase();
+const gimpayApiBase = gimpayMode === 'live'
+  ? 'https://api.gim-uemoa.org/gimpay/v1'
+  : 'https://sandbox.gim-uemoa.org/gimpay/v1';
 
 const emptyStore = {
   users: [...seededAdmins, seededDemoUser],
@@ -213,6 +213,8 @@ const emptyStore = {
   loans: [],
   loanRepayments: [],
   surveyLeads: [],
+  ratings: [],
+  cashbackRecords: [],
 };
 
 const mimeTypes = {
@@ -283,7 +285,7 @@ createServer(async (request, response) => {
       return;
     }
 
-    if (request.url?.startsWith('/api/paydunya/')) {
+    if (request.url?.startsWith('/api/gimpay/')) {
       await handlePaydunya(request, response);
       return;
     }
@@ -355,7 +357,7 @@ createServer(async (request, response) => {
 }).listen(port, host, () => {
   const displayHost = host === '0.0.0.0' ? 'localhost' : host;
   console.log(`FresCoop API listening on http://${displayHost}:${port}`);
-  console.log(`PayDunya mode: ${paydunyaMode} (${paydunyaApiBase})`);
+  console.log(`GIM-Pay mode: ${gimpayMode} (${gimpayApiBase})`);
 });
 
 // ============================================================================
@@ -971,24 +973,24 @@ async function handleUpload(request, response) {
 
 async function handlePaydunya(request, response) {
   const url = new URL(request.url || '/', `http://${request.headers.host}`);
-  const endpoint = url.pathname.replace('/api/paydunya/', '');
+  const endpoint = url.pathname.replace('/api/gimpay/', '');
 
-  if (!process.env.PAYDUNYA_MASTER_KEY) {
-    sendJson(response, 500, { error: 'PayDunya credentials not configured' });
+  if (!process.env.GIMPAY_API_KEY) {
+    sendJson(response, 500, { error: 'GIM-Pay credentials not configured' });
     return;
   }
 
   const headers = {
     'Content-Type': 'application/json',
-    'PAYDUNYA-MASTER-KEY': process.env.PAYDUNYA_MASTER_KEY,
-    'PAYDUNYA-PRIVATE-KEY': process.env.PAYDUNYA_PRIVATE_KEY,
-    'PAYDUNYA-TOKEN': process.env.PAYDUNYA_TOKEN,
+    'X-GIMPAY-API-KEY': process.env.GIMPAY_API_KEY,
+    'X-GIMPAY-SECRET': process.env.GIMPAY_SECRET,
+    'X-GIMPAY-MERCHANT': process.env.GIMPAY_MERCHANT_ID,
   };
 
   if (endpoint === 'create-invoice' && request.method === 'POST') {
     const body = await readBody(request);
     const data = JSON.parse(body || '{}');
-    const storeName = process.env.PAYDUNYA_STORE_NAME || 'FresCoop';
+    const storeName = process.env.GIMPAY_STORE_NAME || 'FresCoop';
     const origin = `${request.headers['x-forwarded-proto'] || 'http'}://${request.headers.host}`;
 
     const payload = {
@@ -1009,14 +1011,14 @@ async function handlePaydunya(request, response) {
         receipt_code: data.receiptCode || '',
       },
       actions: {
-        callback_url: `${origin}/api/paydunya/ipn`,
+        callback_url: `${origin}/api/gimpay/ipn`,
         return_url: `${origin}/paiement?status=success&token=__TOKEN__`,
         cancel_url: `${origin}/paiement?status=cancel`,
       },
     };
 
     try {
-      const pdRes = await fetch(`${paydunyaApiBase}/checkout-invoice/create`, {
+      const pdRes = await fetch(`${gimpayApiBase}/checkout-invoice/create`, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
@@ -1027,12 +1029,12 @@ async function handlePaydunya(request, response) {
           ok: true,
           token: result.token,
           url: result.response_text,
-          mode: paydunyaMode,
+          mode: gimpayMode,
         });
       } else {
         sendJson(response, 400, {
           ok: false,
-          error: result?.response_text || 'Échec création facture PayDunya',
+          error: result?.response_text || 'Échec création facture GIM-Pay',
           raw: result,
         });
       }
@@ -1049,7 +1051,7 @@ async function handlePaydunya(request, response) {
       return;
     }
     try {
-      const pdRes = await fetch(`${paydunyaApiBase}/checkout-invoice/confirm/${encodeURIComponent(token)}`, {
+      const pdRes = await fetch(`${gimpayApiBase}/checkout-invoice/confirm/${encodeURIComponent(token)}`, {
         method: 'GET',
         headers,
       });
@@ -1075,30 +1077,30 @@ async function handlePaydunya(request, response) {
     const body = await readBody(request);
     let ipnData;
     try { ipnData = JSON.parse(body || '{}'); } catch { ipnData = {}; }
-    console.log('[PayDunya IPN]', JSON.stringify(ipnData).slice(0, 500));
-    // Verify IPN by checking the payment status with PayDunya API
+    console.log('[GIM-Pay IPN]', JSON.stringify(ipnData).slice(0, 500));
+    // Verify IPN by checking the payment status with GIM-Pay API
     const ipnToken = ipnData?.data?.hash || ipnData?.token || '';
-    if (ipnToken && process.env.PAYDUNYA_MASTER_KEY) {
+    if (ipnToken && process.env.GIMPAY_API_KEY) {
       try {
-        const verifyRes = await fetch(`${paydunyaApiBase}/checkout-invoice/confirm/${encodeURIComponent(ipnToken)}`, {
+        const verifyRes = await fetch(`${gimpayApiBase}/checkout-invoice/confirm/${encodeURIComponent(ipnToken)}`, {
           method: 'GET',
           headers,
         });
         const verifyResult = await verifyRes.json();
         if (verifyResult?.status === 'completed') {
-          console.log('[PayDunya IPN] Paiement vérifié:', ipnToken);
+          console.log('[GIM-Pay IPN] Paiement vérifié:', ipnToken);
         } else {
-          console.warn('[PayDunya IPN] Statut non confirmé:', verifyResult?.status);
+          console.warn('[GIM-Pay IPN] Statut non confirmé:', verifyResult?.status);
         }
       } catch (err) {
-        console.error('[PayDunya IPN] Erreur vérification:', err.message);
+        console.error('[GIM-Pay IPN] Erreur vérification:', err.message);
       }
     }
     sendJson(response, 200, { ok: true });
     return;
   }
 
-  sendJson(response, 404, { error: 'Endpoint PayDunya inconnu' });
+  sendJson(response, 404, { error: 'Endpoint GIM-Pay inconnu' });
 }
 
 async function handleYaayChat(request, response) {
@@ -1174,7 +1176,7 @@ async function handleYaayChat(request, response) {
           {
             role: 'assistant',
             content:
-              'Yaad ŋ pendol ! Da "Bancabilité" ole score ma (0-100) mi leng ole vente ma ak paiement ma PayDunya. Score haat pe 70 → dossier ma eligible le BNDE ole SFD partenaire.',
+              'Yaad ŋ pendol ! Da "Bancabilité" ole score ma (0-100) mi leng ole vente ma ak paiement ma GIM-Pay. Score haat pe 70 → dossier ma eligible le BNDE ole SFD partenaire.',
           },
         ]
       : [];
@@ -1310,7 +1312,7 @@ function generateSerereAnswer(message, context) {
   // Salutations (sérère authentique)
   if (has(['nafio', 'nafiyo', 'mbaa kaa', 'asalam', 'bonjour', 'bonsoir', 'salut'])) {
     const name = context.userName ? context.userName.split(' ')[0] : '';
-    return `Nafio ${name} 🌱\n\nMi tedd FresCoop AI. Da mbaane wallu la :\n\n• Njeg kirim (prix du marché)\n• Felax njeg (vendre)\n• Haat (crédit bancaire)\n• Anti-gaspi\n• Suivi lot\n• Pay PayDunya\n\nPendol ma — pose ta question en sérère ou français, je réponds selon ce que je sais en sérère.`;
+    return `Nafio ${name} 🌱\n\nMi tedd FresCoop AI. Da mbaane wallu la :\n\n• Njeg kirim (prix du marché)\n• Felax njeg (vendre)\n• Haat (crédit bancaire)\n• Anti-gaspi\n• Suivi lot\n• Pay GIM-Pay\n\nPendol ma — pose ta question en sérère ou français, je réponds selon ce que je sais en sérère.`;
   }
 
   // Qui es-tu
@@ -1331,12 +1333,12 @@ function generateSerereAnswer(message, context) {
 
   // Vendre / publier produit
   if (has(['felax', 'fandu', 'vendre', 'publier', 'poster', 'njeeygol', 'mettre en vente'])) {
-    return `💡 Le mbaane felax kirim ma (comment vendre tes produits) :\n\n1. Inscription : crée un compte "Agriculteur"\n2. Onglet Produits → bouton + (plus) → photos, prix, quantité, zone\n3. Da Marché ole acheteurs (B2B + clients) a ŋ see ma kirim (les acheteurs verront ton produit)\n4. Order → pay PayDunya (Wave, Orange Money, Free Money, carte)\n5. Agent terrain organise la livraison\n\nChaque vente renforce ma score de bancabilité (0-100) pour demander un crédit.`;
+    return `💡 Le mbaane felax kirim ma (comment vendre tes produits) :\n\n1. Inscription : crée un compte "Agriculteur"\n2. Onglet Produits → bouton + (plus) → photos, prix, quantité, zone\n3. Da Marché ole acheteurs (B2B + clients) a ŋ see ma kirim (les acheteurs verront ton produit)\n4. Order → pay GIM-Pay (Wave, Orange Money, Free Money, carte)\n5. Agent terrain organise la livraison\n\nChaque vente renforce ma score de bancabilité (0-100) pour demander un crédit.`;
   }
 
   // Crédit / bancabilité
   if (has(['haat', 'credit', 'banq', 'bnde', 'microcred', 'bancabilite', 'pret', 'emprunt'])) {
-    return `🏦 Haat ana (crédit bancaire) — FresCoop calcule ton score 0-100 :\n\n• Volume de ventes : 30 points\n• Régularité des preuves PayDunya : 25 points\n• Diversification catégories : 20 points\n• Attestations validées : 25 points\n\nScore ≥ 70 = dossier éligible chez BNDE, Microcred walla SFD partenaire. Exportable en PDF depuis l'onglet Bancabilité.\n\nPe felax lu bari e FresCoop, score ma a ŋ baax (plus tu vends, plus ton score grimpe).`;
+    return `🏦 Haat ana (crédit bancaire) — FresCoop calcule ton score 0-100 :\n\n• Volume de ventes : 30 points\n• Régularité des preuves GIM-Pay : 25 points\n• Diversification catégories : 20 points\n• Attestations validées : 25 points\n\nScore ≥ 70 = dossier éligible chez BNDE, Microcred walla SFD partenaire. Exportable en PDF depuis l'onglet Bancabilité.\n\nPe felax lu bari e FresCoop, score ma a ŋ baax (plus tu vends, plus ton score grimpe).`;
   }
 
   // Anti-gaspi
@@ -1358,7 +1360,7 @@ function generateSerereAnswer(message, context) {
 
   // Paiement
   if (has(['pay', 'paiement', 'wave', 'orange money', 'paydunya', 'regler', 'facture', 'recu'])) {
-    return `💳 Paiement sécurisé via PayDunya :\n\n• Wave\n• Orange Money\n• Free Money\n• Cartes Visa / Mastercard\n• Virement bancaire\n• Paiement à la livraison\n\nL'argent ne transite pas par FresCoop — il va directement du client au producteur. Commission transparente 2%. Reçu automatique dans "Mon espace → Paiement".`;
+    return `💳 Paiement sécurisé via GIM-Pay :\n\n• Wave\n• Orange Money\n• Free Money\n• Cartes Visa / Mastercard\n• Virement bancaire\n• Paiement à la livraison\n\nL'argent ne transite pas par FresCoop — il va directement du client au producteur. Commission transparente 2%. Reçu automatique dans "Mon espace → Paiement".`;
   }
 
   // Attestations
@@ -1382,7 +1384,7 @@ function generateSerereAnswer(message, context) {
   // Commandes
   if (has(['order', 'commande', 'acheter', 'achat', 'panier', 'livraison', 'statut'])) {
     const n = stats.orders || 0;
-    return `🛒 Commandes FresCoop — ${n} au total\n\nCycle d'une commande :\n\n1. Client ajoute au panier depuis le Marché\n2. Validation → commande partagée avec producteur + agent terrain\n3. Paiement sécurisé PayDunya\n4. Statuts : Paiement confirmé → Préparation → Prête → En livraison → Livrée\n5. Reçu PDF automatique\n\nChaque statut déclenche une notification à l'acheteur, au vendeur et à l'agent terrain concerné.`;
+    return `🛒 Commandes FresCoop — ${n} au total\n\nCycle d'une commande :\n\n1. Client ajoute au panier depuis le Marché\n2. Validation → commande partagée avec producteur + agent terrain\n3. Paiement sécurisé GIM-Pay\n4. Statuts : Paiement confirmé → Préparation → Prête → En livraison → Livrée\n5. Reçu PDF automatique\n\nChaque statut déclenche une notification à l'acheteur, au vendeur et à l'agent terrain concerné.`;
   }
 
   // Aide / support / contact
@@ -1396,7 +1398,7 @@ function generateSerereAnswer(message, context) {
   }
 
   // Fallback honnête : mélange formules sérère + réponse français
-  return `Mi yenoh a yaad (je comprends ta question). Le mbaane wallu la e sérère exactement pour ce sujet, donc je te réponds en français pour être utile :\n\nJe suis spécialisé sur FresCoop : njeg (prix), felax (vendre), haat (crédit), anti-gaspi, suivi des lots, paiement PayDunya, attestations, USSD *384*FRES#.\n\nPendol ma (pose-moi une question) plus précise sur un de ces sujets, ou change de langue (français, wolof, pulaar) avec les boutons en haut si tu préfères.`;
+  return `Mi yenoh a yaad (je comprends ta question). Le mbaane wallu la e sérère exactement pour ce sujet, donc je te réponds en français pour être utile :\n\nJe suis spécialisé sur FresCoop : njeg (prix), felax (vendre), haat (crédit), anti-gaspi, suivi des lots, paiement GIM-Pay, attestations, USSD *384*FRES#.\n\nPendol ma (pose-moi une question) plus précise sur un de ces sujets, ou change de langue (français, wolof, pulaar) avec les boutons en haut si tu préfères.`;
 }
 
 function buildSystemPrompt(langLabel, context, langCode) {
@@ -1442,7 +1444,7 @@ TES DOMAINES D'EXPERTISE (tu réponds en DÉTAIL et avec SUBSTANCE) :
 - **Intelligence marché FresCoop** : prix, recommandation d'acheteurs, anti-gaspi (alertes DLC, ventes éclair -15/-25/-40%)
 - **Bancabilité** : score 0-100, dossier crédit, BNDE, Microcred, SFD, preuve économique portable, historique de ventes
 - **Traçabilité** : QR codes, photos qualité, température, lots, chaîne de garde
-- **Paiement** : paiement partenaire interopérable, PayDunya, Wave, Orange Money, Free Money, cartes, virements, mobile money
+- **Paiement** : paiement partenaire interopérable, GIM-Pay, Wave, Orange Money, Free Money, cartes, virements, mobile money
 - **USSD** : *384*FRES# pour téléphones 2G sans Internet
 - **Attestations** : document officiel avec QR et signature, exportable PDF pour les banques
 - **ODD** : 1 pauvreté, 5 genre, 8 travail décent, 12 anti-gaspi

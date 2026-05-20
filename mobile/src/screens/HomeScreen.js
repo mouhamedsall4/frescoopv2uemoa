@@ -29,6 +29,7 @@ function buildBancabiliteScore(user, store) {
     { label: 'Preuves vérifiées', points: Math.min(5, verifiedProofs.length * 2), max: 5, icon: 'camera' },
     { label: 'Diversité produits', points: Math.min(5, new Set(products.map(p => p.category)).size * 2), max: 5, icon: 'grid' },
     { label: 'Zéro litige', points: payments.filter(p => p.status === 'Litige').length === 0 ? 5 : 0, max: 5, icon: 'happy' },
+    { label: 'Avis clients', points: (() => { const r = (store?.ratings || []).filter(rt => rt.sellerId === user.id); if (r.length === 0) return 0; const avg = r.reduce((s, rt) => s + rt.rating, 0) / r.length; return avg >= 4.5 ? 8 : avg >= 4 ? 6 : avg >= 3 ? 3 : 0; })(), max: 8, icon: 'star' },
   ];
 
   const score = Math.min(100, criteria.reduce((sum, c) => sum + c.points, 0));

@@ -6,12 +6,21 @@ const notifIcons = {
   order: { name: 'receipt', color: '#1d4ed8', bg: '#dbeafe' },
   payment: { name: 'wallet', color: '#16a34a', bg: '#dcfce7' },
   score: { name: 'trending-up', color: '#7c3aed', bg: '#f3e8ff' },
+  'loan-decision': { name: 'cash', color: '#0891b2', bg: '#cffafe' },
+  'loan-tranche-unlocked': { name: 'lock-open', color: '#16a34a', bg: '#dcfce7' },
+  'loan-tranche-rejected': { name: 'close-circle', color: '#dc2626', bg: '#fee2e2' },
+  'loan-request': { name: 'document-text', color: '#d97706', bg: '#fef3c7' },
+  'loan-status-update': { name: 'sync', color: '#2563eb', bg: '#dbeafe' },
   system: { name: 'information-circle', color: '#6b7280', bg: '#f3f4f6' },
 };
 
 export default function NotificationsScreen({ user, store }) {
   const notifications = (store?.notifications || [])
-    .filter(n => n.userId === user.id)
+    .filter(n =>
+      n.recipientId === user.id
+      || (n.recipientRole && n.recipientRole === user.role)
+      || (Array.isArray(n.recipientRoles) && n.recipientRoles.includes(user.role))
+    )
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   function formatTime(iso) {

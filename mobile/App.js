@@ -561,6 +561,14 @@ export default function App() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      fetchStore();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [user, fetchStore]);
+
   const handleLogin = useCallback(async (loggedUser) => {
     setUser(loggedUser);
     cacheUser(loggedUser);

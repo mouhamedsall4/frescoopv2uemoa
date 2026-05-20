@@ -46,7 +46,13 @@ export default function OrdersScreen({ user, store, onRefresh }) {
   function formatDate(iso) {
     if (!iso) return '';
     const d = new Date(iso);
-    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function formatTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   }
 
   function renderOrder({ item }) {
@@ -88,7 +94,12 @@ export default function OrdersScreen({ user, store, onRefresh }) {
         </View>
 
         <View style={styles.cardFooter}>
-          <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+          <View>
+            <Text style={styles.date}>{formatDate(item.createdAt)} à {formatTime(item.createdAt)}</Text>
+            {item.updatedAt && item.updatedAt !== item.createdAt && (
+              <Text style={styles.dateUpdate}>Maj: {formatDate(item.updatedAt)} {formatTime(item.updatedAt)}</Text>
+            )}
+          </View>
           <Text style={styles.amount}>{total.toLocaleString()} FCFA</Text>
         </View>
       </View>
@@ -113,6 +124,10 @@ export default function OrdersScreen({ user, store, onRefresh }) {
         keyExtractor={(item) => item.id}
         renderItem={renderOrder}
         contentContainerStyle={styles.list}
+        initialNumToRender={10}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={true}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.green700]} />}
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -150,6 +165,7 @@ const styles = StyleSheet.create({
   itemText: { fontSize: 12, color: colors.gray500, lineHeight: 18 },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.gray100 },
   date: { fontSize: 12, color: colors.gray400, fontWeight: '600' },
+  dateUpdate: { fontSize: 10, color: colors.gray300, marginTop: 2 },
   amount: { fontSize: 16, fontWeight: '900', color: colors.green800 },
   empty: { alignItems: 'center', paddingVertical: 80, gap: spacing.md },
   emptyTitle: { fontSize: 17, fontWeight: '800', color: colors.gray800 },

@@ -742,12 +742,12 @@ function VerifyReceiptPage({ navigate, route, store }) {
               <div><em>Code de reçu</em><b>{payment.receiptCode}</b></div>
               <div><em>Date du paiement</em><b>{formatDate(payment.createdAt)}</b></div>
               <div><em>Statut</em><b className="status-valid">✓ {payment.status || 'Payé'}</b></div>
-              <div><em>Mode de paiement</em><b>{payment.partner || 'PayDunya'}</b></div>
+              <div><em>Mode de paiement</em><b>{payment.partner || 'GIM-Pay'}</b></div>
               {product && <div><em>Produit</em><b>{product.name}</b></div>}
               {linkedOrder && <div><em>Quantité</em><b>{formatNumber(linkedOrder.quantity)} {linkedOrder.unit || product?.unit || 'kg'}</b></div>}
               {payer && <div><em>Client</em><b>{payer.name}</b></div>}
               {seller && <div><em>Vendeur</em><b>{seller.name}</b></div>}
-              {payment.paydunyaToken && <div><em>Référence PayDunya</em><b className="ref-token">{payment.paydunyaToken}</b></div>}
+              {payment.gimpayToken && <div><em>Référence GIM-Pay</em><b className="ref-token">{payment.gimpayToken}</b></div>}
             </div>
 
             <div className="verify-seal">
@@ -1050,7 +1050,7 @@ function PublicPageComment({ navigate }) {
     "Inscription et vérification d'identité (CNI)",
     'Publication de vos produits sur le marché',
     "Réception de commandes d'acheteurs",
-    'Paiement confirmé via PayDunya',
+    'Paiement confirmé via GIM-Pay',
     'Score de bancabilité qui monte',
     'Dossier de crédit exportable',
     'Présentation à une banque ou SFD',
@@ -3788,7 +3788,7 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
         paymentStatus: 'En attente',
         assignedAgentId: assignedAgent?.id || '',
         agentWorkflow: {},
-        message: 'Commande FresCoop en attente de paiement. Règlement sécurisé via PayDunya requis avant préparation.',
+        message: 'Commande FresCoop en attente de paiement. Règlement sécurisé via GIM-Pay requis avant préparation.',
         productSnapshot: snapshotCartProduct(item.product),
       };
     });
@@ -3911,6 +3911,65 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
       });
     }
     notify('Commande mise à jour', 'success');
+  }
+
+  function rateOrder(orderId, rating, comment = '') {
+    const order = store.orders.find((item) => item.id === orderId);
+    if (!order || order.status !== 'Livree') return;
+    const existingRating = (store.ratings || []).find((r) => r.orderId === orderId && r.userId === currentUser.id);
+    if (existingRating) { notify('Vous avez déjà noté cette commande.', 'info'); return; }
+    const newRating = {
+      id: uid('rat'),
+      orderId,
+      userId: currentUser.id,
+      sellerId: order.sellerId,
+      rating: Math.min(5, Math.max(1, Number(rating))),
+      comment,
+      createdAt: new Date().toISOString(),
+    };
+    actions.setStore((s) => ({ ...s, ratings: [newRating, ...(s.ratings || [])] }));
+    const seller = store.users.find((u) => u.id === order.sellerId);
+    if (seller) {
+      const notif = createAppNotification({
+        actor: currentUser,
+        recipientId: seller.id,
+        title: `Nouvelle note : ${rating}/5`,
+        body: `${currentUser.name} vous a attribué ${rating} étoile${rating > 1 ? 's' : ''}${comment ? ' : "' + comment + '"' : ''}.`,
+        path: '/commandes',
+        relatedId: orderId,
+        type: 'rating',
+      });
+      actions.setNotifications((items) => [notif, ...items]);
+    }
+    const cashbackAmount = Math.round(Number(order.totalAmount || order.totalPrice || 0) * 0.02);
+    if (cashbackAmount > 0) {
+      const cashback = {
+        id: uid('cb'),
+        userId: currentUser.id,
+        orderId,
+        amount: cashbackAmount,
+        createdAt: new Date().toISOString(),
+        type: 'cashback',
+        status: 'credited',
+      };
+      actions.setStore((s) => ({ ...s, cashbackRecords: [cashback, ...(s.cashbackRecords || [])] }));
+      notify(`Merci pour votre avis ! ${cashbackAmount.toLocaleString()} FCFA de cashback crédités.`, 'success');
+    } else {
+      notify('Merci pour votre avis !', 'success');
+    }
+  }
+
+  function getSellerAverageRating(sellerId) {
+    const sellerRatings = (store.ratings || []).filter((r) => r.sellerId === sellerId);
+    if (sellerRatings.length === 0) return { average: 0, count: 0 };
+    const sum = sellerRatings.reduce((acc, r) => acc + r.rating, 0);
+    return { average: Math.round((sum / sellerRatings.length) * 10) / 10, count: sellerRatings.length };
+  }
+
+  function getUserCashbackBalance(userId) {
+    return (store.cashbackRecords || [])
+      .filter((r) => r.userId === userId && r.status === 'credited')
+      .reduce((sum, r) => sum + (r.amount || 0), 0);
   }
 
   async function markAgentStep(orderId, step) {
@@ -4277,7 +4336,7 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
   const [receipt, setReceipt] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [pendingToken, setPendingToken] = useState(() => {
-    try { return sessionStorage.getItem('frescoop.paydunya.token') || ''; } catch { return ''; }
+    try { return sessionStorage.getItem('frescoop.gimpay.token') || ''; } catch { return ''; }
   });
   const orderIds = useMemo(() => new URLSearchParams(route.search || '').get('orders')?.split(',').filter(Boolean) || [], [route.search]);
   const queryStatus = useMemo(() => new URLSearchParams(route.search || '').get('status') || '', [route.search]);
@@ -4289,16 +4348,16 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
   ));
   const total = payableOrders.reduce((sum, order) => sum + getOrderTotal(order, store), 0);
 
-  function finalizePayment(token, paydunyaData) {
+  function finalizePayment(token, gimpayData) {
     // Garde anti-rejouage: si un paymentRecord existe déjà avec ce token, on ne refait rien
-    const alreadyProcessed = (store.paymentRecords || []).some((record) => record.paydunyaToken === token);
+    const alreadyProcessed = (store.paymentRecords || []).some((record) => record.gimpayToken === token);
     if (alreadyProcessed) {
-      const existing = (store.paymentRecords || []).find((record) => record.paydunyaToken === token);
+      const existing = (store.paymentRecords || []).find((record) => record.gimpayToken === token);
       if (existing) {
-        const paidOrders = (store.orders || []).filter((order) => order.paydunyaToken === token);
-        setReceipt({ code: existing.receiptCode, orders: paidOrders, total: existing.amount, paidAt: existing.createdAt, token, paydunyaReceiptUrl: existing.paydunyaReceiptUrl || '' });
+        const paidOrders = (store.orders || []).filter((order) => order.gimpayToken === token);
+        setReceipt({ code: existing.receiptCode, orders: paidOrders, total: existing.amount, paidAt: existing.createdAt, token, gimpayReceiptUrl: existing.gimpayReceiptUrl || '' });
       }
-      try { sessionStorage.removeItem('frescoop.paydunya.token'); } catch {}
+      try { sessionStorage.removeItem('frescoop.gimpay.token'); } catch {}
       setPendingToken('');
       return;
     }
@@ -4311,7 +4370,7 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
     ));
     if (!eligibleOrders.length) {
       notify('Aucune commande éligible au paiement.', 'info');
-      try { sessionStorage.removeItem('frescoop.paydunya.token'); } catch {}
+      try { sessionStorage.removeItem('frescoop.gimpay.token'); } catch {}
       setPendingToken('');
       return;
     }
@@ -4408,14 +4467,14 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
         agentId: order.assignedAgentId || agent?.id || '',
         amount: getOrderTotal(order, store),
         status: 'Paye',
-        partner: `PayDunya (${paydunyaData?.mode || 'test'})`,
+        partner: `GIM-Pay (${gimpayData?.mode || 'test'})`,
         receiptCode,
-        paydunyaToken: token,
-        paydunyaReceiptUrl: paydunyaData?.receiptUrl || '',
+        gimpayToken: token,
+        gimpayReceiptUrl: gimpayData?.receiptUrl || '',
         loanDeductionAmount: loanDeduction?.amount || 0,
         loanDeductionPct: loanDeduction?.repaymentPct || 0,
         sellerNetAmount: getOrderTotal(order, store) - (loanDeduction?.amount || 0),
-        regulatoryNote: 'Paiement execute via PayDunya. FresCoop conserve la preuve de coordination.',
+        regulatoryNote: 'Paiement execute via GIM-Pay. FresCoop conserve la preuve de coordination.',
       };
     });
 
@@ -4425,7 +4484,7 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
       paymentStatus: 'Paye',
       paidAt: now,
       receiptCode,
-      paydunyaToken: token,
+      gimpayToken: token,
       assignedAgentId: order.assignedAgentId || getAvailableFieldAgent(store)?.id || '',
       updatedAt: now,
     } : order));
@@ -4464,12 +4523,12 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
         ownerId: order.sellerId,
         label: `Vente ${product?.name || 'produit'} (${formatNumber(order.quantity)} ${order.unit || product?.unit || 'kg'})`,
         amount: getOrderTotal(order, store),
-        paymentMethod: `PayDunya`,
+        paymentMethod: `GIM-Pay`,
         status: 'Paye',
         buyer: currentUser.name || 'Client',
         orderId: order.id,
         receiptCode,
-        paydunyaToken: token,
+        gimpayToken: token,
         loanDeductionAmount: repayment?.amount || 0,
         netAmount: getOrderTotal(order, store) - (repayment?.amount || 0),
       };
@@ -4479,10 +4538,10 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
     }
 
     actions.setNotifications((items) => [...notifications, ...items]);
-    actions.setAuditLogs((items) => [createAuditLog(currentUser, 'payment_paydunya_confirmed', `Paiement PayDunya confirmé: ${receiptCode} (token ${token})`, receiptCode), ...items]);
-    setReceipt({ code: receiptCode, orders: eligibleOrders, total: totalAmount, paidAt: now, token, paydunyaReceiptUrl: paydunyaData?.receiptUrl || '' });
+    actions.setAuditLogs((items) => [createAuditLog(currentUser, 'payment_gimpay_confirmed', `Paiement GIM-Pay confirmé: ${receiptCode} (token ${token})`, receiptCode), ...items]);
+    setReceipt({ code: receiptCode, orders: eligibleOrders, total: totalAmount, paidAt: now, token, gimpayReceiptUrl: gimpayData?.receiptUrl || '' });
     notify('Paiement confirmé. Reçu généré.', 'success');
-    try { sessionStorage.removeItem('frescoop.paydunya.token'); } catch {}
+    try { sessionStorage.removeItem('frescoop.gimpay.token'); } catch {}
     setPendingToken('');
   }
 
@@ -4490,17 +4549,17 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
     if (!token) return;
     setProcessing(true);
     try {
-      const res = await fetch(`${API_BASE}/api/paydunya/confirm/${encodeURIComponent(token)}`);
+      const res = await fetch(`${API_BASE}/api/gimpay/confirm/${encodeURIComponent(token)}`);
       const data = await res.json();
       if (data?.confirmed) {
         finalizePayment(token, data);
       } else {
         notify(`Paiement non confirmé (statut: ${data?.status || 'inconnu'}). Aucun reçu généré.`);
-        try { sessionStorage.removeItem('frescoop.paydunya.token'); } catch {}
+        try { sessionStorage.removeItem('frescoop.gimpay.token'); } catch {}
         setPendingToken('');
       }
     } catch (error) {
-      notify(`Erreur verification PayDunya: ${error.message}`);
+      notify(`Erreur verification GIM-Pay: ${error.message}`);
     } finally {
       setProcessing(false);
     }
@@ -4509,7 +4568,7 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
   useEffect(() => {
     if (queryStatus === 'cancel') {
       notify('Paiement annulé. Aucun reçu généré.');
-      try { sessionStorage.removeItem('frescoop.paydunya.token'); } catch {}
+      try { sessionStorage.removeItem('frescoop.gimpay.token'); } catch {}
       setPendingToken('');
       navigate(route.pathname);
       return;
@@ -4537,7 +4596,7 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
     setProcessing(true);
     try {
       const description = `Commande FresCoop - ${payableOrders.length} article(s)`;
-      const res = await fetch(API_BASE + '/api/paydunya/create-invoice', {
+      const res = await fetch(API_BASE + '/api/gimpay/create-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -4551,16 +4610,16 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
       });
       const data = await res.json();
       if (!data?.ok || !data?.url) {
-        notify(data?.error || 'Echec initialisation PayDunya');
+        notify(data?.error || 'Echec initialisation GIM-Pay');
         setProcessing(false);
         return;
       }
-      try { sessionStorage.setItem('frescoop.paydunya.token', data.token); } catch {}
+      try { sessionStorage.setItem('frescoop.gimpay.token', data.token); } catch {}
       setPendingToken(data.token);
-      notify('Redirection vers PayDunya...');
+      notify('Redirection vers GIM-Pay...');
       window.location.href = data.url;
     } catch (error) {
-      notify(`Erreur PayDunya: ${error.message}`);
+      notify(`Erreur GIM-Pay: ${error.message}`);
       setProcessing(false);
     }
   }
@@ -4595,7 +4654,7 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
             <div><em>Code de reçu</em><b>{receipt.code}</b></div>
             <div><em>Date & heure</em><b>{formatDate(receipt.paidAt)}</b></div>
             <div><em>Articles</em><b>{receipt.orders.length} produit{receipt.orders.length > 1 ? 's' : ''}</b></div>
-            <div><em>Mode</em><b>{receipt.token?.startsWith('DEMO') ? 'Simulation démo' : 'PayDunya'}</b></div>
+            <div><em>Mode</em><b>{receipt.token?.startsWith('DEMO') ? 'Simulation démo' : 'GIM-Pay'}</b></div>
           </div>
           <div className="payment-success-qr">
             <img
@@ -4625,7 +4684,7 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
       ) : (
         <section className="panel payment-panel partner-powered">
           <PanelToolbar icon={ReceiptText} title="Paiement sécurisé" action={<Button variant="secondary" onClick={() => navigate('/commandes?tab=cart')}><ShoppingCart size={16} /> Retour commandes</Button>} />
-          <NoticeCard icon={ShieldCheck} title="Paiement via PayDunya" body="Orange Money, Wave, Free Money, carte bancaire. Aucun reçu n'est émis tant que le paiement n'est pas confirmé." />
+          <NoticeCard icon={ShieldCheck} title="Paiement via GIM-Pay" body="Orange Money, Wave, Free Money, carte bancaire. Aucun reçu n'est émis tant que le paiement n'est pas confirmé." />
           {pendingToken && (
             <NoticeCard icon={CircleAlert} title="Paiement en cours de vérification" body={`Référence: ${pendingToken}. Cliquez ci-dessous pour vérifier le statut.`} />
           )}
@@ -4651,7 +4710,7 @@ function PaymentPage({ actions, currentUser, navigate, notify, route, store }) {
               <div className="summary-total"><span>Total à payer</span><strong>{formatMoney(total)}</strong></div>
               <div className="button-row">
                 <Button onClick={payNow} disabled={processing}>
-                  <CheckCircle2 size={18} /> {processing ? 'Redirection...' : 'Payer via PayDunya'}
+                  <CheckCircle2 size={18} /> {processing ? 'Redirection...' : 'Payer via GIM-Pay'}
                 </Button>
                 <Button variant="secondary" onClick={simulateAcceptedPayment} disabled={processing}>
                   <CheckCircle2 size={18} /> {processing ? '...' : 'Simuler paiement (démo)'}
@@ -6097,9 +6156,9 @@ function ImpactPage({ stats, store }) {
           <span className="uemoa-badge">IMPACT FILIERES UEMOA</span>
           <h2>FresCoop en chiffres: indicateurs mesurables</h2>
           <p>Chaque lot trace, chaque paiement partenaire, chaque capteur froid convertit des pertes en revenu pour les acteurs agricoles UEMOA. Aucun chiffre fictif: ces KPI sont calcules en temps reel sur l activité du compte.</p>
-          <div className="paydunya-counter" style={{ marginTop: '1rem', padding: '0.75rem 1.25rem', background: 'var(--surface)', borderRadius: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="gimpay-counter" style={{ marginTop: '1rem', padding: '0.75rem 1.25rem', background: 'var(--surface)', borderRadius: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
             <ReceiptText size={18} />
-            <span><strong>{impact.paydunyaTxCount}</strong> paiements PayDunya (Wave, OM, Free Money)</span>
+            <span><strong>{impact.gimpayTxCount}</strong> paiements GIM-Pay (Wave, OM, Free Money)</span>
           </div>
         </div>
       </section>
@@ -6111,7 +6170,7 @@ function ImpactPage({ stats, store }) {
         <StatCard icon={Sprout} label="CO2 évité (kg eq.)" value={formatCompact(impact.co2SavedKg)} tone="blue" />
         <StatCard icon={Tractor} label="Coopératives connectées" value={impact.coopérativeCount} tone="green" />
         <StatCard icon={Truck} label="Kg tracés jusqu'au marché" value={formatCompact(impact.tracedKg)} tone="blue" />
-        <StatCard icon={ReceiptText} label="Transactions partenaires" value={impact.paydunyaTxCount} tone="gold" />
+        <StatCard icon={ReceiptText} label="Transactions partenaires" value={impact.gimpayTxCount} tone="gold" />
         <StatCard icon={ShieldCheck} label="Preuves économiques émises" value={stats.proofs} tone="coral" />
       </div>
 
@@ -6190,7 +6249,7 @@ function computeUemoaImpact(store) {
   const producers = users.filter((user) => user.role === 'agriculteur');
   const womenProducers = producers.filter((user) => user.gender === 'Femme' || user.gender === 'F' || /(^|\s)(fatou|aissatou|aïssatou|aminata|awa|khady|marieme|mariéme|mariame|mame|ndeye|fama|ndèye|fatoumata|diarra|binta|astou|bintou|soda|coumba|rokhaya|rokhia|aida|aïda|yacine|khadija|khadidja|penda|dior|oumy|mareme|marème)/i.test(String(user.name || ''))).length;
   const coopérativeCount = (store.coopératives || []).length;
-  const paydunyaTxCount = paymentRecords.filter((record) => record.paydunyaToken || /paydunya/i.test(record.partner || '')).length;
+  const gimpayTxCount = paymentRecords.filter((record) => record.gimpayToken || /gimpay/i.test(record.partner || '')).length;
 
   return {
     lossesAvertedPercent,
@@ -6200,7 +6259,7 @@ function computeUemoaImpact(store) {
     totalProducers: producers.length,
     womenProducers,
     coopérativeCount,
-    paydunyaTxCount,
+    gimpayTxCount,
     transactionsCount: transactions.length,
     revenue: totalRevenue,
   };
@@ -6649,7 +6708,7 @@ function RepayLoanBlock({ loan, actions, currentUser, store, notify }) {
     };
     const notif = loan.partnerId ? createAppNotification({
         actor: currentUser,
-        body: `${currentUser.name} a remboursé ${formatMoney(amount)}${isFullyRepaid ? ' (solde complet)' : ''} sur le prêt ${loan.contractCode || ''}. Mode: ${method === 'paydunya' ? 'PayDunya' : 'Simulation'}.`,
+        body: `${currentUser.name} a remboursé ${formatMoney(amount)}${isFullyRepaid ? ' (solde complet)' : ''} sur le prêt ${loan.contractCode || ''}. Mode: ${method === 'gimpay' ? 'GIM-Pay' : 'Simulation'}.`,
         path: '/bancabilite',
         recipientId: loan.partnerId,
         relatedId: loan.id,
@@ -6668,13 +6727,13 @@ function RepayLoanBlock({ loan, actions, currentUser, store, notify }) {
     setShowForm(false);
   }
 
-  async function handlePayDunya() {
+  async function handleGimPay() {
     const amount = Number(repayAmount);
     if (!amount || amount <= 0) { notify('Montant invalide.', 'error'); return; }
     if (amount > remaining) { notify(`Le montant dépasse le solde restant (${formatMoney(remaining)}).`, 'error'); return; }
     setProcessing(true);
     try {
-      const res = await fetch(API_BASE + '/api/paydunya/create-invoice', {
+      const res = await fetch(API_BASE + '/api/gimpay/create-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -6688,15 +6747,15 @@ function RepayLoanBlock({ loan, actions, currentUser, store, notify }) {
       });
       const data = await res.json();
       if (!data?.ok || !data?.url) {
-        notify(data?.error || 'Echec initialisation PayDunya', 'error');
+        notify(data?.error || 'Echec initialisation GIM-Pay', 'error');
         setProcessing(false);
         return;
       }
-      executeRepayment(amount, 'paydunya');
-      notify('Redirection vers PayDunya...');
+      executeRepayment(amount, 'gimpay');
+      notify('Redirection vers GIM-Pay...');
       window.location.href = data.url;
     } catch (error) {
-      notify(`Erreur PayDunya: ${error.message}`, 'error');
+      notify(`Erreur GIM-Pay: ${error.message}`, 'error');
       setProcessing(false);
     }
   }
@@ -6734,8 +6793,8 @@ function RepayLoanBlock({ loan, actions, currentUser, store, notify }) {
             <small style={{ color: 'var(--muted)', marginTop: '0.3rem', display: 'block' }}>Solde restant : {formatMoney(remaining)}</small>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <button type="button" className="btn btn-primary" onClick={handlePayDunya} disabled={processing} style={{ fontSize: '0.82rem', padding: '0.45rem 0.8rem' }}>
-              {processing ? '...' : '💳 Payer via PayDunya'}
+            <button type="button" className="btn btn-primary" onClick={handleGimPay} disabled={processing} style={{ fontSize: '0.82rem', padding: '0.45rem 0.8rem' }}>
+              {processing ? '...' : '💳 Payer via GIM-Pay'}
             </button>
             <button type="button" className="btn btn-secondary" onClick={handleSimulation} disabled={processing} style={{ fontSize: '0.82rem', padding: '0.45rem 0.8rem' }}>
               {processing ? '...' : '⚡ Simulation paiement'}
@@ -7090,7 +7149,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
           <h2>{isFinancePartner ? 'Portefeuille agriculteurs - éligibilité crédit' : 'Score de bancabilité & dossier financement'}</h2>
           <p>{isFinancePartner
             ? 'Consultez les profils d\'agriculteurs FresCoop, leur score de bancabilité en temps réel, et instruisez les demandes de prêt directement depuis cette page.'
-            : 'Transformez votre activité réelle (transactions PayDunya, lots tracés, attestations) en dossier exploitable par banques, SFD et microfinance. Demande de prêt en un clic.'}
+            : 'Transformez votre activité réelle (transactions GIM-Pay, lots tracés, attestations) en dossier exploitable par banques, SFD et microfinance. Demande de prêt en un clic.'}
           </p>
         </div>
       </section>
@@ -7100,8 +7159,8 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
         const scoreFactor = myDossier.score >= 80 ? 0.7 : myDossier.score >= 60 ? 0.5 : myDossier.score >= 40 ? 0.3 : 0;
         const monthsFactor = Number(loanForm.months) / 6;
         const regularityBonus = myDossier.transactionsCount >= 10 ? 1.2 : myDossier.transactionsCount >= 5 ? 1.1 : 1.0;
-        const paydunyaBonus = myDossier.paydunyaCount >= 3 ? 1.15 : 1.0;
-        const maxEligible = Math.round(myDossier.monthlyAverage * 6 * scoreFactor * regularityBonus * paydunyaBonus);
+        const gimpayBonus = myDossier.gimpayCount >= 3 ? 1.15 : 1.0;
+        const maxEligible = Math.round(myDossier.monthlyAverage * 6 * scoreFactor * regularityBonus * gimpayBonus);
         const suggestedForDuration = Math.round(maxEligible * monthsFactor);
         const blockingLoan = findBlockingLoanForFarmer(currentUser.id, store);
         return (
@@ -7119,11 +7178,11 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
             <div className="bancabilite-kpi">
               <div><em>Revenu mensuel moyen</em><b>{formatMoney(myDossier.monthlyAverage)}</b></div>
               <div><em>Transactions vérifiées</em><b>{myDossier.transactionsCount}</b></div>
-              <div><em>Paiements PayDunya</em><b>{myDossier.paydunyaCount}</b></div>
+              <div><em>Paiements GIM-Pay</em><b>{myDossier.gimpayCount}</b></div>
               <div><em>Montant max éligible (IA)</em><b>{maxEligible > 0 ? formatMoney(maxEligible) : 'Score insuffisant'}</b></div>
             </div>
             {maxEligible > 0 && (
-              <NoticeCard icon={Activity} title="Calcul IA du montant éligible" body={`Basé sur : revenu moyen (${formatMoney(myDossier.monthlyAverage)}/mois) × facteur score (${(scoreFactor * 100).toFixed(0)}%) × régularité (×${regularityBonus.toFixed(2)}) × bonus PayDunya (×${paydunyaBonus.toFixed(2)}). Montant max : ${formatMoney(maxEligible)} sur 6 mois.`} />
+              <NoticeCard icon={Activity} title="Calcul IA du montant éligible" body={`Basé sur : revenu moyen (${formatMoney(myDossier.monthlyAverage)}/mois) × facteur score (${(scoreFactor * 100).toFixed(0)}%) × régularité (×${regularityBonus.toFixed(2)}) × bonus GIM-Pay (×${gimpayBonus.toFixed(2)}). Montant max : ${formatMoney(maxEligible)} sur 6 mois.`} />
             )}
             <div className="button-row">
               <Button variant="secondary" onClick={() => exportDossier(currentUser)}><Download size={16} /> Exporter mon dossier (PDF)</Button>
@@ -7149,7 +7208,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
         }
         const sFactor = dossier.score >= 80 ? 0.7 : dossier.score >= 60 ? 0.5 : 0;
         const regBonus = dossier.transactionsCount >= 10 ? 1.2 : dossier.transactionsCount >= 5 ? 1.1 : 1.0;
-        const pdBonus = dossier.paydunyaCount >= 3 ? 1.15 : 1.0;
+        const pdBonus = dossier.gimpayCount >= 3 ? 1.15 : 1.0;
         const maxEligible6m = Math.round(dossier.monthlyAverage * 6 * sFactor * regBonus * pdBonus);
         const mFactor = Number(loanForm.months) / 6;
         const maxForDuration = Math.round(maxEligible6m * mFactor);
@@ -7193,7 +7252,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
                     <div className="loan-ia-details">
                       <small>Revenu moyen : {formatMoney(dossier.monthlyAverage)}/mois</small>
                       <small>Score : {dossier.score}/100 (facteur {(sFactor * 100).toFixed(0)}%)</small>
-                      <small>Régularité : ×{regBonus.toFixed(2)} · PayDunya : ×{pdBonus.toFixed(2)}</small>
+                      <small>Régularité : ×{regBonus.toFixed(2)} · GIM-Pay : ×{pdBonus.toFixed(2)}</small>
                     </div>
                   </div>
                 ) : (
@@ -7421,7 +7480,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
               <div><em>Revenu vérifié</em><b>{formatMoney(dossier.totalRevenue)}</b></div>
               <div><em>Moyenne / mois</em><b>{formatMoney(dossier.monthlyAverage)}</b></div>
               <div><em>Transactions</em><b>{dossier.transactionsCount}</b></div>
-              <div><em>PayDunya</em><b>{dossier.paydunyaCount}</b></div>
+              <div><em>GIM-Pay</em><b>{dossier.gimpayCount}</b></div>
             </div>
             <div className="button-row">
               <Button variant="secondary" onClick={() => exportDossier(user)}><Download size={16} /> Dossier PDF</Button>
@@ -7749,7 +7808,7 @@ function buildBancabiliteDossier(user, store) {
   const orders = (store.orders || []).filter((item) => item.sellerId === user.id);
   const paidOrders = orders.filter((order) => order.paymentStatus === 'Paye' || order.status === 'Confirmee' || order.status === 'Livree');
   const paymentRecords = (store.paymentRecords || []).filter((record) => record.sellerId === user.id);
-  const paydunyaTx = paymentRecords.filter((r) => r.paydunyaToken || /paydunya/i.test(r.partner || ''));
+  const gimpayTx = paymentRecords.filter((r) => r.gimpayToken || /gimpay/i.test(r.partner || ''));
   const proofs = (store.proofs || []).filter((item) => item.ownerId === user.id);
   const activityProofs = (store.activityProofs || []).filter((item) => item.userId === user.id && (item.status === 'valide' || item.status === 'auto_valide'));
   const totalRevenue = paidOrders.reduce((sum, order) => sum + getOrderTotal(order, store), 0)
@@ -7775,16 +7834,17 @@ function buildBancabiliteDossier(user, store) {
   const criteria = [
     { label: 'Anciennete compte', value: `${monthsActive} mois`, points: Math.min(15, monthsActive * 2) },
     { label: 'Transactions vérifiées', value: transactions.length + paidOrders.length, points: Math.min(15, (transactions.length + paidOrders.length) * 2) },
-    { label: 'Paiements PayDunya', value: paydunyaTx.length, points: Math.min(10, paydunyaTx.length * 3) },
+    { label: 'Paiements GIM-Pay', value: gimpayTx.length, points: Math.min(10, gimpayTx.length * 3) },
     { label: 'Vérifications terrain par agent', value: activityProofs.length, points: Math.min(15, activityProofs.length * 4) },
     { label: 'Justificatifs de revenus vérifiés', value: proofs.length + paidOrders.length, points: Math.min(10, (proofs.length + paidOrders.length) * 2) },
     { label: 'Revenu mensuel moyen', value: `${formatCompact(monthlyAverage)} FCFA`, points: Math.min(10, Math.floor(monthlyAverage / 50000) * 2) },
     { label: 'Groupement / GIE / Coop', value: hasGroupement ? groupementValue : 'Non renseigné', points: hasGroupement ? 5 : 0 },
     { label: 'Foncier (formel ou coutumier)', value: hasFoncier ? foncierValue : 'Non renseigné', points: hasFoncier ? 5 : 0 },
     { label: 'Expérience agricole', value: experienceYears > 0 ? `${experienceYears} ans` : '⚠ Non renseigné (0 an)', points: Math.min(5, Math.floor(experienceYears / 2)) },
-    { label: 'Mobile Money actif', value: (hasMobileMoney || paydunyaTx.length > 0) ? 'Oui' : 'Non', points: (hasMobileMoney || paydunyaTx.length > 0) ? 4 : 0 },
+    { label: 'Mobile Money actif', value: (hasMobileMoney || gimpayTx.length > 0) ? 'Oui' : 'Non', points: (hasMobileMoney || gimpayTx.length > 0) ? 4 : 0 },
     { label: 'Tontine / épargne informelle', value: hasTontine ? 'Oui' : 'Non', points: hasTontine ? 4 : 0 },
     { label: 'Historique remboursement', value: repaid > 0 ? `${repaid} remboursé(s)${defaults > 0 ? `, ${defaults} défaut(s)` : ''}` : '—', points: Math.max(0, repaymentBonus) },
+    { label: 'Avis clients (étoiles)', value: (() => { const r = (store.ratings || []).filter((rt) => rt.sellerId === user.id); if (r.length === 0) return '—'; const avg = r.reduce((s, rt) => s + rt.rating, 0) / r.length; return `${avg.toFixed(1)}/5 (${r.length} avis)`; })(), points: (() => { const r = (store.ratings || []).filter((rt) => rt.sellerId === user.id); if (r.length === 0) return 0; const avg = r.reduce((s, rt) => s + rt.rating, 0) / r.length; if (avg >= 4.5) return 8; if (avg >= 4) return 6; if (avg >= 3) return 3; return -2; })() },
   ];
   const score = Math.min(100, criteria.reduce((sum, c) => sum + c.points, 0));
   const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : 'D';
@@ -7801,7 +7861,7 @@ function buildBancabiliteDossier(user, store) {
     totalRevenue,
     monthlyAverage,
     transactionsCount: transactions.length + paidOrders.length,
-    paydunyaCount: paydunyaTx.length,
+    gimpayCount: gimpayTx.length,
     activityProofsCount: activityProofs.length,
     agriCollectionCount: agriCollections.length,
     repaymentHistory: { repaid, defaults },
@@ -7829,7 +7889,7 @@ function renderBancabiliteHtml(dossier) {
       <h2>Indicateurs cles</h2>
       <p>Revenu total vérifié: <strong>${escapeHtml(formatMoney(dossier.totalRevenue))}</strong></p>
       <p>Revenu mensuel moyen: <strong>${escapeHtml(formatMoney(dossier.monthlyAverage))}</strong></p>
-      <p>Transactions vérifiées: ${dossier.transactionsCount} | Paiements PayDunya: ${dossier.paydunyaCount}</p>
+      <p>Transactions vérifiées: ${dossier.transactionsCount} | Paiements GIM-Pay: ${dossier.gimpayCount}</p>
       <p>Vérifications terrain par agent: ${dossier.activityProofsCount}</p>
     </section>
     <section>
@@ -8551,7 +8611,7 @@ function LotDigitalTwinCard({ lot, canReserve, onReserve, onShareConsent }) {
       <div className="payment-proof-card">
         <ShieldCheck size={18} />
         <div>
-          <strong>Paiement sécurisé via PayDunya</strong>
+          <strong>Paiement sécurisé via GIM-Pay</strong>
           <span>Orange Money, Wave, Free Money, carte bancaire. Reçu numérique rattaché au lot.</span>
         </div>
       </div>
@@ -9075,31 +9135,31 @@ function LanguageAssistant({ currentUser, store }) {
 
   const quickPrompts = {
     fr: [
-      { q: 'Comment vendre mes produits ?', a: 'Trois étapes: 1) Publiez votre produit dans "Produits" avec photo et prix, 2) Les acheteurs vous commandent depuis le Marché, 3) Vous recevez le paiement PayDunya directement sur votre compte (Orange Money, Wave, banque).' },
+      { q: 'Comment vendre mes produits ?', a: 'Trois étapes: 1) Publiez votre produit dans "Produits" avec photo et prix, 2) Les acheteurs vous commandent depuis le Marché, 3) Vous recevez le paiement GIM-Pay directement sur votre compte (Orange Money, Wave, banque).' },
       { q: 'Quel est le prix du jour ?', a: `Consultez la page "Marché" pour voir tous les produits disponibles et leurs prix en temps réel. Actuellement ${store.products.length} produits sont listés sur la plateforme.` },
-      { q: 'Comment obtenir un crédit bancaire ?', a: 'Allez dans "Bancabilité": FresCoop calcule votre score (0-100) à partir de vos ventes et paiements PayDunya. Exportez le dossier PDF et présentez-le à une banque ou SFD partenaire. Plus vous vendez via FresCoop, meilleur est votre score.' },
+      { q: 'Comment obtenir un crédit bancaire ?', a: 'Allez dans "Bancabilité": FresCoop calcule votre score (0-100) à partir de vos ventes et paiements GIM-Pay. Exportez le dossier PDF et présentez-le à une banque ou SFD partenaire. Plus vous vendez via FresCoop, meilleur est votre score.' },
       { q: 'Comment éviter de perdre ma récolte ?', a: 'Inscrivez vos produits dès la récolte. La page "Anti-gaspi" détecte les lots à DLC courte et propose une réduction automatique (-15% à -40%) pour vendre vite aux acheteurs B2B avant perte. Utilisez aussi les hubs froid pour prolonger la durée de vie.' },
       { q: 'Comment suivre un lot ?', a: 'Chaque lot reçoit un QR code. Dans "Lots froids", scannez le QR pour voir: température en temps réel, photos qualité, durée de vie restante, acheteur recommandé et preuve de paiement.' },
       { q: 'Je n ai pas de smartphone', a: 'Pas de problème! Appelez *384*FRES# depuis un téléphone à touches (même 2G). Menu en wolof/pular: cours du jour, déclaration de stock, vente, consultation paiement. Testez le simulateur dans "USSD".' },
     ],
     wo: [
-      { q: 'Naka laa man jaay sama njaay ?', a: '1) Bind sa njaay ci "Produits" ak nataal ak njëg, 2) Jaaykatyi dinañu la jënd ci Marché, 3) Dinga jot sa pay ci PayDunya (Orange Money, Wave, banq).' },
+      { q: 'Naka laa man jaay sama njaay ?', a: '1) Bind sa njaay ci "Produits" ak nataal ak njëg, 2) Jaaykatyi dinañu la jënd ci Marché, 3) Dinga jot sa pay ci GIM-Pay (Orange Money, Wave, banq).' },
       { q: 'Lan mooy njëg bis bi ?', a: `Demal ci "Marché" ngir gis njëg yépp ci waxtu wi. Tey am na ${store.products.length} njaay ci plateforme bi.` },
-      { q: 'Naka laa man jot crédit ?', a: 'Demal ci "Bancabilité": FresCoop dina wax sa score (0-100) ci sa njaay ak pay PayDunya. Yeggali dossier PDF, yobbu ko banq walla SFD. Bu nga jaay lu bari ci FresCoop, sa score mooy baax.' },
+      { q: 'Naka laa man jot crédit ?', a: 'Demal ci "Bancabilité": FresCoop dina wax sa score (0-100) ci sa njaay ak pay GIM-Pay. Yeggali dossier PDF, yobbu ko banq walla SFD. Bu nga jaay lu bari ci FresCoop, sa score mooy baax.' },
       { q: 'Naka laa fi man moytu yàq sama ngëneel ?', a: 'Bindal sa ngëneel jekk. "Anti-gaspi" dina gis yi doon yàq, jaay leen ak -15% ba -40% ci jaaykat B2B yi. Jëfandikoo hub yu sedd ngir sedd sa ngëneel.' },
       { q: 'Naka laa man topp sama lot ?', a: 'Lot bu ci nekk am na QR code. Ci "Lots froids", scaan QR bi: température, nataal, bërëb-bi mu des, jaaykat wi reccommende, pay yi.' },
       { q: 'Amuma téléphone bu baax', a: 'Dara du jaxasu! Woo *384*FRES# ci téléphone bi am touche (2G doy na). Menu ci wolof: njëg bis bi, bind stock, jaay, saytu pay.' },
     ],
     pul: [
-      { q: 'No mbaawnoo njeeygol am ?', a: '1) Winndu njeeygol ma e "Produits" e nataal e coggu, 2) Yiɗɓe soodugol ina sooda e Marché, 3) A heɓa njoɓdi ma e PayDunya.' },
+      { q: 'No mbaawnoo njeeygol am ?', a: '1) Winndu njeeygol ma e "Produits" e nataal e coggu, 2) Yiɗɓe soodugol ina sooda e Marché, 3) A heɓa njoɓdi ma e GIM-Pay.' },
       { q: 'No foti coggu hannde ?', a: `Yahu e "Marché" ngam yi\'ugol kala njeeygol e coggu maggi. Hannde ${store.products.length} njeeygol woni e plateforme.` },
-      { q: 'No mbaawnoo heɓugol tokkoral ?', a: 'Yahu e "Bancabilité": FresCoop hiitoo score maa (0-100) e njeeygol e njoɓdi PayDunya. Yaltin dossier PDF, addan banka walla SFD.' },
+      { q: 'No mbaawnoo heɓugol tokkoral ?', a: 'Yahu e "Bancabilité": FresCoop hiitoo score maa (0-100) e njeeygol e njoɓdi GIM-Pay. Yaltin dossier PDF, addan banka walla SFD.' },
       { q: 'No reenoo bonnde ndema am ?', a: '"Anti-gaspi" ko hollitta ko boni: jeey ɗum -15% haa -40% e soodooɓe B2B ado ɗum bonnugol.' },
       { q: 'No ndaroo-mi lot ?', a: 'Lot kala ina jogii QR code. E "Lots froids", scaan QR ndi: wulaango, nataa, ñalɗi keddiiɗi, soodoowo, njoɓdi.' },
       { q: 'Mi alaa simartifol', a: 'Noddu *384*FRES# e njokkondiral foti touches. Menu e pulaar: coggu hannde, winndugol stock, njeeygol.' },
     ],
     sr: [
-      { q: 'Le mbaane mbelax lomi tedd ?', a: '1) Bisim kirim ma ole "Produits", 2) Nga nu jim moox le "Marché", 3) Mi fa pay ole PayDunya.' },
+      { q: 'Le mbaane mbelax lomi tedd ?', a: '1) Bisim kirim ma ole "Produits", 2) Nga nu jim moox le "Marché", 3) Mi fa pay ole GIM-Pay.' },
       { q: 'Le ma ŋ kirim penaar ?', a: `Da "Marché" ole ya kirim ma tedd. Penaar ${store.products.length} kirim ne.` },
       { q: 'Le mbaane haat ana ?', a: 'Da "Bancabilité": score ma (0-100). Yol ma e yo le bank ole SFD.' },
       { q: 'Le mbaane rot ale ñoox ?', a: '"Anti-gaspi" yol ŋ ŋoox le -15% haa -40%.' },
@@ -9434,11 +9494,11 @@ function PitchPage({ navigate, store }) {
     },
     {
       title: 'La solution FresCoop',
-      body: 'Une plateforme intégrée qui connecte lot froid, paiement partenaire (PayDunya) et preuve économique portable. Pas de wallet: le paiement reste chez Wave, OM, Free Money. FresCoop fabrique la preuve.',
+      body: 'Une plateforme intégrée qui connecte lot froid, paiement partenaire (GIM-Pay) et preuve économique portable. Pas de wallet: le paiement reste chez Wave, OM, Free Money. FresCoop fabrique la preuve.',
       metrics: [
         { label: 'Lots traces', value: String(store.lots?.length || 0) },
         { label: 'Hubs solaires', value: String(store.hubs?.length || 0) },
-        { label: 'Paiements partenaires', value: String(impact.paydunyaTxCount) },
+        { label: 'Paiements partenaires', value: String(impact.gimpayTxCount) },
       ],
     },
     {
@@ -10129,6 +10189,8 @@ function createEmptyStore() {
     loanRepayments: [],
     agriScoreCollections: [],
     surveyLeads: [],
+    ratings: [],
+    cashbackRecords: [],
   };
 }
 
@@ -11993,7 +12055,7 @@ function renderPaymentReceiptHtml(receipt, store, user) {
   const dateStr = paidDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
   const timeStr = paidDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   const invoiceNum = `FC-${paidDate.getFullYear()}-${receipt.code.slice(-8)}`;
-  const method = receipt.token?.startsWith('DEMO') ? 'Simulation démo' : 'PayDunya';
+  const method = receipt.token?.startsWith('DEMO') ? 'Simulation démo' : 'GIM-Pay';
 
   const verifyUrl = getReceiptVerifyUrl(receipt.code);
   const qrUrl = getQrImageUrl(verifyUrl, 220);
@@ -12347,7 +12409,7 @@ function renderBusinessReportHtml(store) {
       </div>
       <div class="kpi-row">
         <div class="kpi-card green"><span class="kpi-value">${formatCompact(impact.tracedKg)}</span><span class="kpi-label">Kg traces</span></div>
-        <div class="kpi-card gold"><span class="kpi-value">${impact.paydunyaTxCount}</span><span class="kpi-label">Paiements PayDunya</span></div>
+        <div class="kpi-card gold"><span class="kpi-value">${impact.gimpayTxCount}</span><span class="kpi-label">Paiements GIM-Pay</span></div>
         <div class="kpi-card blue"><span class="kpi-value">${(store.lots || []).length}</span><span class="kpi-label">Lots actifs</span></div>
         <div class="kpi-card coral"><span class="kpi-value">${store.proofs.length}</span><span class="kpi-label">Preuves économiques</span></div>
       </div>
