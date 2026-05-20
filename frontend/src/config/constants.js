@@ -149,7 +149,7 @@ export const roles = [
 // ─── Public Images ──────────────────────────────────────────────────────────
 export const publicImages = {
   hero: '/sector-images/platform-home.jpg',
-  auth: '/sector-images/auth-coopérative.jpg',
+  auth: '/sector-images/auth-cooperative.jpg',
   market: '/sector-images/market-produce.jpg',
   products: '/sector-images/seller-products.jpg',
   dossiers: '/sector-images/documents-dossier.jpg',
