@@ -6502,13 +6502,10 @@ function calculateLoanSaleDeduction(order, store) {
 function RepayLoanBlock({ loan, actions, currentUser, store, notify }) {
   const [showForm, setShowForm] = useState(false);
   const [repayAmount, setRepayAmount] = useState('');
+  const [processing, setProcessing] = useState(false);
   const remaining = loan.remainingBalance || loan.amount || 0;
 
-  function handleRepay(e) {
-    e.preventDefault();
-    const amount = Number(repayAmount);
-    if (!amount || amount <= 0) { notify('Montant invalide.', 'error'); return; }
-    if (amount > remaining) { notify(`Le montant dépasse le solde restant (${formatMoney(remaining)}).`, 'error'); return; }
+  function executeRepayment(amount, method) {
     const now = new Date().toISOString();
     const newRemaining = Math.max(0, remaining - amount);
     const newRepaid = (loan.repaidAmount || 0) + amount;
@@ -6528,14 +6525,14 @@ function RepayLoanBlock({ loan, actions, currentUser, store, notify }) {
       farmerName: currentUser.name,
       partnerId: loan.partnerId,
       amount,
-      type: 'manual',
+      type: method,
       status: isFullyRepaid ? 'Remboursé' : 'Partiel',
     };
     actions.setLoanRepayments((items) => [repayment, ...items]);
     if (loan.partnerId) {
       const notif = createAppNotification({
         actor: currentUser,
-        body: `${currentUser.name} a remboursé ${formatMoney(amount)}${isFullyRepaid ? ' (solde complet)' : ''} sur le prêt ${loan.contractCode || ''}.`,
+        body: `${currentUser.name} a remboursé ${formatMoney(amount)}${isFullyRepaid ? ' (solde complet)' : ''} sur le prêt ${loan.contractCode || ''}. Mode: ${method === 'paydunya' ? 'PayDunya' : 'Simulation'}.`,
         path: '/bancabilite',
         recipientId: loan.partnerId,
         title: isFullyRepaid ? 'Prêt intégralement remboursé' : 'Remboursement reçu',
@@ -6548,6 +6545,50 @@ function RepayLoanBlock({ loan, actions, currentUser, store, notify }) {
     setShowForm(false);
   }
 
+  async function handlePayDunya() {
+    const amount = Number(repayAmount);
+    if (!amount || amount <= 0) { notify('Montant invalide.', 'error'); return; }
+    if (amount > remaining) { notify(`Le montant dépasse le solde restant (${formatMoney(remaining)}).`, 'error'); return; }
+    setProcessing(true);
+    try {
+      const res = await fetch(API_BASE + '/api/paydunya/create-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: Math.round(amount),
+          description: `Remboursement prêt ${loan.contractCode || loan.id} - ${currentUser.name}`,
+          orderIds: [],
+          payerId: currentUser.id,
+          storePhone: currentUser.phone || '',
+          storeAddress: currentUser.region || 'Senegal',
+        }),
+      });
+      const data = await res.json();
+      if (!data?.ok || !data?.url) {
+        notify(data?.error || 'Echec initialisation PayDunya', 'error');
+        setProcessing(false);
+        return;
+      }
+      executeRepayment(amount, 'paydunya');
+      notify('Redirection vers PayDunya...');
+      window.location.href = data.url;
+    } catch (error) {
+      notify(`Erreur PayDunya: ${error.message}`, 'error');
+      setProcessing(false);
+    }
+  }
+
+  function handleSimulation() {
+    const amount = Number(repayAmount);
+    if (!amount || amount <= 0) { notify('Montant invalide.', 'error'); return; }
+    if (amount > remaining) { notify(`Le montant dépasse le solde restant (${formatMoney(remaining)}).`, 'error'); return; }
+    setProcessing(true);
+    setTimeout(() => {
+      executeRepayment(amount, 'simulation');
+      setProcessing(false);
+    }, 1000);
+  }
+
   return (
     <div className="loan-repay-block">
       {!showForm ? (
@@ -6555,23 +6596,30 @@ function RepayLoanBlock({ loan, actions, currentUser, store, notify }) {
           <CircleDollarSign size={15} /> Rembourser
         </button>
       ) : (
-        <form onSubmit={handleRepay} className="loan-repay-form">
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="loan-repay-form">
+          <div style={{ marginBottom: '0.5rem' }}>
             <input
               type="number"
               min="1"
               max={remaining}
               value={repayAmount}
               onChange={(e) => setRepayAmount(e.target.value)}
-              placeholder={`Max ${formatMoney(remaining)}`}
-              style={{ flex: 1, minWidth: '140px', padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid var(--line)', fontSize: '0.85rem' }}
+              placeholder={`Montant à rembourser (max ${formatMoney(remaining)})`}
+              style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '6px', border: '1px solid var(--line)', fontSize: '0.88rem' }}
               autoFocus
             />
-            <button type="submit" className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '0.45rem 0.8rem' }}>Valider</button>
-            <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)} style={{ fontSize: '0.82rem', padding: '0.45rem 0.8rem' }}>Annuler</button>
+            <small style={{ color: 'var(--muted)', marginTop: '0.3rem', display: 'block' }}>Solde restant : {formatMoney(remaining)}</small>
           </div>
-          <small style={{ color: 'var(--muted)', marginTop: '0.25rem', display: 'block' }}>Solde restant : {formatMoney(remaining)}</small>
-        </form>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button type="button" className="btn btn-primary" onClick={handlePayDunya} disabled={processing} style={{ fontSize: '0.82rem', padding: '0.45rem 0.8rem' }}>
+              {processing ? '...' : '💳 Payer via PayDunya'}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={handleSimulation} disabled={processing} style={{ fontSize: '0.82rem', padding: '0.45rem 0.8rem' }}>
+              {processing ? '...' : '⚡ Simulation paiement'}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)} disabled={processing} style={{ fontSize: '0.82rem', padding: '0.45rem 0.8rem' }}>Annuler</button>
+          </div>
+        </div>
       )}
     </div>
   );
