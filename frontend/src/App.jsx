@@ -1830,6 +1830,20 @@ function LoginPage({ actions, notify, onLogin, store }) {
           if (items.some((u) => u.id === data.user.id)) return items;
           return [data.user, ...items];
         });
+        if (normalize(data.user.status) === 'en attente') {
+          actions.setNotifications((items) => [
+            createAppNotification({
+              actor: data.user,
+              body: `${data.user.name} (${data.user.email}) demande à être validé comme ${data.user.role}.`,
+              path: data.user.role === 'agriculteur' ? '/verification' : '/utilisateurs',
+              recipientRole: 'admin',
+              relatedId: data.user.id,
+              title: `Nouvelle inscription ${data.user.role}`,
+              type: 'approval_request',
+            }),
+            ...items,
+          ]);
+        }
       }
       notify(`Bienvenue ${data.user.name} !`, 'success');
       onLogin(data.user.id, data.user);
