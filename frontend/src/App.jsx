@@ -3944,22 +3944,24 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
       comment,
       createdAt: new Date().toISOString(),
     };
-    actions.setStore((s) => ({ ...s, ratings: [newRating, ...(s.ratings || [])] }));
-    const seller = store.users.find((u) => u.id === order.sellerId);
-    if (seller) {
-      const allSellerRatings = [newRating, ...(store.ratings || []).filter((r) => r.sellerId === order.sellerId)];
-      const newAvg = (allSellerRatings.reduce((s, r) => s + r.rating, 0) / allSellerRatings.length).toFixed(1);
-      const notif = createAppNotification({
-        actor: currentUser,
-        recipientId: seller.id,
-        title: `Nouvelle note : ${'★'.repeat(rating)}${'☆'.repeat(5 - rating)}`,
-        body: `${currentUser.name} vous a attribué ${rating}/5. Votre moyenne globale est maintenant ${newAvg}/5 (${allSellerRatings.length} avis).`,
-        path: '/commandes',
-        relatedId: orderId,
-        type: 'rating',
-      });
-      actions.setNotifications((items) => [notif, ...items]);
-    }
+    const sellerId = order.sellerId || order.ownerId || '';
+    const updatedRatings = [newRating, ...(store.ratings || [])];
+    const allSellerRatings = updatedRatings.filter((r) => r.sellerId === sellerId);
+    const newAvg = allSellerRatings.length ? (allSellerRatings.reduce((s, r) => s + r.rating, 0) / allSellerRatings.length).toFixed(1) : rating.toFixed(1);
+    const notif = createAppNotification({
+      actor: currentUser,
+      recipientId: sellerId,
+      title: `Nouvelle note : ${'★'.repeat(rating)}${'☆'.repeat(5 - rating)}`,
+      body: `${currentUser.name} vous a attribué ${rating}/5. Votre moyenne globale est maintenant ${newAvg}/5 (${allSellerRatings.length} avis).`,
+      path: '/commandes',
+      relatedId: orderId,
+      type: 'rating',
+    });
+    actions.setStore((s) => ({
+      ...s,
+      ratings: [newRating, ...(s.ratings || [])],
+      notifications: [notif, ...(s.notifications || [])],
+    }));
     const cashbackAmount = Math.round(Number(order.totalAmount || order.totalPrice || 0) * 0.02);
     if (cashbackAmount > 0) {
       const cashback = {
