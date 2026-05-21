@@ -500,6 +500,7 @@ function App() {
   const prevStatusRef = useRef(currentUser?.status);
   useEffect(() => {
     if (!currentUser) return;
+    if (currentUser.role === 'admin') { prevStatusRef.current = currentUser.status; return; }
     const prev = normalize(prevStatusRef.current || '');
     const curr = normalize(currentUser.status || 'Actif');
     if (prev === 'en attente' && curr === 'actif') {
