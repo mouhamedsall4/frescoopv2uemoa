@@ -3580,6 +3580,7 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
   const [activeOrderTab, setActiveOrderTab] = useState(() => (isBuyerRole(currentUser.role) ? 'cart' : 'orders'));
   const [voiceRecording, setVoiceRecording] = useState(false);
   const [voiceBlob, setVoiceBlob] = useState(null);
+  const [ratingModal, setRatingModal] = useState(null);
   const voiceRecorderRef = useRef(null);
   const voiceChunksRef = useRef([]);
   const orders = getVisibleOrders(store.orders, currentUser);
@@ -4237,9 +4238,9 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
                 showOrderList ? (
                   <>
                     {isBuyerRole(currentUser.role) ? (
-                      <ClientOrderList currentUser={currentUser} onCancel={cancelOrder} onPay={(orderId) => navigate(`/paiement?orders=${orderId}`)} onRate={(orderId) => { const r = prompt('Notez cette commande de 1 à 5 étoiles :'); if (r && Number(r) >= 1 && Number(r) <= 5) rateOrder(orderId, Number(r)); }} onSelect={toggleOrderSelection} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
+                      <ClientOrderList currentUser={currentUser} onCancel={cancelOrder} onPay={(orderId) => navigate(`/paiement?orders=${orderId}`)} onRate={(orderId) => setRatingModal({ orderId })} onSelect={toggleOrderSelection} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
                     ) : (
-                      <OrderCardGrid currentUser={currentUser} onAgentStep={markAgentStep} onCancel={cancelOrder} onRate={(orderId) => { const r = prompt('Notez cette commande de 1 à 5 étoiles :'); if (r && Number(r) >= 1 && Number(r) <= 5) rateOrder(orderId, Number(r)); }} onSelect={toggleOrderSelection} onStatusChange={updateOrder} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
+                      <OrderCardGrid currentUser={currentUser} onAgentStep={markAgentStep} onCancel={cancelOrder} onRate={(orderId) => setRatingModal({ orderId })} onSelect={toggleOrderSelection} onStatusChange={updateOrder} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
                     )}
                     <CatalogPager page={orderPage} totalPages={orderTotalPages} onPageChange={setOrderPage} />
                   </>
@@ -4329,7 +4330,35 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
           )}
         </section>
       )}
+      {ratingModal && (
+        <RatingModal onClose={() => setRatingModal(null)} onSubmit={(rating) => { rateOrder(ratingModal.orderId, rating); setRatingModal(null); }} />
+      )}
     </PageFrame>
+  );
+}
+
+function RatingModal({ onClose, onSubmit }) {
+  const [hover, setHover] = useState(0);
+  const [selected, setSelected] = useState(0);
+  return (
+    <div className="confirm-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="confirm-modal rating-modal" onClick={(e) => e.stopPropagation()}>
+        <h3>Noter cette commande</h3>
+        <p>Comment évaluez-vous cette transaction ?</p>
+        <div className="rating-stars">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button key={n} type="button" className={`rating-star ${n <= (hover || selected) ? 'active' : ''}`} onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)} onClick={() => setSelected(n)} aria-label={`${n} étoile${n > 1 ? 's' : ''}`}>
+              <Star size={28} fill={n <= (hover || selected) ? '#f59e0b' : 'none'} color={n <= (hover || selected) ? '#f59e0b' : '#d1d5db'} />
+            </button>
+          ))}
+        </div>
+        {selected > 0 && <p className="rating-label">{selected === 5 ? 'Excellent !' : selected === 4 ? 'Très bien' : selected === 3 ? 'Correct' : selected === 2 ? 'Décevant' : 'Mauvais'}</p>}
+        <div className="confirm-modal-actions">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>Annuler</button>
+          <button type="button" className="btn btn-primary" disabled={!selected} onClick={() => onSubmit(selected)}>Valider ({selected}/5)</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
