@@ -5767,6 +5767,7 @@ function LotIntelligencePage({ actions, currentUser, notify, store }) {
             <LotDigitalTwinCard
               lot={selectedLot}
               canReserve={['acheteurB2B', 'partenaire', 'admin'].includes(currentUser.role)}
+              canConsent={currentUser.role === 'admin' || currentUser.id === selectedLot.ownerId}
               onReserve={() => reserveLot(selectedLot)}
               onShareConsent={() => shareConsent(selectedLot)}
             />
@@ -8593,7 +8594,7 @@ function CatalogPager({ onPageChange, page, totalPages }) {
   );
 }
 
-function LotDigitalTwinCard({ lot, canReserve, onReserve, onShareConsent }) {
+function LotDigitalTwinCard({ lot, canReserve, canConsent, onReserve, onShareConsent }) {
   const gain = Number(lot.recommendedPrice || 0) - Number(lot.baselinePrice || 0);
   return (
     <article className="lot-twin-card">
@@ -8634,7 +8635,7 @@ function LotDigitalTwinCard({ lot, canReserve, onReserve, onShareConsent }) {
       </div>
       <div className="button-row">
         {canReserve && <Button onClick={onReserve}><ShoppingCart size={17} /> Réserver B2B</Button>}
-        <Button variant="secondary" onClick={onShareConsent}><Landmark size={17} /> Partager avec consentement</Button>
+        {canConsent && <Button variant="secondary" onClick={onShareConsent}><Landmark size={17} /> Partager avec consentement</Button>}
       </div>
     </article>
   );
