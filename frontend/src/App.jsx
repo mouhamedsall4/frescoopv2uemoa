@@ -635,7 +635,7 @@ function App() {
       />
       <main id="main-content" tabIndex="-1">
         <PageHero meta={pageMeta} stats={stats} store={store} user={currentUser} />
-        {!accessAllowed && <AccessDenied navigate={navigate} user={currentUser} />}
+        {!accessAllowed && (() => { navigate(getRoleHomePath(currentUser.role)); return null; })()}
         {accessAllowed && route.pathname === '/' && <DashboardPage currentUser={currentUser} navigate={navigate} stats={stats} store={store} />}
         {accessAllowed && route.pathname === '/marche' && <MarketplacePage actions={actions} currentUser={currentUser} navigate={navigate} notify={notify} store={store} />}
         {accessAllowed && route.pathname === '/produits' && <ProductsPage actions={actions} currentUser={currentUser} notify={notify} store={store} />}
@@ -5864,7 +5864,7 @@ function UsersPage({ actions, currentUser, navigate, notify, store }) {
     }
   }, [highlightId]);
 
-  if (currentUser.role !== 'admin') return <AccessDenied />;
+  if (currentUser.role !== 'admin') return null;
   const filteredUsers = filterUsersForAdmin(store.users, roleFilter, search);
   const groupedUsers = groupUsersByRole(filteredUsers);
   const roleCounts = countUsersByRole(store.users);
@@ -6033,46 +6033,7 @@ function UsersPage({ actions, currentUser, navigate, notify, store }) {
           </label>
         </div>
 
-        {(() => {
-          const userAuditLogs = (store.auditLogs || []).filter((log) =>
-            ['user_deleted', 'user_suspended', 'user_reactivated', 'user_approved', 'user_rejected', 'user_status_changed'].includes(log.action),
-          ).slice(0, 8);
-          if (userAuditLogs.length === 0) return null;
-          return (
-            <section className="user-audit-panel">
-              <div className="user-audit-head">
-                <strong>🕒 Journal d'audit · actions admin sur les comptes</strong>
-                <small>Traçabilité complète des {userAuditLogs.length} dernière(s) action(s).</small>
-              </div>
-              <ul className="user-audit-list">
-                {userAuditLogs.map((log) => {
-                  const icon = log.action === 'user_deleted' ? '🗑️' : log.action === 'user_suspended' || log.action === 'user_rejected' ? '⛔' : '✅';
-                  const label = log.action === 'user_deleted'
-                    ? 'Suppression'
-                    : log.action === 'user_suspended'
-                      ? 'Suspension'
-                      : log.action === 'user_approved'
-                        ? 'Approbation'
-                        : log.action === 'user_rejected'
-                          ? 'Rejet'
-                          : log.action === 'user_status_changed'
-                            ? 'Statut'
-                            : 'Réactivation';
-                  return (
-                    <li key={log.id} className={`audit-row audit-${log.action}`}>
-                      <span className="audit-icon">{icon}</span>
-                      <div>
-                        <strong>{label}</strong>
-                        <p>{log.detail}</p>
-                        <small>par {log.actorName || 'Admin'} · {formatDate(log.createdAt)}</small>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          );
-        })()}
+        <AuditLogCollapsible logs={(store.auditLogs || []).filter((log) => ['user_deleted', 'user_suspended', 'user_reactivated', 'user_approved', 'user_rejected', 'user_status_changed'].includes(log.action))} />
 
         <section className="survey-leads-panel">
           <div className="user-role-heading">
@@ -6176,6 +6137,7 @@ function UsersPage({ actions, currentUser, navigate, notify, store }) {
                             ...items,
                           ]);
                           actions.setUsers((items) => items.filter((item) => item.id !== user.id));
+                          actions.setProducts((items) => items.filter((item) => item.ownerId !== user.id && item.sellerId !== user.id));
                           notify(`${user.name} a été supprimé. Action tracée dans l'audit.`, 'success');
                         }}
                         user={user}
@@ -8125,7 +8087,7 @@ function UssdSimulatorPage({ currentUser, store }) {
 
 function DataPage({ actions, currentUser, notify, store }) {
   const [file, setFile] = useState(null);
-  if (currentUser.role !== 'admin') return <AccessDenied />;
+  if (currentUser.role !== 'admin') return null;
 
   async function importData() {
     if (!file) {
@@ -9107,6 +9069,31 @@ function UserCompactRow({ onStatusChange, onDelete, onViewProofs, user, canDelet
         )}
       </div>
     </article>
+  );
+}
+
+function AuditLogCollapsible({ logs }) {
+  const [open, setOpen] = useState(false);
+  if (!logs.length) return null;
+  const visible = open ? logs.slice(0, 20) : logs.slice(0, 3);
+  return (
+    <details className="audit-collapsible" open={open || undefined} onToggle={(e) => setOpen(e.target.open)}>
+      <summary className="audit-collapsible-summary">
+        <Activity size={14} />
+        <span>Journal d'audit ({logs.length})</span>
+        <ChevronDown size={14} className={open ? 'rotated' : ''} />
+      </summary>
+      <ul className="audit-collapsible-list">
+        {visible.map((log) => (
+          <li key={log.id}>
+            <span className="audit-dot" data-action={log.action} />
+            <span className="audit-detail">{log.detail}</span>
+            <span className="audit-meta">{log.actorName || 'Admin'} · {formatDate(log.createdAt)}</span>
+          </li>
+        ))}
+      </ul>
+      {logs.length > 20 && open && <small className="muted" style={{ padding: '0 0.75rem 0.5rem', display: 'block' }}>Affichage limité aux 20 plus récentes.</small>}
+    </details>
   );
 }
 

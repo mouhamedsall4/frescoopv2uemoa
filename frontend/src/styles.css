@@ -2926,6 +2926,74 @@ button:disabled {
   border-left: 3px solid var(--green-700);
 }
 
+.audit-collapsible {
+  margin: 8px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--wash, #f8faf9);
+  overflow: hidden;
+}
+
+.audit-collapsible-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  list-style: none;
+}
+
+.audit-collapsible-summary::-webkit-details-marker { display: none; }
+
+.audit-collapsible-summary .rotated { transform: rotate(180deg); }
+
+.audit-collapsible-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 12px 8px;
+}
+
+.audit-collapsible-list li {
+  display: grid;
+  grid-template-columns: 8px 1fr auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.78rem;
+}
+
+.audit-collapsible-list li:last-child { border-bottom: none; }
+
+.audit-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green-600, #16a34a);
+  margin-top: 4px;
+}
+
+.audit-dot[data-action="user_deleted"],
+.audit-dot[data-action="user_rejected"] { background: #dc2626; }
+.audit-dot[data-action="user_suspended"] { background: #d97706; }
+
+.audit-detail {
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.audit-meta {
+  color: var(--muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
 .user-role-section {
   display: grid;
   gap: 10px;
