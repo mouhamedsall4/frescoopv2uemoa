@@ -657,6 +657,7 @@ function App() {
       <AppFooter currentUser={currentUser} navigate={navigate} />
       <LanguageAssistant currentUser={currentUser} store={store} />
       <ConfirmModalHost />
+      <RatingModalHost />
       {toast && <Toast toast={toast} />}
     </div>
   );
@@ -3580,7 +3581,6 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
   const [activeOrderTab, setActiveOrderTab] = useState(() => (isBuyerRole(currentUser.role) ? 'cart' : 'orders'));
   const [voiceRecording, setVoiceRecording] = useState(false);
   const [voiceBlob, setVoiceBlob] = useState(null);
-  const [ratingModal, setRatingModal] = useState(null);
   const voiceRecorderRef = useRef(null);
   const voiceChunksRef = useRef([]);
   const orders = getVisibleOrders(store.orders, currentUser);
@@ -3932,11 +3932,13 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
     actions.setStore((s) => ({ ...s, ratings: [newRating, ...(s.ratings || [])] }));
     const seller = store.users.find((u) => u.id === order.sellerId);
     if (seller) {
+      const allSellerRatings = [newRating, ...(store.ratings || []).filter((r) => r.sellerId === order.sellerId)];
+      const newAvg = (allSellerRatings.reduce((s, r) => s + r.rating, 0) / allSellerRatings.length).toFixed(1);
       const notif = createAppNotification({
         actor: currentUser,
         recipientId: seller.id,
-        title: `Nouvelle note : ${rating}/5`,
-        body: `${currentUser.name} vous a attribué ${rating} étoile${rating > 1 ? 's' : ''}${comment ? ' : "' + comment + '"' : ''}.`,
+        title: `Nouvelle note : ${'★'.repeat(rating)}${'☆'.repeat(5 - rating)}`,
+        body: `${currentUser.name} vous a attribué ${rating}/5. Votre moyenne globale est maintenant ${newAvg}/5 (${allSellerRatings.length} avis).`,
         path: '/commandes',
         relatedId: orderId,
         type: 'rating',
@@ -4238,9 +4240,9 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
                 showOrderList ? (
                   <>
                     {isBuyerRole(currentUser.role) ? (
-                      <ClientOrderList currentUser={currentUser} onCancel={cancelOrder} onPay={(orderId) => navigate(`/paiement?orders=${orderId}`)} onRate={(orderId) => setRatingModal({ orderId })} onSelect={toggleOrderSelection} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
+                      <ClientOrderList currentUser={currentUser} onCancel={cancelOrder} onPay={(orderId) => navigate(`/paiement?orders=${orderId}`)} onRate={async (orderId) => { const r = await askRating(); if (r >= 1) rateOrder(orderId, r); }} onSelect={toggleOrderSelection} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
                     ) : (
-                      <OrderCardGrid currentUser={currentUser} onAgentStep={markAgentStep} onCancel={cancelOrder} onRate={(orderId) => setRatingModal({ orderId })} onSelect={toggleOrderSelection} onStatusChange={updateOrder} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
+                      <OrderCardGrid currentUser={currentUser} onAgentStep={markAgentStep} onCancel={cancelOrder} onRate={async (orderId) => { const r = await askRating(); if (r >= 1) rateOrder(orderId, r); }} onSelect={toggleOrderSelection} onStatusChange={updateOrder} orders={pagedOrders} selectedIds={selectedOrderSet} store={store} />
                     )}
                     <CatalogPager page={orderPage} totalPages={orderTotalPages} onPageChange={setOrderPage} />
                   </>
@@ -4330,18 +4332,24 @@ function OrdersPage({ actions, currentUser, navigate, notify, route, store }) {
           )}
         </section>
       )}
-      {ratingModal && (
-        <RatingModal onClose={() => setRatingModal(null)} onSubmit={(rating) => { rateOrder(ratingModal.orderId, rating); setRatingModal(null); }} />
-      )}
     </PageFrame>
   );
 }
 
-function RatingModal({ onClose, onSubmit }) {
+function RatingModalHost() {
+  const [request, setRequest] = useState(null);
   const [hover, setHover] = useState(0);
   const [selected, setSelected] = useState(0);
+  useEffect(() => {
+    ratingHandler = (opts) => { setSelected(0); setHover(0); setRequest(opts); };
+    return () => { ratingHandler = null; };
+  }, []);
+  if (!request) return null;
+  const { resolve } = request;
+  const close = () => { resolve(0); setRequest(null); };
+  const submit = () => { resolve(selected); setRequest(null); };
   return (
-    <div className="confirm-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+    <div className="confirm-modal-backdrop" onClick={close} role="dialog" aria-modal="true">
       <div className="confirm-modal rating-modal" onClick={(e) => e.stopPropagation()}>
         <h3>Noter cette commande</h3>
         <p>Comment évaluez-vous cette transaction ?</p>
@@ -4354,8 +4362,8 @@ function RatingModal({ onClose, onSubmit }) {
         </div>
         {selected > 0 && <p className="rating-label">{selected === 5 ? 'Excellent !' : selected === 4 ? 'Très bien' : selected === 3 ? 'Correct' : selected === 2 ? 'Décevant' : 'Mauvais'}</p>}
         <div className="confirm-modal-actions">
-          <button type="button" className="btn btn-secondary" onClick={onClose}>Annuler</button>
-          <button type="button" className="btn btn-primary" disabled={!selected} onClick={() => onSubmit(selected)}>Valider ({selected}/5)</button>
+          <button type="button" className="btn btn-secondary" onClick={close}>Annuler</button>
+          <button type="button" className="btn btn-primary" disabled={!selected} onClick={submit}>Valider ({selected}/5)</button>
         </div>
       </div>
     </div>
@@ -7209,6 +7217,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
               <div><em>Revenu mensuel moyen</em><b>{formatMoney(myDossier.monthlyAverage)}</b></div>
               <div><em>Transactions vérifiées</em><b>{myDossier.transactionsCount}</b></div>
               <div><em>Paiements GIM-Pay</em><b>{myDossier.gimpayCount}</b></div>
+              {(() => { const rats = (store.ratings || []).filter((rt) => rt.sellerId === currentUser.id); if (!rats.length) return null; const avg = (rats.reduce((s, rt) => s + rt.rating, 0) / rats.length).toFixed(1); return <div><em>Note clients</em><b style={{ color: '#d97706' }}>{'★'.repeat(Math.round(Number(avg)))} {avg}/5 <small>({rats.length} avis)</small></b></div>; })()}
               <div><em>Montant max éligible (IA)</em><b>{maxEligible > 0 ? formatMoney(maxEligible) : 'Score insuffisant'}</b></div>
             </div>
             {maxEligible > 0 && (
@@ -7511,6 +7520,7 @@ function BancabilitePage({ actions, currentUser, notify, store }) {
               <div><em>Moyenne / mois</em><b>{formatMoney(dossier.monthlyAverage)}</b></div>
               <div><em>Transactions</em><b>{dossier.transactionsCount}</b></div>
               <div><em>GIM-Pay</em><b>{dossier.gimpayCount}</b></div>
+              {(() => { const rats = (store.ratings || []).filter((rt) => rt.sellerId === user.id); if (!rats.length) return null; const avg = (rats.reduce((s, rt) => s + rt.rating, 0) / rats.length).toFixed(1); return <div><em>Note clients</em><b style={{ color: '#d97706' }}>{'★'.repeat(Math.round(Number(avg)))} {avg}/5 <small>({rats.length})</small></b></div>; })()}
             </div>
             <div className="button-row">
               <Button variant="secondary" onClick={() => exportDossier(user)}><Download size={16} /> Dossier PDF</Button>
@@ -9966,6 +9976,14 @@ function askConfirm(options) {
   return new Promise((resolve) => {
     if (!confirmHandler) return resolve(window.confirm(options.message || 'Confirmer ?'));
     confirmHandler({ ...options, resolve });
+  });
+}
+
+let ratingHandler = null;
+function askRating() {
+  return new Promise((resolve) => {
+    if (!ratingHandler) return resolve(0);
+    ratingHandler({ resolve });
   });
 }
 
